@@ -1,5 +1,5 @@
 # Root-level Dockerfile for Railway monorepo build
-# cache-bust: v8
+# cache-bust: v9
 FROM node:20-slim AS build
 RUN apt-get update && apt-get install -y --no-install-recommends openssl python3 make g++
 WORKDIR /repo
@@ -11,11 +11,14 @@ COPY apps/pos/package.json apps/pos/
 COPY apps/backoffice/package.json apps/backoffice/
 COPY apps/kds/package.json apps/kds/
 COPY apps/print-service/package.json apps/print-service/
+# Install ALL deps (including prod runtime deps like express, reflect-metadata etc)
 RUN pnpm install --filter @goblins/api --filter @goblins/shared
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY apps/api apps/api
-RUN pnpm --filter @goblins/shared build && pnpm --filter @goblins/api db:generate && pnpm --filter @goblins/api build
+RUN pnpm --filter @goblins/shared build && \
+    pnpm --filter @goblins/api db:generate && \
+    pnpm --filter @goblins/api build
 
 FROM node:20-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates gnupg curl && \
@@ -26,7 +29,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     apt-get purge -y --auto-remove ca-certificates gnupg curl
 WORKDIR /repo
 RUN npm install -g pnpm@8
-ENV NODE_ENV=production
+# Copy everything including node_modules from build stage
 COPY --from=build /repo ./
+ENV NODE_ENV=production
 EXPOSE 3000
 CMD sh -c "cd /repo/apps/api && npx prisma migrate deploy && echo Migrations-Done && node dist/main.js"
