@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "CashMoveKind" ADD VALUE 'CASH_TRANSFER';

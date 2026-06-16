@@ -1,0 +1,8 @@
+**/.env
+node_modules
+**/node_modules
+**/dist
+backups
+**/preview
+.git
+*.log

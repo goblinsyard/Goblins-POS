@@ -1,0 +1,22 @@
+               Goblins Yard
+               Cairo, Egypt
+          Tax ID: EG-123-456-789
+==========================================
+Order #321                         DINE IN
+Table/Room:                             T5
+Server:                     Mona (Manager)
+Date:                6/11/2026, 3:44:36 PM
+------------------------------------------
+2 x Virgin Mojito               EGP 170.00
+------------------------------------------
+Subtotal                        EGP 170.00
+Service                          EGP 20.40
+VAT                              EGP 26.66
+==========================================
+TOTAL                           EGP 217.06
+==========================================
+Cash                            EGP 217.06
+  Tendered                      EGP 217.06
+  Change                          EGP 0.00
+
+Thank you! See you soon — goblinsyard.com

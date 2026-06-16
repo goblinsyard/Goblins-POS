@@ -1,0 +1,21 @@
+               Goblins Yard
+               Cairo, Egypt
+          Tax ID: EG-123-456-789
+==========================================
+Order #310                        TAKEAWAY
+Server:                     Mona (Manager)
+Date:                6/11/2026, 3:27:05 PM
+Customer:            Loyalty Test Customer
+------------------------------------------
+Double Trouble Burger           EGP 250.00
+------------------------------------------
+Subtotal                        EGP 250.00
+VAT                              EGP 35.00
+==========================================
+TOTAL                           EGP 285.00
+==========================================
+Cash                            EGP 285.00
+  Tendered                      EGP 285.00
+  Change                          EGP 0.00
+
+Thank you! See you soon — goblinsyard.com
