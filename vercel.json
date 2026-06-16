@@ -1,6 +1,6 @@
 {
   "framework": "vite",
-  "installCommand": "cd apps/pos && sed -i \"s/\"workspace:\\*\"/\"*\"/g\" package.json && npm install --legacy-peer-deps",
+  "installCommand": "cd apps/pos && npm install --legacy-peer-deps",
   "buildCommand": "cd apps/pos && ./node_modules/.bin/vite build",
   "outputDirectory": "apps/pos/dist"
 }
