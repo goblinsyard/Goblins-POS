@@ -1,8 +1,8 @@
 {
   "framework": "vite",
-  "installCommand": "cd apps/backoffice && npm install --legacy-peer-deps",
-  "buildCommand": "cd apps/backoffice && ./node_modules/.bin/vite build",
-  "outputDirectory": "apps/backoffice/dist",
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "./node_modules/.bin/vite build",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/api/:path*",
