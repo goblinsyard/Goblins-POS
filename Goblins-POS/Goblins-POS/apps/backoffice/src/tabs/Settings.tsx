@@ -15,6 +15,37 @@ const SECTIONS = ['general', 'receipt customizer', 'printers', 'stations', 'paym
 
 export function SettingsView() {
   const [section, setSection] = useState<(typeof SECTIONS)[number]>('general');
+
+  async function exportFloor() {
+    setBusy(true);
+    try {
+      const data = await api<any[]>('/admin/export/floor');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `floor-layout-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      setSuccess('Floor layout exported successfully.');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Export failed');
+    } finally { setBusy(false); }
+  }
+
+  async function handleFloorImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      if (!Array.isArray(payload)) throw new Error('Floor layout file must be a JSON array of zones.');
+      const res = await api<any>('/admin/import/floor', { method: 'POST', body: payload });
+      setSuccess(`Floor import complete! ${res.zonesCreated} zones, ${res.resourcesCreated} resources imported.`);
+    } catch (err) {
+      setErr(err instanceof Error ? err.message : 'Import failed');
+    } finally { setBusy(false); e.target.value = ''; }
+  }
+
   return (
     <div>
       <div className="mb-4"><Pills value={section} onChange={setSection} options={SECTIONS} /></div>
@@ -950,6 +981,27 @@ function DatabaseManager() {
                 <p className="text-[10px] text-slate-400 mt-1">Accepts JSON or CSV with columns: `Name, Phone, Email, Birthday, Tags, Notes` (Tags split by comma)</p>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl bg-white p-4 shadow space-y-5">
+        <div>
+          <h3 className="font-semibold text-slate-800">Floor Layout & Tables</h3>
+          <p className="text-xs text-slate-500 mt-0.5">Export or import your full floor plan — zones, tables, billiards tables, and rooms — as a JSON file.</p>
+        </div>
+        <div className="flex flex-wrap gap-3 pt-2 border-t">
+          <Btn onClick={exportFloor} disabled={busy}>Export Floor Layout (JSON)</Btn>
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Import Floor Layout</label>
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleFloorImport}
+              disabled={busy}
+              className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+            />
+            <p className="text-[10px] text-slate-400 mt-1">Warning: importing will ADD zones/resources on top of existing ones.</p>
           </div>
         </div>
       </div>

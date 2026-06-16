@@ -406,4 +406,96 @@ export class ImportExportController {
   }
 
 
+  // -------- Floor Layout Export --------
+  @Get('export/floor')
+  @RequirePermissions('settings.manage')
+  async exportFloor() {
+    const zones = await this.prisma.floorZone.findMany({
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        resources: {
+          orderBy: { name: 'asc' },
+          include: { ratePlan: { select: { id: true, name: true } } },
+        },
+      },
+    });
+    return zones.map((z) => ({
+      name: z.name,
+      nameAr: z.nameAr,
+      sortOrder: z.sortOrder,
+      resources: z.resources.map((r) => ({
+        name: r.name,
+        nameAr: r.nameAr,
+        type: r.type,
+        capacity: r.capacity,
+        posX: r.posX,
+        posY: r.posY,
+        width: r.width,
+        height: r.height,
+        shape: r.shape,
+        rotation: r.rotation,
+        isActive: r.isActive,
+        ratePlanName: r.ratePlan?.name ?? null,
+      })),
+    }));
+  }
+
+  // -------- Floor Layout Import --------
+  @Post('import/floor')
+  @RequirePermissions('settings.manage')
+  async importFloor(@Body() body: any[]) {
+    if (!Array.isArray(body)) throw new BadRequestException('Payload must be an array of zones.');
+
+    // Build ratePlan name->id map
+    const ratePlans = await this.prisma.ratePlan.findMany({ select: { id: true, name: true } });
+    const rpMap: Record<string, string> = {};
+    for (const rp of ratePlans) rpMap[rp.name.toLowerCase()] = rp.id;
+
+    let zonesCreated = 0;
+    let resourcesCreated = 0;
+
+    for (const zoneData of body) {
+      if (!zoneData.name) continue;
+      const zone = await this.prisma.floorZone.create({
+        data: {
+          name: zoneData.name,
+          nameAr: zoneData.nameAr || null,
+          sortOrder: zoneData.sortOrder ?? 0,
+        },
+      });
+      zonesCreated++;
+
+      for (const res of zoneData.resources ?? []) {
+        if (!res.name) continue;
+        // Match ratePlan by name (case-insensitive partial)
+        let ratePlanId: string | null = null;
+        if (res.ratePlanName && res.ratePlanName !== 'None') {
+          const key = Object.keys(rpMap).find((k) => k.includes(res.ratePlanName.toLowerCase()) || res.ratePlanName.toLowerCase().includes(k));
+          if (key) ratePlanId = rpMap[key];
+        }
+        await this.prisma.resource.create({
+          data: {
+            name: res.name,
+            nameAr: res.nameAr || null,
+            type: res.type ?? 'RESTAURANT_TABLE',
+            capacity: res.capacity ?? 4,
+            posX: res.posX ?? 0,
+            posY: res.posY ?? 0,
+            width: res.width ?? 120,
+            height: res.height ?? 80,
+            shape: res.shape ?? 'rect',
+            rotation: res.rotation ?? 0,
+            isActive: res.isActive ?? true,
+            zoneId: zone.id,
+            ...(ratePlanId ? { ratePlanId } : {}),
+          },
+        });
+        resourcesCreated++;
+      }
+    }
+
+    return { zonesCreated, resourcesCreated };
+  }
+
+
 }
