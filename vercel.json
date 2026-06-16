@@ -1,6 +1,6 @@
 {
   "framework": "vite",
-  "installCommand": "npm install -g pnpm@8 && pnpm install --frozen-lockfile=false",
+  "installCommand": "npm install -g pnpm@8 && pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm --filter @goblins/shared build && pnpm --filter @goblins/pos build",
   "outputDirectory": "apps/pos/dist"
 }
