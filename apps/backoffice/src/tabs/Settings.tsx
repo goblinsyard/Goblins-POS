@@ -1,41 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import 
-
-  async function exportFloor() {
-    setBusy(true);
-    try {
-      const data = await api<any[]>('/admin/export/floor');
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `floor-layout-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      setSuccess('Floor layout exported successfully.');
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Export failed');
-    } finally { setBusy(false); }
-  }
-
-  async function handleImportFloor(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setBusy(true);
-    try {
-      const text = await file.text();
-      const payload = JSON.parse(text);
-      if (!Array.isArray(payload)) throw new Error('File must be a JSON array of floor zones.');
-      const res = await api<any>('/admin/import/floor', { method: 'POST', body: payload });
-      setSuccess(`Floor import complete! Created ${res.zonesCreated} zones and ${res.resourcesCreated} resources.`);
-    } catch (err) {
-      setErr(err instanceof Error ? err.message : 'Floor import failed');
-    } finally {
-      setBusy(false);
-      e.target.value = '';
-    }
-  }
-
-{ Btn, ErrorBanner, Field, Modal, Pills, Select, Spinner, Table, TextInput, useLoad } from '../lib/ui';
+import { Btn, ErrorBanner, Field, Modal, Pills, Select, Spinner, Table, TextInput, useLoad } from '../lib/ui';
 
 interface Printer {
   id: string; name: string; connection: 'NETWORK' | 'USB' | 'PREVIEW'; address: string;
@@ -718,6 +683,41 @@ function DatabaseManager() {
     }
   }
 
+  async function exportFloor() {
+    setBusy(true);
+    try {
+      const data = await api<any[]>('/admin/export/floor');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `floor-layout-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      setSuccess('Floor layout exported successfully.');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Export failed');
+    }
+    finally { setBusy(false); }
+  }
+
+  async function handleImportFloor(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      if (!Array.isArray(payload)) throw new Error('File must be a JSON array of floor zones.');
+      const res = await api<any>('/admin/import/floor', { method: 'POST', body: payload });
+      setSuccess(`Floor import complete! Created ${res.zonesCreated} zones and ${res.resourcesCreated} resources.`);
+    } catch (err) {
+      setErr(err instanceof Error ? err.message : 'Floor import failed');
+    } finally {
+      setBusy(false);
+      e.target.value = '';
+    }
+  }
+
+
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>, type: 'menu' | 'customers') {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1182,4 +1182,5 @@ function flattenAccounts(nodes: any[], prefix = ''): { value: string; label: str
   }
   return list;
 }
+
 
