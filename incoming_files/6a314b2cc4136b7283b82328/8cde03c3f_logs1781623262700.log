@@ -1,0 +1,1005 @@
+2026-06-16T15:18:46.072633528Z [inf]  scheduling build on Metal builder "builder-yvyapv"
+2026-06-16T15:18:51.891195452Z [inf]  unpacking archive
+2026-06-16T15:18:52.367250271Z [inf]  uploading snapshot
+2026-06-16T15:18:52.571837673Z [inf]  [internal] load build definition from Dockerfile
+2026-06-16T15:18:52.571977733Z [inf]  [internal] load build definition from Dockerfile
+2026-06-16T15:18:52.573287588Z [inf]  [internal] load build definition from Dockerfile
+2026-06-16T15:18:52.749950993Z [inf]  [internal] load build definition from Dockerfile
+2026-06-16T15:18:52.770990451Z [inf]  [internal] load metadata for docker.io/library/node:22-slim
+2026-06-16T15:18:53.030251855Z [inf]  [internal] load metadata for docker.io/library/node:22-slim
+2026-06-16T15:18:53.031283012Z [inf]  [internal] load .dockerignore
+2026-06-16T15:18:53.031292025Z [inf]  [internal] load .dockerignore
+2026-06-16T15:18:53.032017103Z [inf]  [internal] load .dockerignore
+2026-06-16T15:18:53.136073739Z [inf]  [internal] load .dockerignore
+2026-06-16T15:18:53.205219745Z [inf]  [build  8/16] COPY apps/pos/package.json apps/pos/
+2026-06-16T15:18:53.205221528Z [inf]  [build  7/16] COPY apps/api/package.json apps/api/
+2026-06-16T15:18:53.205222470Z [inf]  [internal] load build context
+2026-06-16T15:18:53.205223030Z [inf]  [build  4/16] RUN corepack enable && corepack prepare pnpm@latest --activate
+2026-06-16T15:18:53.205223301Z [inf]  [build 13/16] COPY tsconfig.base.json ./
+2026-06-16T15:18:53.205223731Z [inf]  [build 10/16] COPY apps/kds/package.json apps/kds/
+2026-06-16T15:18:53.205224292Z [inf]  [build 12/16] RUN pnpm install --filter @goblins/api --filter @goblins/shared
+2026-06-16T15:18:53.205224583Z [inf]  [build  2/16] RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+2026-06-16T15:18:53.205227086Z [inf]  [stage-1 4/5] RUN corepack enable && corepack prepare pnpm@latest --activate
+2026-06-16T15:18:53.205227307Z [inf]  [stage-1 3/5] WORKDIR /repo
+2026-06-16T15:18:53.205227497Z [inf]  [stage-1 2/5] RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates gnupg curl &&     curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg &&     echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list &&     apt-get update &&     apt-get install -y --no-install-recommends openssl postgresql-client-16 &&     apt-get purge -y --auto-remove ca-certificates gnupg curl &&     rm -rf /var/lib/apt/lists/*
+2026-06-16T15:18:53.205227687Z [inf]  [build  9/16] COPY apps/backoffice/package.json apps/backoffice/
+2026-06-16T15:18:53.205227918Z [inf]  [build 11/16] COPY apps/print-service/package.json apps/print-service/
+2026-06-16T15:18:53.205228118Z [inf]  [build  3/16] WORKDIR /repo
+2026-06-16T15:18:53.205230071Z [inf]  [build  6/16] COPY packages/shared/package.json packages/shared/
+2026-06-16T15:18:53.205230361Z [inf]  [build  1/16] FROM docker.io/library/node:22-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752
+2026-06-16T15:18:53.205231383Z [inf]  [build  5/16] COPY pnpm-workspace.yaml package.json ./
+2026-06-16T15:18:53.205237742Z [inf]  [stage-1 5/5] COPY --from=build /repo ./
+2026-06-16T15:18:53.205238133Z [inf]  [build 16/16] RUN pnpm --filter @goblins/shared build && pnpm --filter @goblins/api db:generate && pnpm --filter @goblins/api build
+2026-06-16T15:18:53.205238964Z [inf]  [build 15/16] COPY apps/api apps/api
+2026-06-16T15:18:53.205239395Z [inf]  [build 14/16] COPY packages/shared packages/shared
+2026-06-16T15:18:53.206028198Z [inf]  [build  1/16] FROM docker.io/library/node:22-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752
+2026-06-16T15:18:53.206064733Z [inf]  [internal] load build context
+2026-06-16T15:18:53.206117422Z [inf]  [internal] load build context
+2026-06-16T15:18:53.324917389Z [inf]  [build  1/16] FROM docker.io/library/node:22-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752
+2026-06-16T15:18:53.325110629Z [inf]  [build  1/16] FROM docker.io/library/node:22-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752
+2026-06-16T15:18:53.325486222Z [inf]  [build  1/16] FROM docker.io/library/node:22-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752
+2026-06-16T15:18:53.348580924Z [inf]  [internal] load build context
+2026-06-16T15:18:53.348583678Z [inf]  [build  1/16] FROM docker.io/library/node:22-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752
+2026-06-16T15:18:53.367952268Z [inf]  [build  1/16] FROM docker.io/library/node:22-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752
+2026-06-16T15:18:53.368475213Z [inf]  [build  2/16] RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+2026-06-16T15:18:53.368628873Z [inf]  [stage-1 2/5] RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates gnupg curl &&     curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg &&     echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list &&     apt-get update &&     apt-get install -y --no-install-recommends openssl postgresql-client-16 &&     apt-get purge -y --auto-remove ca-certificates gnupg curl &&     rm -rf /var/lib/apt/lists/*
+2026-06-16T15:18:54.251958956Z [inf]  Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+
+2026-06-16T15:18:54.261601273Z [inf]  Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+
+2026-06-16T15:18:54.316536598Z [inf]  Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+
+2026-06-16T15:18:54.326997373Z [inf]  Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+
+2026-06-16T15:18:54.396383690Z [inf]  [internal] load build context
+2026-06-16T15:18:54.438433581Z [inf]  Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8790 kB]
+
+2026-06-16T15:18:54.49401812Z [inf]  Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8790 kB]
+
+2026-06-16T15:18:54.519261755Z [inf]  Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]
+
+2026-06-16T15:18:54.560149834Z [inf]  Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]
+
+2026-06-16T15:18:54.57205086Z [inf]  Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [311 kB]
+
+2026-06-16T15:18:54.627032334Z [inf]  Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [311 kB]
+
+2026-06-16T15:18:55.410583989Z [inf]  Fetched 9363 kB in 1s (7990 kB/s)
+Reading package lists...
+2026-06-16T15:18:55.442518243Z [inf]  Fetched 9363 kB in 1s (8245 kB/s)
+Reading package lists...
+2026-06-16T15:18:55.955724825Z [inf]  
+2026-06-16T15:18:55.973044221Z [inf]  
+2026-06-16T15:18:55.994681205Z [inf]  Reading package lists...
+2026-06-16T15:18:56.032395912Z [inf]  Reading package lists...
+2026-06-16T15:18:56.533741938Z [inf]  
+2026-06-16T15:18:56.551343557Z [inf]  Building dependency tree...
+2026-06-16T15:18:56.616148461Z [inf]  
+2026-06-16T15:18:56.63256401Z [inf]  Building dependency tree...
+2026-06-16T15:18:56.708316559Z [inf]  
+Reading state information...
+2026-06-16T15:18:56.723425278Z [inf]  
+2026-06-16T15:18:56.764852195Z [inf]  
+Reading state information...
+2026-06-16T15:18:56.764883562Z [inf]  
+2026-06-16T15:18:56.871604084Z [inf]  The following additional packages will be installed:
+
+2026-06-16T15:18:56.871668261Z [inf]    dirmngr gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client gpg-wks-server
+
+2026-06-16T15:18:56.872065607Z [inf]    gpgconf gpgsm libassuan0 libbrotli1 libcurl4 libgssapi-krb5-2 libk5crypto3
+
+2026-06-16T15:18:56.872105196Z [inf]    libkeyutils1 libkrb5-3 libkrb5support0 libksba8 libldap-2.5-0 libncursesw6
+
+2026-06-16T15:18:56.872468261Z [inf]    libnghttp2-14 libnpth0 libpsl5 libreadline8 librtmp1 libsasl2-2
+
+2026-06-16T15:18:56.87297455Z [inf]    libsasl2-modules-db libsqlite3-0 libssh2-1 libssl3 openssl pinentry-curses
+
+2026-06-16T15:18:56.873091176Z [inf]    readline-common
+
+2026-06-16T15:18:56.874701171Z [inf]  Suggested packages:
+  dbus-user-session libpam-systemd pinentry-gnome3 tor parcimonie xloadimage
+  scdaemon krb5-doc krb5-user pinentry-doc readline-doc
+Recommended packages:
+  krb5-locales libldap-common libgpm2 publicsuffix libsasl2-modules
+
+2026-06-16T15:18:56.904294453Z [inf]  The following additional packages will be installed:
+
+2026-06-16T15:18:56.904841173Z [inf]    libssl3
+
+2026-06-16T15:18:56.905988034Z [inf]  Suggested packages:
+  ca-certificates
+
+2026-06-16T15:18:56.971574289Z [inf]  The following NEW packages will be installed:
+
+2026-06-16T15:18:56.971776923Z [inf]    libssl3 openssl
+
+2026-06-16T15:18:57.005082544Z [inf]  0 upgraded, 2 newly installed, 0 to remove and 0 not upgraded.
+Need to get 3475 kB of archives.
+After this operation, 8540 kB of additional disk space will be used.
+Get:1 http://deb.debian.org/debian-security bookworm-security/main amd64 libssl3 amd64 3.0.20-1~deb12u2 [2036 kB]
+
+2026-06-16T15:18:57.014144741Z [inf]  Get:2 http://deb.debian.org/debian-security bookworm-security/main amd64 openssl amd64 3.0.20-1~deb12u2 [1439 kB]
+
+2026-06-16T15:18:57.064195437Z [inf]  The following NEW packages will be installed:
+
+2026-06-16T15:18:57.064357741Z [inf]    ca-certificates curl dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent
+
+2026-06-16T15:18:57.064484641Z [inf]    gpg-wks-client gpg-wks-server gpgconf gpgsm libassuan0 libbrotli1 libcurl4
+
+2026-06-16T15:18:57.064560905Z [inf]    libgssapi-krb5-2 libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0
+
+2026-06-16T15:18:57.064687866Z [inf]    libksba8 libldap-2.5-0 libncursesw6 libnghttp2-14 libnpth0 libpsl5
+
+2026-06-16T15:18:57.064975267Z [inf]    libreadline8 librtmp1 libsasl2-2 libsasl2-modules-db libsqlite3-0 libssh2-1
+
+2026-06-16T15:18:57.065344541Z [inf]    libssl3 openssl pinentry-curses readline-common
+
+2026-06-16T15:18:57.090147916Z [inf]  0 upgraded, 36 newly installed, 0 to remove and 0 not upgraded.
+Need to get 14.9 MB of archives.
+After this operation, 33.5 MB of additional disk space will be used.
+Get:1 http://deb.debian.org/debian bookworm/main amd64 readline-common all 8.2-1.3 [69.0 kB]
+
+2026-06-16T15:18:57.120113496Z [inf]  Get:2 http://deb.debian.org/debian-security bookworm-security/main amd64 libssl3 amd64 3.0.20-1~deb12u2 [2036 kB]
+
+2026-06-16T15:18:57.127375652Z [inf]  Get:3 http://deb.debian.org/debian-security bookworm-security/main amd64 openssl amd64 3.0.20-1~deb12u2 [1439 kB]
+
+2026-06-16T15:18:57.142380405Z [inf]  Get:4 http://deb.debian.org/debian bookworm/main amd64 ca-certificates all 20230311+deb12u1 [155 kB]
+
+2026-06-16T15:18:57.144047487Z [inf]  Get:5 http://deb.debian.org/debian bookworm/main amd64 libbrotli1 amd64 1.0.9-2+b6 [275 kB]
+
+2026-06-16T15:18:57.14608221Z [inf]  Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 libkrb5support0 amd64 1.20.1-2+deb12u5 [33.2 kB]
+
+2026-06-16T15:18:57.146433086Z [inf]  Get:7 http://deb.debian.org/debian-security bookworm-security/main amd64 libk5crypto3 amd64 1.20.1-2+deb12u5 [79.7 kB]
+
+2026-06-16T15:18:57.14734892Z [inf]  Get:8 http://deb.debian.org/debian bookworm/main amd64 libkeyutils1 amd64 1.6.3-2 [8808 B]
+
+2026-06-16T15:18:57.148156331Z [inf]  Get:9 http://deb.debian.org/debian-security bookworm-security/main amd64 libkrb5-3 amd64 1.20.1-2+deb12u5 [332 kB]
+
+2026-06-16T15:18:57.149615912Z [inf]  Get:10 http://deb.debian.org/debian-security bookworm-security/main amd64 libgssapi-krb5-2 amd64 1.20.1-2+deb12u5 [135 kB]
+
+2026-06-16T15:18:57.150564214Z [inf]  Get:11 http://deb.debian.org/debian bookworm/main amd64 libsasl2-modules-db amd64 2.1.28+dfsg-10 [20.3 kB]
+
+2026-06-16T15:18:57.151308591Z [inf]  Get:12 http://deb.debian.org/debian bookworm/main amd64 libsasl2-2 amd64 2.1.28+dfsg-10 [59.7 kB]
+
+2026-06-16T15:18:57.152290815Z [inf]  Get:13 http://deb.debian.org/debian bookworm/main amd64 libldap-2.5-0 amd64 2.5.13+dfsg-5 [183 kB]
+
+2026-06-16T15:18:57.154303114Z [inf]  Get:14 http://deb.debian.org/debian-security bookworm-security/main amd64 libnghttp2-14 amd64 1.52.0-1+deb12u3 [72.4 kB]
+
+2026-06-16T15:18:57.154996845Z [inf]  Get:15 http://deb.debian.org/debian bookworm/main amd64 libpsl5 amd64 0.21.2-1 [58.7 kB]
+
+2026-06-16T15:18:57.155775213Z [inf]  Get:16 http://deb.debian.org/debian bookworm/main amd64 librtmp1 amd64 2.4+20151223.gitfa8646d.1-2+b2 [60.8 kB]
+
+2026-06-16T15:18:57.156610316Z [inf]  Get:17 http://deb.debian.org/debian bookworm/main amd64 libssh2-1 amd64 1.10.0-3+b1 [179 kB]
+
+2026-06-16T15:18:57.158306771Z [inf]  Get:18 http://deb.debian.org/debian bookworm/main amd64 libcurl4 amd64 7.88.1-10+deb12u14 [392 kB]
+
+2026-06-16T15:18:57.16179154Z [inf]  Get:19 http://deb.debian.org/debian bookworm/main amd64 curl amd64 7.88.1-10+deb12u14 [316 kB]
+
+2026-06-16T15:18:57.164539283Z [inf]  Get:20 http://deb.debian.org/debian bookworm/main amd64 libassuan0 amd64 2.5.5-5 [48.5 kB]
+
+2026-06-16T15:18:57.166085152Z [inf]  Get:21 http://deb.debian.org/debian bookworm/main amd64 libreadline8 amd64 8.2-1.3 [166 kB]
+
+2026-06-16T15:18:57.167898973Z [inf]  Get:22 http://deb.debian.org/debian bookworm/main amd64 gpgconf amd64 2.2.40-1.1+deb12u2 [565 kB]
+
+2026-06-16T15:18:57.172897844Z [inf]  Get:23 http://deb.debian.org/debian bookworm/main amd64 libksba8 amd64 1.6.3-2 [128 kB]
+
+2026-06-16T15:18:57.174010583Z [inf]  Get:24 http://deb.debian.org/debian bookworm/main amd64 libnpth0 amd64 1.6-3 [19.0 kB]
+
+2026-06-16T15:18:57.174442831Z [inf]  Get:25 http://deb.debian.org/debian bookworm/main amd64 dirmngr amd64 2.2.40-1.1+deb12u2 [793 kB]
+
+2026-06-16T15:18:57.180370966Z [inf]  Get:26 http://deb.debian.org/debian bookworm/main amd64 gnupg-l10n all 2.2.40-1.1+deb12u2 [1093 kB]
+
+2026-06-16T15:18:57.18723188Z [inf]  Get:27 http://deb.debian.org/debian bookworm/main amd64 gnupg-utils amd64 2.2.40-1.1+deb12u2 [927 kB]
+
+2026-06-16T15:18:57.191413935Z [inf]  Get:28 http://deb.debian.org/debian bookworm/main amd64 libsqlite3-0 amd64 3.40.1-2+deb12u2 [839 kB]
+
+2026-06-16T15:18:57.194950181Z [inf]  Get:29 http://deb.debian.org/debian bookworm/main amd64 gpg amd64 2.2.40-1.1+deb12u2 [950 kB]
+
+2026-06-16T15:18:57.198974719Z [inf]  Get:30 http://deb.debian.org/debian bookworm/main amd64 libncursesw6 amd64 6.4-4 [134 kB]
+
+2026-06-16T15:18:57.199596532Z [inf]  Get:31 http://deb.debian.org/debian bookworm/main amd64 pinentry-curses amd64 1.2.1-1 [77.4 kB]
+
+2026-06-16T15:18:57.200098505Z [inf]  Get:32 http://deb.debian.org/debian bookworm/main amd64 gpg-agent amd64 2.2.40-1.1+deb12u2 [695 kB]
+
+2026-06-16T15:18:57.203242643Z [inf]  Get:33 http://deb.debian.org/debian bookworm/main amd64 gpg-wks-client amd64 2.2.40-1.1+deb12u2 [541 kB]
+
+2026-06-16T15:18:57.205635343Z [inf]  Get:34 http://deb.debian.org/debian bookworm/main amd64 gpg-wks-server amd64 2.2.40-1.1+deb12u2 [531 kB]
+
+2026-06-16T15:18:57.207915804Z [inf]  Get:35 http://deb.debian.org/debian bookworm/main amd64 gpgsm amd64 2.2.40-1.1+deb12u2 [671 kB]
+
+2026-06-16T15:18:57.211418299Z [inf]  Get:36 http://deb.debian.org/debian bookworm/main amd64 gnupg all 2.2.40-1.1+deb12u2 [846 kB]
+
+2026-06-16T15:18:57.536735183Z [inf]  debconf: delaying package configuration, since apt-utils is not installed
+
+2026-06-16T15:18:57.546888477Z [inf]  debconf: delaying package configuration, since apt-utils is not installed
+
+2026-06-16T15:18:57.692884438Z [inf]  Fetched 3475 kB in 0s (82.9 MB/s)
+
+2026-06-16T15:18:57.708530994Z [inf]  Fetched 14.9 MB in 0s (105 MB/s)
+
+2026-06-16T15:18:57.859596862Z [inf]  Selecting previously unselected package readline-common.
+(Reading database ... 
+2026-06-16T15:18:57.860400558Z [inf]  (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%
+2026-06-16T15:18:57.865228322Z [inf]  (Reading database ... 75%
+2026-06-16T15:18:57.924872611Z [inf]  Selecting previously unselected package libssl3:amd64.
+(Reading database ... 
+2026-06-16T15:18:57.926894365Z [inf]  (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%
+2026-06-16T15:18:57.927628226Z [inf]  (Reading database ... 80%
+2026-06-16T15:18:57.927820364Z [inf]  (Reading database ... 85%
+2026-06-16T15:18:57.928454035Z [inf]  (Reading database ... 90%
+2026-06-16T15:18:57.928620895Z [inf]  (Reading database ... 75%
+2026-06-16T15:18:57.928831221Z [inf]  (Reading database ... 95%
+2026-06-16T15:18:57.92912383Z [inf]  (Reading database ... 80%
+2026-06-16T15:18:57.92929705Z [inf]  (Reading database ... 85%
+2026-06-16T15:18:57.929604511Z [inf]  (Reading database ... 90%
+2026-06-16T15:18:57.929888437Z [inf]  (Reading database ... 95%
+2026-06-16T15:18:57.936674429Z [inf]  (Reading database ... 100%(Reading database ... 6096 files and directories currently installed.)
+
+2026-06-16T15:18:57.936713147Z [inf]  (Reading database ... 100%(Reading database ... 6096 files and directories currently installed.)
+
+2026-06-16T15:18:57.937437654Z [inf]  Preparing to unpack .../libssl3_3.0.20-1~deb12u2_amd64.deb ...
+
+2026-06-16T15:18:57.937564605Z [inf]  Preparing to unpack .../00-readline-common_8.2-1.3_all.deb ...
+
+2026-06-16T15:18:57.968254882Z [inf]  Unpacking readline-common (8.2-1.3) ...
+
+2026-06-16T15:18:57.969813921Z [inf]  Unpacking libssl3:amd64 (3.0.20-1~deb12u2) ...
+
+2026-06-16T15:18:58.095880791Z [inf]  Selecting previously unselected package libssl3:amd64.
+
+2026-06-16T15:18:58.096992389Z [inf]  Preparing to unpack .../01-libssl3_3.0.20-1~deb12u2_amd64.deb ...
+
+2026-06-16T15:18:58.11022289Z [inf]  Unpacking libssl3:amd64 (3.0.20-1~deb12u2) ...
+
+2026-06-16T15:18:58.301342925Z [inf]  Selecting previously unselected package openssl.
+
+2026-06-16T15:18:58.302278669Z [inf]  Preparing to unpack .../openssl_3.0.20-1~deb12u2_amd64.deb ...
+
+2026-06-16T15:18:58.331344289Z [inf]  Unpacking openssl (3.0.20-1~deb12u2) ...
+
+2026-06-16T15:18:58.334339353Z [inf]  Selecting previously unselected package openssl.
+
+2026-06-16T15:18:58.336128978Z [inf]  Preparing to unpack .../02-openssl_3.0.20-1~deb12u2_amd64.deb ...
+
+2026-06-16T15:18:58.410904421Z [inf]  Unpacking openssl (3.0.20-1~deb12u2) ...
+
+2026-06-16T15:18:58.55703909Z [inf]  Setting up libssl3:amd64 (3.0.20-1~deb12u2) ...
+
+2026-06-16T15:18:58.564855538Z [inf]  Setting up openssl (3.0.20-1~deb12u2) ...
+
+2026-06-16T15:18:58.583093502Z [inf]  Processing triggers for libc-bin (2.36-9+deb12u14) ...
+
+2026-06-16T15:18:58.597807599Z [inf]  Selecting previously unselected package ca-certificates.
+
+2026-06-16T15:18:58.599205957Z [inf]  Preparing to unpack .../03-ca-certificates_20230311+deb12u1_all.deb ...
+
+2026-06-16T15:18:58.630408383Z [inf]  Unpacking ca-certificates (20230311+deb12u1) ...
+
+2026-06-16T15:18:59.089816085Z [inf]  Selecting previously unselected package libbrotli1:amd64.
+
+2026-06-16T15:18:59.092054934Z [inf]  Preparing to unpack .../04-libbrotli1_1.0.9-2+b6_amd64.deb ...
+
+2026-06-16T15:18:59.094673493Z [inf]  Unpacking libbrotli1:amd64 (1.0.9-2+b6) ...
+
+2026-06-16T15:18:59.207577533Z [inf]  [build  2/16] RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+2026-06-16T15:18:59.213145938Z [inf]  Selecting previously unselected package libkrb5support0:amd64.
+
+2026-06-16T15:18:59.214869224Z [inf]  Preparing to unpack .../05-libkrb5support0_1.20.1-2+deb12u5_amd64.deb ...
+
+2026-06-16T15:18:59.224146123Z [inf]  Unpacking libkrb5support0:amd64 (1.20.1-2+deb12u5) ...
+
+2026-06-16T15:18:59.232094499Z [inf]  [build  3/16] WORKDIR /repo
+2026-06-16T15:18:59.504673885Z [inf]  Selecting previously unselected package libk5crypto3:amd64.
+
+2026-06-16T15:18:59.506482078Z [inf]  Preparing to unpack .../06-libk5crypto3_1.20.1-2+deb12u5_amd64.deb ...
+
+2026-06-16T15:18:59.517095492Z [inf]  Unpacking libk5crypto3:amd64 (1.20.1-2+deb12u5) ...
+
+2026-06-16T15:18:59.61060262Z [inf]  Selecting previously unselected package libkeyutils1:amd64.
+
+2026-06-16T15:18:59.614519657Z [inf]  Preparing to unpack .../07-libkeyutils1_1.6.3-2_amd64.deb ...
+
+2026-06-16T15:18:59.629813384Z [inf]  Unpacking libkeyutils1:amd64 (1.6.3-2) ...
+
+2026-06-16T15:19:00.163738852Z [inf]  Selecting previously unselected package libkrb5-3:amd64.
+
+2026-06-16T15:19:00.167837872Z [inf]  Preparing to unpack .../08-libkrb5-3_1.20.1-2+deb12u5_amd64.deb ...
+
+2026-06-16T15:19:00.260751199Z [inf]  Unpacking libkrb5-3:amd64 (1.20.1-2+deb12u5) ...
+
+2026-06-16T15:19:00.480600629Z [inf]  [build  3/16] WORKDIR /repo
+2026-06-16T15:19:00.554687018Z [inf]  [build  4/16] RUN corepack enable && corepack prepare pnpm@latest --activate
+2026-06-16T15:19:00.564886551Z [inf]  Selecting previously unselected package libgssapi-krb5-2:amd64.
+
+2026-06-16T15:19:00.566053172Z [inf]  Preparing to unpack .../09-libgssapi-krb5-2_1.20.1-2+deb12u5_amd64.deb ...
+
+2026-06-16T15:19:00.59965016Z [inf]  Unpacking libgssapi-krb5-2:amd64 (1.20.1-2+deb12u5) ...
+
+2026-06-16T15:19:00.694169366Z [inf]  Selecting previously unselected package libsasl2-modules-db:amd64.
+
+2026-06-16T15:19:00.695202737Z [inf]  Preparing to unpack .../10-libsasl2-modules-db_2.1.28+dfsg-10_amd64.deb ...
+
+2026-06-16T15:19:00.698292573Z [inf]  Unpacking libsasl2-modules-db:amd64 (2.1.28+dfsg-10) ...
+
+2026-06-16T15:19:00.925598381Z [inf]  Selecting previously unselected package libsasl2-2:amd64.
+
+2026-06-16T15:19:00.927822197Z [inf]  Preparing to unpack .../11-libsasl2-2_2.1.28+dfsg-10_amd64.deb ...
+
+2026-06-16T15:19:00.971243116Z [inf]  Unpacking libsasl2-2:amd64 (2.1.28+dfsg-10) ...
+
+2026-06-16T15:19:01.04408653Z [inf]  Selecting previously unselected package libldap-2.5-0:amd64.
+
+2026-06-16T15:19:01.045925659Z [inf]  Preparing to unpack .../12-libldap-2.5-0_2.5.13+dfsg-5_amd64.deb ...
+
+2026-06-16T15:19:01.051861084Z [inf]  Unpacking libldap-2.5-0:amd64 (2.5.13+dfsg-5) ...
+
+2026-06-16T15:19:01.123901403Z [inf]  Selecting previously unselected package libnghttp2-14:amd64.
+
+2026-06-16T15:19:01.125462365Z [inf]  Preparing to unpack .../13-libnghttp2-14_1.52.0-1+deb12u3_amd64.deb ...
+
+2026-06-16T15:19:01.136318724Z [inf]  Unpacking libnghttp2-14:amd64 (1.52.0-1+deb12u3) ...
+
+2026-06-16T15:19:02.046170079Z [inf]  Selecting previously unselected package libpsl5:amd64.
+
+2026-06-16T15:19:02.048119885Z [inf]  Preparing to unpack .../14-libpsl5_0.21.2-1_amd64.deb ...
+
+2026-06-16T15:19:02.087175904Z [inf]  Unpacking libpsl5:amd64 (0.21.2-1) ...
+
+2026-06-16T15:19:02.157089782Z [inf]  Selecting previously unselected package librtmp1:amd64.
+
+2026-06-16T15:19:02.158182492Z [inf]  Preparing to unpack .../15-librtmp1_2.4+20151223.gitfa8646d.1-2+b2_amd64.deb ...
+
+2026-06-16T15:19:02.262990886Z [inf]  Unpacking librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b2) ...
+
+2026-06-16T15:19:02.341470967Z [inf]  Selecting previously unselected package libssh2-1:amd64.
+
+2026-06-16T15:19:02.342734573Z [inf]  Preparing to unpack .../16-libssh2-1_1.10.0-3+b1_amd64.deb ...
+
+2026-06-16T15:19:02.348136718Z [inf]  Unpacking libssh2-1:amd64 (1.10.0-3+b1) ...
+
+2026-06-16T15:19:02.399475967Z [inf]  Selecting previously unselected package libcurl4:amd64.
+
+2026-06-16T15:19:02.400583088Z [inf]  Preparing to unpack .../17-libcurl4_7.88.1-10+deb12u14_amd64.deb ...
+
+2026-06-16T15:19:02.404556971Z [inf]  Unpacking libcurl4:amd64 (7.88.1-10+deb12u14) ...
+
+2026-06-16T15:19:02.639107739Z [inf]  Selecting previously unselected package curl.
+
+2026-06-16T15:19:02.640863163Z [inf]  Preparing to unpack .../18-curl_7.88.1-10+deb12u14_amd64.deb ...
+
+2026-06-16T15:19:02.644249464Z [inf]  Unpacking curl (7.88.1-10+deb12u14) ...
+
+2026-06-16T15:19:02.761739635Z [inf]  Selecting previously unselected package libassuan0:amd64.
+
+2026-06-16T15:19:02.762819185Z [inf]  Preparing to unpack .../19-libassuan0_2.5.5-5_amd64.deb ...
+
+2026-06-16T15:19:02.765944634Z [inf]  Unpacking libassuan0:amd64 (2.5.5-5) ...
+
+2026-06-16T15:19:02.98321846Z [inf]  Selecting previously unselected package libreadline8:amd64.
+
+2026-06-16T15:19:02.984639913Z [inf]  Preparing to unpack .../20-libreadline8_8.2-1.3_amd64.deb ...
+
+2026-06-16T15:19:02.98709746Z [inf]  Unpacking libreadline8:amd64 (8.2-1.3) ...
+
+2026-06-16T15:19:03.093175018Z [inf]  Selecting previously unselected package gpgconf.
+
+2026-06-16T15:19:03.094376291Z [inf]  Preparing to unpack .../21-gpgconf_2.2.40-1.1+deb12u2_amd64.deb ...
+
+2026-06-16T15:19:03.097291245Z [inf]  Unpacking gpgconf (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:03.251371115Z [inf]  Preparing pnpm@latest for immediate activation...
+
+2026-06-16T15:19:03.332536835Z [inf]  Selecting previously unselected package libksba8:amd64.
+
+2026-06-16T15:19:03.33369923Z [inf]  Preparing to unpack .../22-libksba8_1.6.3-2_amd64.deb ...
+
+2026-06-16T15:19:03.343796199Z [inf]  Unpacking libksba8:amd64 (1.6.3-2) ...
+
+2026-06-16T15:19:03.50986659Z [inf]  Selecting previously unselected package libnpth0:amd64.
+
+2026-06-16T15:19:03.511903756Z [inf]  Preparing to unpack .../23-libnpth0_1.6-3_amd64.deb ...
+
+2026-06-16T15:19:03.514224168Z [inf]  Unpacking libnpth0:amd64 (1.6-3) ...
+
+2026-06-16T15:19:03.662481943Z [inf]  Selecting previously unselected package dirmngr.
+
+2026-06-16T15:19:03.664427973Z [inf]  Preparing to unpack .../24-dirmngr_2.2.40-1.1+deb12u2_amd64.deb ...
+
+2026-06-16T15:19:03.758266798Z [inf]  Unpacking dirmngr (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:03.896706732Z [inf]  Selecting previously unselected package gnupg-l10n.
+
+2026-06-16T15:19:03.897992491Z [inf]  Preparing to unpack .../25-gnupg-l10n_2.2.40-1.1+deb12u2_all.deb ...
+
+2026-06-16T15:19:03.900336048Z [inf]  Unpacking gnupg-l10n (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:04.000059692Z [inf]  Selecting previously unselected package gnupg-utils.
+
+2026-06-16T15:19:04.001535937Z [inf]  Preparing to unpack .../26-gnupg-utils_2.2.40-1.1+deb12u2_amd64.deb ...
+
+2026-06-16T15:19:04.003105703Z [inf]  Unpacking gnupg-utils (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:04.208435718Z [inf]  Selecting previously unselected package libsqlite3-0:amd64.
+
+2026-06-16T15:19:04.210098944Z [inf]  Preparing to unpack .../27-libsqlite3-0_3.40.1-2+deb12u2_amd64.deb ...
+
+2026-06-16T15:19:04.213004173Z [inf]  Unpacking libsqlite3-0:amd64 (3.40.1-2+deb12u2) ...
+
+2026-06-16T15:19:04.324919089Z [inf]  Selecting previously unselected package gpg.
+
+2026-06-16T15:19:04.325967402Z [inf]  Preparing to unpack .../28-gpg_2.2.40-1.1+deb12u2_amd64.deb ...
+
+2026-06-16T15:19:04.437570791Z [inf]  Unpacking gpg (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:04.636005742Z [inf]  Selecting previously unselected package libncursesw6:amd64.
+
+2026-06-16T15:19:04.637533394Z [inf]  Preparing to unpack .../29-libncursesw6_6.4-4_amd64.deb ...
+
+2026-06-16T15:19:04.639148667Z [inf]  Unpacking libncursesw6:amd64 (6.4-4) ...
+
+2026-06-16T15:19:04.802372928Z [inf]  Selecting previously unselected package pinentry-curses.
+
+2026-06-16T15:19:04.803508712Z [inf]  Preparing to unpack .../30-pinentry-curses_1.2.1-1_amd64.deb ...
+
+2026-06-16T15:19:04.805030956Z [inf]  Unpacking pinentry-curses (1.2.1-1) ...
+
+2026-06-16T15:19:04.930596073Z [inf]  Selecting previously unselected package gpg-agent.
+
+2026-06-16T15:19:04.931627641Z [inf]  Preparing to unpack .../31-gpg-agent_2.2.40-1.1+deb12u2_amd64.deb ...
+
+2026-06-16T15:19:04.96165281Z [inf]  Unpacking gpg-agent (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:05.152481829Z [inf]  Selecting previously unselected package gpg-wks-client.
+
+2026-06-16T15:19:05.154163712Z [inf]  Preparing to unpack .../32-gpg-wks-client_2.2.40-1.1+deb12u2_amd64.deb ...
+
+2026-06-16T15:19:05.161955143Z [inf]  Unpacking gpg-wks-client (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:05.208886428Z [inf]  Selecting previously unselected package gpg-wks-server.
+
+2026-06-16T15:19:05.209909333Z [inf]  Preparing to unpack .../33-gpg-wks-server_2.2.40-1.1+deb12u2_amd64.deb ...
+
+2026-06-16T15:19:05.211103524Z [inf]  Unpacking gpg-wks-server (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:05.250173925Z [inf]  Selecting previously unselected package gpgsm.
+
+2026-06-16T15:19:05.251367476Z [inf]  Preparing to unpack .../34-gpgsm_2.2.40-1.1+deb12u2_amd64.deb ...
+
+2026-06-16T15:19:05.252747146Z [inf]  Unpacking gpgsm (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:05.406915339Z [inf]  Selecting previously unselected package gnupg.
+
+2026-06-16T15:19:05.410124574Z [inf]  Preparing to unpack .../35-gnupg_2.2.40-1.1+deb12u2_all.deb ...
+
+2026-06-16T15:19:05.412228952Z [inf]  Unpacking gnupg (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:05.521527242Z [inf]  Setting up libksba8:amd64 (1.6.3-2) ...
+
+2026-06-16T15:19:05.525770308Z [inf]  Setting up libkeyutils1:amd64 (1.6.3-2) ...
+
+2026-06-16T15:19:05.621319069Z [inf]  Setting up libpsl5:amd64 (0.21.2-1) ...
+
+2026-06-16T15:19:05.627041806Z [inf]  Setting up libbrotli1:amd64 (1.0.9-2+b6) ...
+
+2026-06-16T15:19:05.910787876Z [inf]  Setting up libsqlite3-0:amd64 (3.40.1-2+deb12u2) ...
+
+2026-06-16T15:19:05.961204722Z [inf]  Setting up libssl3:amd64 (3.0.20-1~deb12u2) ...
+
+2026-06-16T15:19:05.976718608Z [inf]  Setting up libnghttp2-14:amd64 (1.52.0-1+deb12u3) ...
+
+2026-06-16T15:19:05.981392812Z [inf]  Setting up libnpth0:amd64 (1.6-3) ...
+
+2026-06-16T15:19:05.984468136Z [inf]  Setting up libassuan0:amd64 (2.5.5-5) ...
+
+2026-06-16T15:19:05.988154377Z [inf]  Setting up libkrb5support0:amd64 (1.20.1-2+deb12u5) ...
+
+2026-06-16T15:19:06.00092659Z [inf]  Setting up libsasl2-modules-db:amd64 (2.1.28+dfsg-10) ...
+
+2026-06-16T15:19:06.005300552Z [inf]  Setting up gnupg-l10n (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:06.009891441Z [inf]  Setting up librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b2) ...
+
+2026-06-16T15:19:06.013871993Z [inf]  Setting up libncursesw6:amd64 (6.4-4) ...
+
+2026-06-16T15:19:06.02860625Z [inf]  Setting up libk5crypto3:amd64 (1.20.1-2+deb12u5) ...
+
+2026-06-16T15:19:06.033017899Z [inf]  Setting up libsasl2-2:amd64 (2.1.28+dfsg-10) ...
+
+2026-06-16T15:19:06.072679017Z [inf]  Setting up libssh2-1:amd64 (1.10.0-3+b1) ...
+
+2026-06-16T15:19:06.079318439Z [inf]  Setting up libkrb5-3:amd64 (1.20.1-2+deb12u5) ...
+
+2026-06-16T15:19:06.124265797Z [inf]  Setting up openssl (3.0.20-1~deb12u2) ...
+
+2026-06-16T15:19:06.144146296Z [inf]  Setting up readline-common (8.2-1.3) ...
+
+2026-06-16T15:19:06.160315005Z [inf]  Setting up pinentry-curses (1.2.1-1) ...
+
+2026-06-16T15:19:06.179741553Z [inf]  Setting up libreadline8:amd64 (8.2-1.3) ...
+
+2026-06-16T15:19:06.183110998Z [inf]  Setting up libldap-2.5-0:amd64 (2.5.13+dfsg-5) ...
+
+2026-06-16T15:19:06.190409328Z [inf]  Setting up ca-certificates (20230311+deb12u1) ...
+
+2026-06-16T15:19:06.283895705Z [inf]  debconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+
+2026-06-16T15:19:06.284018459Z [inf]  debconf: unable to initialize frontend: Readline
+debconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC contains: /etc/perl /usr/local/lib/x86_64-linux-gnu/perl/5.36.0 /usr/local/share/perl/5.36.0 /usr/lib/x86_64-linux-gnu/perl5/5.36 /usr/share/perl5 /usr/lib/x86_64-linux-gnu/perl-base /usr/lib/x86_64-linux-gnu/perl/5.36 /usr/share/perl/5.36 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 7.)
+debconf: falling back to frontend: Teletype
+
+2026-06-16T15:19:06.781951124Z [inf]  Updating certificates in /etc/ssl/certs...
+
+2026-06-16T15:19:07.485353324Z [inf]  142 added, 0 removed; done.
+
+2026-06-16T15:19:07.485480124Z [inf]  [build  4/16] RUN corepack enable && corepack prepare pnpm@latest --activate
+2026-06-16T15:19:07.546110744Z [inf]  [build  5/16] COPY pnpm-workspace.yaml package.json ./
+2026-06-16T15:19:07.560810009Z [inf]  Setting up libgssapi-krb5-2:amd64 (1.20.1-2+deb12u5) ...
+
+2026-06-16T15:19:07.574051857Z [inf]  Setting up gpgconf (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:07.579064177Z [inf]  Setting up libcurl4:amd64 (7.88.1-10+deb12u14) ...
+
+2026-06-16T15:19:07.584483368Z [inf]  Setting up curl (7.88.1-10+deb12u14) ...
+
+2026-06-16T15:19:07.598257986Z [inf]  Setting up gpg (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:07.602281492Z [inf]  Setting up gnupg-utils (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:07.60907808Z [inf]  Setting up gpg-agent (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:08.107561201Z [inf]  Setting up gpgsm (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:08.262382353Z [inf]  Setting up dirmngr (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:08.448997199Z [inf]  Setting up gpg-wks-server (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:08.456148879Z [inf]  Setting up gpg-wks-client (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:08.458810923Z [inf]  Setting up gnupg (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:08.464736935Z [inf]  Processing triggers for libc-bin (2.36-9+deb12u14) ...
+
+2026-06-16T15:19:08.479920256Z [inf]  Processing triggers for ca-certificates (20230311+deb12u1) ...
+
+2026-06-16T15:19:08.486226377Z [inf]  Updating certificates in /etc/ssl/certs...
+
+2026-06-16T15:19:09.084529207Z [inf]  0 added, 0 removed; done.
+Running hooks in /etc/ca-certificates/update.d...
+
+2026-06-16T15:19:09.096582261Z [inf]  done.
+
+2026-06-16T15:19:10.556404149Z [inf]  Hit:1 http://deb.debian.org/debian bookworm InRelease
+Hit:2 http://deb.debian.org/debian bookworm-updates InRelease
+Hit:3 http://deb.debian.org/debian-security bookworm-security InRelease
+
+2026-06-16T15:19:10.556419652Z [inf]  Get:4 http://apt.postgresql.org/pub/repos/apt bookworm-pgdg InRelease [180 kB]
+
+2026-06-16T15:19:10.822710102Z [inf]  Get:5 http://apt.postgresql.org/pub/repos/apt bookworm-pgdg/main amd64 Packages [650 kB]
+
+2026-06-16T15:19:11.048612184Z [inf]  [build  5/16] COPY pnpm-workspace.yaml package.json ./
+2026-06-16T15:19:11.106903775Z [inf]  Fetched 831 kB in 1s (1452 kB/s)
+Reading package lists...
+2026-06-16T15:19:11.114667704Z [inf]  [build  6/16] COPY packages/shared/package.json packages/shared/
+2026-06-16T15:19:11.765384815Z [inf]  
+2026-06-16T15:19:11.786510542Z [inf]  Reading package lists...
+2026-06-16T15:19:12.387256267Z [inf]  
+2026-06-16T15:19:12.397687498Z [inf]  Building dependency tree...
+2026-06-16T15:19:12.547845384Z [inf]  
+Reading state information...
+2026-06-16T15:19:12.547896431Z [inf]  
+2026-06-16T15:19:12.699644021Z [inf]  openssl is already the newest version (3.0.20-1~deb12u2).
+openssl set to manually installed.
+The following additional packages will be installed:
+
+2026-06-16T15:19:12.700334918Z [inf]    libgdbm-compat4 libgdbm6 libperl5.36 libpq5 netbase perl perl-modules-5.36
+
+2026-06-16T15:19:12.700592985Z [inf]    postgresql-client-common sensible-utils
+
+2026-06-16T15:19:12.701882891Z [inf]  Suggested packages:
+  gdbm-l10n libpq-oauth perl-doc libterm-readline-gnu-perl
+  | libterm-readline-perl-perl make libtap-harness-archive-perl postgresql-16
+  postgresql-doc-16
+
+2026-06-16T15:19:12.780967469Z [inf]  The following NEW packages will be installed:
+
+2026-06-16T15:19:12.781506277Z [inf]    libgdbm-compat4 libgdbm6 libperl5.36 libpq5 netbase perl perl-modules-5.36
+
+2026-06-16T15:19:12.78175489Z [inf]    postgresql-client-16 postgresql-client-common sensible-utils
+
+2026-06-16T15:19:12.816568584Z [inf]  0 upgraded, 10 newly installed, 0 to remove and 0 not upgraded.
+Need to get 9663 kB of archives.
+After this operation, 60.2 MB of additional disk space will be used.
+Get:1 http://deb.debian.org/debian bookworm/main amd64 perl-modules-5.36 all 5.36.0-7+deb12u3 [2815 kB]
+
+2026-06-16T15:19:12.818793773Z [inf]  Get:2 http://apt.postgresql.org/pub/repos/apt bookworm-pgdg/main amd64 libpq5 amd64 18.4-1.pgdg12+1 [257 kB]
+
+2026-06-16T15:19:12.82293065Z [inf]  Get:3 http://apt.postgresql.org/pub/repos/apt bookworm-pgdg/main amd64 postgresql-client-common all 291.pgdg12+1 [49.2 kB]
+
+2026-06-16T15:19:12.825058403Z [inf]  Get:4 http://apt.postgresql.org/pub/repos/apt bookworm-pgdg/main amd64 postgresql-client-16 amd64 16.14-1.pgdg12+1 [1954 kB]
+
+2026-06-16T15:19:12.829674318Z [inf]  Get:5 http://deb.debian.org/debian bookworm/main amd64 libgdbm6 amd64 1.23-3 [72.2 kB]
+
+2026-06-16T15:19:12.83002239Z [inf]  Get:6 http://deb.debian.org/debian bookworm/main amd64 libgdbm-compat4 amd64 1.23-3 [48.2 kB]
+
+2026-06-16T15:19:12.830546557Z [inf]  Get:7 http://deb.debian.org/debian bookworm/main amd64 libperl5.36 amd64 5.36.0-7+deb12u3 [4196 kB]
+
+2026-06-16T15:19:12.845780724Z [inf]  Get:8 http://deb.debian.org/debian bookworm/main amd64 perl amd64 5.36.0-7+deb12u3 [239 kB]
+
+2026-06-16T15:19:12.8466579Z [inf]  Get:9 http://deb.debian.org/debian bookworm/main amd64 netbase all 6.4 [12.8 kB]
+
+2026-06-16T15:19:12.846856128Z [inf]  Get:10 http://deb.debian.org/debian bookworm/main amd64 sensible-utils all 0.0.17+nmu1 [19.0 kB]
+
+2026-06-16T15:19:12.953072875Z [inf]  debconf: delaying package configuration, since apt-utils is not installed
+
+2026-06-16T15:19:12.98600775Z [inf]  Fetched 9663 kB in 0s (173 MB/s)
+
+2026-06-16T15:19:13.008978555Z [inf]  Selecting previously unselected package perl-modules-5.36.
+(Reading database ... 
+2026-06-16T15:19:13.00966188Z [inf]  (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%
+2026-06-16T15:19:13.010844875Z [inf]  (Reading database ... 75%
+2026-06-16T15:19:13.011148441Z [inf]  (Reading database ... 80%
+2026-06-16T15:19:13.01129453Z [inf]  (Reading database ... 85%
+2026-06-16T15:19:13.011790724Z [inf]  (Reading database ... 90%
+2026-06-16T15:19:13.012341691Z [inf]  (Reading database ... 95%
+2026-06-16T15:19:13.012735281Z [inf]  (Reading database ... 100%(Reading database ... 7001 files and directories currently installed.)
+
+2026-06-16T15:19:13.01322095Z [inf]  Preparing to unpack .../0-perl-modules-5.36_5.36.0-7+deb12u3_all.deb ...
+
+2026-06-16T15:19:13.018687392Z [inf]  Unpacking perl-modules-5.36 (5.36.0-7+deb12u3) ...
+
+2026-06-16T15:19:13.725525868Z [inf]  Selecting previously unselected package libgdbm6:amd64.
+
+2026-06-16T15:19:13.727159329Z [inf]  Preparing to unpack .../1-libgdbm6_1.23-3_amd64.deb ...
+
+2026-06-16T15:19:13.739103199Z [inf]  Unpacking libgdbm6:amd64 (1.23-3) ...
+
+2026-06-16T15:19:13.779114883Z [inf]  Selecting previously unselected package libgdbm-compat4:amd64.
+
+2026-06-16T15:19:13.780563416Z [inf]  Preparing to unpack .../2-libgdbm-compat4_1.23-3_amd64.deb ...
+
+2026-06-16T15:19:13.786609357Z [inf]  Unpacking libgdbm-compat4:amd64 (1.23-3) ...
+
+2026-06-16T15:19:13.818264422Z [inf]  Selecting previously unselected package libperl5.36:amd64.
+
+2026-06-16T15:19:13.819684613Z [inf]  Preparing to unpack .../3-libperl5.36_5.36.0-7+deb12u3_amd64.deb ...
+
+2026-06-16T15:19:13.821407398Z [inf]  Unpacking libperl5.36:amd64 (5.36.0-7+deb12u3) ...
+
+2026-06-16T15:19:14.194173834Z [inf]  Selecting previously unselected package perl.
+
+2026-06-16T15:19:14.195634956Z [inf]  Preparing to unpack .../4-perl_5.36.0-7+deb12u3_amd64.deb ...
+
+2026-06-16T15:19:14.262287862Z [inf]  Unpacking perl (5.36.0-7+deb12u3) ...
+
+2026-06-16T15:19:14.302862009Z [inf]  [build  6/16] COPY packages/shared/package.json packages/shared/
+2026-06-16T15:19:14.412452658Z [inf]  [build  7/16] COPY apps/api/package.json apps/api/
+2026-06-16T15:19:15.112151572Z [inf]  Selecting previously unselected package netbase.
+
+2026-06-16T15:19:15.113540166Z [inf]  Preparing to unpack .../5-netbase_6.4_all.deb ...
+
+2026-06-16T15:19:15.242079846Z [inf]  Unpacking netbase (6.4) ...
+
+2026-06-16T15:19:15.431706681Z [inf]  Selecting previously unselected package sensible-utils.
+
+2026-06-16T15:19:15.433765539Z [inf]  Preparing to unpack .../6-sensible-utils_0.0.17+nmu1_all.deb ...
+
+2026-06-16T15:19:15.473992786Z [inf]  Unpacking sensible-utils (0.0.17+nmu1) ...
+
+2026-06-16T15:19:15.9638933Z [inf]  Selecting previously unselected package libpq5:amd64.
+
+2026-06-16T15:19:15.965807231Z [inf]  Preparing to unpack .../7-libpq5_18.4-1.pgdg12+1_amd64.deb ...
+
+2026-06-16T15:19:16.152955638Z [inf]  Unpacking libpq5:amd64 (18.4-1.pgdg12+1) ...
+
+2026-06-16T15:19:17.000922161Z [inf]  Selecting previously unselected package postgresql-client-common.
+
+2026-06-16T15:19:17.002569583Z [inf]  Preparing to unpack .../8-postgresql-client-common_291.pgdg12+1_all.deb ...
+
+2026-06-16T15:19:17.009791338Z [inf]  Unpacking postgresql-client-common (291.pgdg12+1) ...
+
+2026-06-16T15:19:17.100129932Z [inf]  Selecting previously unselected package postgresql-client-16.
+
+2026-06-16T15:19:17.101487959Z [inf]  Preparing to unpack .../9-postgresql-client-16_16.14-1.pgdg12+1_amd64.deb ...
+
+2026-06-16T15:19:17.103474951Z [inf]  Unpacking postgresql-client-16 (16.14-1.pgdg12+1) ...
+
+2026-06-16T15:19:17.433777194Z [inf]  Setting up libpq5:amd64 (18.4-1.pgdg12+1) ...
+
+2026-06-16T15:19:17.457603102Z [inf]  Setting up perl-modules-5.36 (5.36.0-7+deb12u3) ...
+
+2026-06-16T15:19:17.461691817Z [inf]  Setting up sensible-utils (0.0.17+nmu1) ...
+
+2026-06-16T15:19:17.477145513Z [inf]  Setting up netbase (6.4) ...
+
+2026-06-16T15:19:17.488730726Z [inf]  Setting up libgdbm6:amd64 (1.23-3) ...
+
+2026-06-16T15:19:17.502109579Z [inf]  Setting up libgdbm-compat4:amd64 (1.23-3) ...
+
+2026-06-16T15:19:17.506021729Z [inf]  Setting up libperl5.36:amd64 (5.36.0-7+deb12u3) ...
+
+2026-06-16T15:19:17.510749492Z [inf]  Setting up perl (5.36.0-7+deb12u3) ...
+
+2026-06-16T15:19:17.570541824Z [inf]  Setting up postgresql-client-common (291.pgdg12+1) ...
+
+2026-06-16T15:19:17.591912509Z [inf]  Setting up postgresql-client-16 (16.14-1.pgdg12+1) ...
+
+2026-06-16T15:19:17.834816701Z [inf]  [build  7/16] COPY apps/api/package.json apps/api/
+2026-06-16T15:19:17.924419410Z [inf]  [build  8/16] COPY apps/pos/package.json apps/pos/
+2026-06-16T15:19:18.01749465Z [inf]  update-alternatives: using /usr/share/postgresql/16/man/man1/psql.1.gz to provide /usr/share/man/man1/psql.1.gz (psql.1.gz) in auto mode
+
+2026-06-16T15:19:18.101588594Z [inf]  Processing triggers for libc-bin (2.36-9+deb12u14) ...
+
+2026-06-16T15:19:18.183777399Z [inf]  Reading package lists...
+2026-06-16T15:19:18.723797462Z [inf]  
+2026-06-16T15:19:18.740048925Z [inf]  Building dependency tree...
+2026-06-16T15:19:18.914406561Z [inf]  
+Reading state information...
+2026-06-16T15:19:18.914547091Z [inf]  
+2026-06-16T15:19:19.121969496Z [inf]  The following packages will be REMOVED:
+  ca-certificates* curl* dirmngr* gnupg* gnupg-l10n* gnupg-utils* gpg*
+
+2026-06-16T15:19:19.122082286Z [inf]    gpg-agent* gpg-wks-client* gpg-wks-server* gpgconf* gpgsm* libassuan0*
+
+2026-06-16T15:19:19.122273282Z [inf]    libbrotli1* libcurl4* libksba8* libncursesw6* libnghttp2-14* libnpth0*
+
+2026-06-16T15:19:19.122819612Z [inf]    libpsl5* librtmp1* libsqlite3-0* libssh2-1* pinentry-curses*
+
+2026-06-16T15:19:19.319732078Z [inf]  0 upgraded, 0 newly installed, 24 to remove and 0 not upgraded.
+After this operation, 21.5 MB disk space will be freed.
+
+2026-06-16T15:19:19.362683012Z [inf]  (Reading database ... 
+2026-06-16T15:19:19.364342021Z [inf]  (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%
+2026-06-16T15:19:19.366860049Z [inf]  (Reading database ... 75%
+2026-06-16T15:19:19.367384175Z [inf]  (Reading database ... 80%
+2026-06-16T15:19:19.367862162Z [inf]  (Reading database ... 85%
+2026-06-16T15:19:19.36860684Z [inf]  (Reading database ... 90%
+2026-06-16T15:19:19.369598317Z [inf]  (Reading database ... 95%
+2026-06-16T15:19:19.3717264Z [inf]  (Reading database ... 100%(Reading database ... 9482 files and directories currently installed.)
+
+2026-06-16T15:19:19.372649445Z [inf]  Removing ca-certificates (20230311+deb12u1) ...
+
+2026-06-16T15:19:19.401810648Z [inf]  Removing dangling symlinks from /etc/ssl/certs... 
+2026-06-16T15:19:19.605670418Z [inf]  done.
+
+2026-06-16T15:19:19.629449206Z [inf]  Removing curl (7.88.1-10+deb12u14) ...
+
+2026-06-16T15:19:19.639304533Z [inf]  Removing gnupg (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:19.649364507Z [inf]  Removing gpg-wks-client (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:19.664539755Z [inf]  Removing dirmngr (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:19.747082021Z [inf]  Removing gnupg-l10n (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:19.777069314Z [inf]  Removing gnupg-utils (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:19.813364251Z [inf]  Removing gpg-wks-server (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:19.856479771Z [inf]  Removing gpg (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:19.874397685Z [inf]  Removing gpg-agent (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:19.89942818Z [inf]  Removing gpgsm (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:19.970397042Z [inf]  Removing gpgconf (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:19.991115257Z [inf]  Removing pinentry-curses (1.2.1-1) ...
+
+2026-06-16T15:19:20.012862747Z [inf]  Removing libassuan0:amd64 (2.5.5-5) ...
+
+2026-06-16T15:19:20.033018088Z [inf]  Removing libcurl4:amd64 (7.88.1-10+deb12u14) ...
+
+2026-06-16T15:19:20.051226498Z [inf]  Removing libbrotli1:amd64 (1.0.9-2+b6) ...
+
+2026-06-16T15:19:20.07175633Z [inf]  Removing libksba8:amd64 (1.6.3-2) ...
+
+2026-06-16T15:19:20.088599402Z [inf]  Removing libncursesw6:amd64 (6.4-4) ...
+
+2026-06-16T15:19:20.11377163Z [inf]  Removing libnghttp2-14:amd64 (1.52.0-1+deb12u3) ...
+
+2026-06-16T15:19:20.132633951Z [inf]  Removing libnpth0:amd64 (1.6-3) ...
+
+2026-06-16T15:19:20.156382633Z [inf]  Removing libpsl5:amd64 (0.21.2-1) ...
+
+2026-06-16T15:19:20.186131558Z [inf]  Removing librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b2) ...
+
+2026-06-16T15:19:20.237758028Z [inf]  Removing libsqlite3-0:amd64 (3.40.1-2+deb12u2) ...
+
+2026-06-16T15:19:20.334175352Z [inf]  Removing libssh2-1:amd64 (1.10.0-3+b1) ...
+
+2026-06-16T15:19:20.397263439Z [inf]  Processing triggers for libc-bin (2.36-9+deb12u14) ...
+
+2026-06-16T15:19:20.448891742Z [inf]  (Reading database ... 
+2026-06-16T15:19:20.44935071Z [inf]  (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%
+2026-06-16T15:19:20.450830361Z [inf]  (Reading database ... 80%
+2026-06-16T15:19:20.451011513Z [inf]  (Reading database ... 85%
+2026-06-16T15:19:20.45122328Z [inf]  (Reading database ... 90%
+2026-06-16T15:19:20.45179627Z [inf]  (Reading database ... 95%
+2026-06-16T15:19:20.453156431Z [inf]  (Reading database ... 100%(Reading database ... 8991 files and directories currently installed.)
+
+2026-06-16T15:19:20.453772204Z [inf]  Purging configuration files for gpg-agent (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:20.538898377Z [inf]  Purging configuration files for dirmngr (2.2.40-1.1+deb12u2) ...
+
+2026-06-16T15:19:20.680706045Z [inf]  Purging configuration files for ca-certificates (20230311+deb12u1) ...
+
+2026-06-16T15:19:20.754557731Z [inf]  debconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+
+2026-06-16T15:19:20.76134836Z [inf]  debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+
+2026-06-16T15:19:20.772219631Z [inf]  Removing dangling symlinks from /etc/ssl/certs... 
+2026-06-16T15:19:20.773888545Z [inf]  done.
+
+2026-06-16T15:19:26.343721135Z [inf]  [stage-1 2/5] RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates gnupg curl &&     curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg &&     echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list &&     apt-get update &&     apt-get install -y --no-install-recommends openssl postgresql-client-16 &&     apt-get purge -y --auto-remove ca-certificates gnupg curl &&     rm -rf /var/lib/apt/lists/*
+2026-06-16T15:19:26.421128016Z [inf]  [build  8/16] COPY apps/pos/package.json apps/pos/
+2026-06-16T15:19:26.568778270Z [inf]  [build  9/16] COPY apps/backoffice/package.json apps/backoffice/
+2026-06-16T15:19:26.568780723Z [inf]  [stage-1 3/5] WORKDIR /repo
+2026-06-16T15:19:28.228691622Z [inf]  [stage-1 3/5] WORKDIR /repo
+2026-06-16T15:19:28.285829842Z [inf]  [stage-1 4/5] RUN corepack enable && corepack prepare pnpm@latest --activate
+2026-06-16T15:19:29.083239030Z [inf]  [build  9/16] COPY apps/backoffice/package.json apps/backoffice/
+2026-06-16T15:19:29.155806069Z [inf]  [build 10/16] COPY apps/kds/package.json apps/kds/
+2026-06-16T15:19:29.854084882Z [inf]  Preparing pnpm@latest for immediate activation...
+
+2026-06-16T15:19:30.645606305Z [inf]  [build 10/16] COPY apps/kds/package.json apps/kds/
+2026-06-16T15:19:30.675923113Z [inf]  [build 11/16] COPY apps/print-service/package.json apps/print-service/
+2026-06-16T15:19:30.707758919Z [inf]  [stage-1 4/5] RUN corepack enable && corepack prepare pnpm@latest --activate
+2026-06-16T15:19:31.325524701Z [inf]  [build 11/16] COPY apps/print-service/package.json apps/print-service/
+2026-06-16T15:19:31.397294363Z [inf]  [build 12/16] RUN pnpm install --filter @goblins/api --filter @goblins/shared
+2026-06-16T15:19:31.914261607Z [inf]  ! Corepack is about to download https://registry.npmjs.org/pnpm/-/pnpm-9.15.9.tgz
+
+2026-06-16T15:19:33.105973014Z [inf]  Scope: 2 of 7 workspace projects
+
+2026-06-16T15:19:33.252051599Z [inf]  Progress: resolved 1, reused 0, downloaded 0, added 0
+
+2026-06-16T15:19:33.316249631Z [inf]  
+   ╭──────────────────────────────────────────────────────────────────╮
+   │                                                                  │
+   │                Update available! 9.15.9 → 11.7.0.                │
+   │   Changelog: https://github.com/pnpm/pnpm/releases/tag/v11.7.0   │
+   │            Run "corepack use pnpm@11.7.0" to update.             │
+   │                                                                  │
+   ╰──────────────────────────────────────────────────────────────────╯
+
+
+2026-06-16T15:19:34.252414176Z [inf]  Progress: resolved 39, reused 0, downloaded 0, added 0
+
+2026-06-16T15:19:35.257403185Z [inf]  Progress: resolved 128, reused 0, downloaded 0, added 0
+
+2026-06-16T15:19:36.261560106Z [inf]  Progress: resolved 531, reused 0, downloaded 0, added 0
+
+2026-06-16T15:19:37.261780039Z [inf]  Progress: resolved 714, reused 0, downloaded 0, added 0
+
+2026-06-16T15:19:38.247785125Z [inf]   WARN  1 deprecated subdependencies found: glob@10.4.5
+
+2026-06-16T15:19:38.303878487Z [inf]  Progress: resolved 721, reused 0, downloaded 0, added 0
+
+2026-06-16T15:19:38.470357571Z [inf]  Progress: resolved 721, reused 0, downloaded 0, added 0, done
+
+2026-06-16T15:19:38.59696396Z [inf]  .                                        | +521 ++++++++++++++++++++++++++++++++
+
+2026-06-16T15:19:39.831411818Z [inf]  .../node_modules/@prisma/engines postinstall$ node scripts/postinstall.js
+
+2026-06-16T15:19:39.901043843Z [inf]  .../esbuild@0.21.5/node_modules/esbuild postinstall$ node install.js
+
+2026-06-16T15:19:39.901582081Z [inf]  .../argon2@0.41.1/node_modules/argon2 install$ node-gyp-build
+
+2026-06-16T15:19:39.902302362Z [inf]  .../esbuild@0.28.1/node_modules/esbuild postinstall$ node install.js
+
+2026-06-16T15:19:39.903158356Z [inf]  .../node_modules/@nestjs/core postinstall$ opencollective || exit 0
+
+2026-06-16T15:19:40.099884963Z [inf]  .../esbuild@0.28.1/node_modules/esbuild postinstall: Done
+
+2026-06-16T15:19:40.100551002Z [inf]  .../esbuild@0.21.5/node_modules/esbuild postinstall: Done
+
+2026-06-16T15:19:40.110997286Z [inf]  .../argon2@0.41.1/node_modules/argon2 install: Done
+
+2026-06-16T15:19:40.260706358Z [inf]  .../node_modules/@nestjs/core postinstall:                            Thanks for installing nest 
+
+2026-06-16T15:19:40.26137359Z [inf]  .../node_modules/@nestjs/core postinstall:                  Please consider donating to our open collective
+
+2026-06-16T15:19:40.261945548Z [inf]  .../node_modules/@nestjs/core postinstall:                         to help us maintain this package.
+
+2026-06-16T15:19:40.262275122Z [inf]  .../node_modules/@nestjs/core postinstall:                                          
+
+2026-06-16T15:19:40.262396674Z [inf]  .../node_modules/@nestjs/core postinstall:                             Number of contributors: 0
+
+2026-06-16T15:19:40.262491487Z [inf]  .../node_modules/@nestjs/core postinstall:                              Number of backers: 1204
+
+2026-06-16T15:19:40.364237726Z [inf]  .../node_modules/@nestjs/core postinstall:                              Annual budget: $133,629
+
+2026-06-16T15:19:40.364632979Z [inf]  .../node_modules/@nestjs/core postinstall:                              Current balance: $11,337
+
+2026-06-16T15:19:40.364974301Z [inf]  .../node_modules/@nestjs/core postinstall:                                          
+
+2026-06-16T15:19:40.365250866Z [inf]  .../node_modules/@nestjs/core postinstall:              Become a partner: https://opencollective.com/nest/donate
+
+2026-06-16T15:19:40.365471638Z [inf]  .../node_modules/@nestjs/core postinstall:                                          
+
+2026-06-16T15:19:40.373316047Z [inf]  .../node_modules/@nestjs/core postinstall: Done
+
+2026-06-16T15:19:40.516894011Z [inf]  .../node_modules/@prisma/engines postinstall: Done
+
+2026-06-16T15:19:40.619402744Z [inf]  .../prisma@5.22.0/node_modules/prisma preinstall$ node scripts/preinstall-entry.js
+
+2026-06-16T15:19:40.699526301Z [inf]  .../prisma@5.22.0/node_modules/prisma preinstall: Done
+
+2026-06-16T15:19:40.772198999Z [inf]  .../node_modules/@prisma/client postinstall$ node scripts/postinstall.js
+
+2026-06-16T15:19:41.26511737Z [inf]  .../node_modules/@prisma/client postinstall: prisma:warn We could not find your Prisma schema in the default locations (see: https://pris.ly/d/prisma-schema-location).
+
+2026-06-16T15:19:41.265153915Z [inf]  .../node_modules/@prisma/client postinstall: If you have a Prisma schema file in a custom path, you will need to run
+.../node_modules/@prisma/client postinstall: `prisma generate --schema=./path/to/your/schema.prisma` to generate Prisma Client.
+
+2026-06-16T15:19:41.265267646Z [inf]  .../node_modules/@prisma/client postinstall: If you do not have a Prisma schema file yet, you can ignore this message.
+
+2026-06-16T15:19:41.28709788Z [inf]  .../node_modules/@prisma/client postinstall: Done
+
+2026-06-16T15:19:41.736608482Z [inf]  Done in 9s using pnpm v9.15.9
+
+2026-06-16T15:19:44.397637913Z [inf]  [build 12/16] RUN pnpm install --filter @goblins/api --filter @goblins/shared
+2026-06-16T15:19:44.471893186Z [inf]  [build 13/16] COPY tsconfig.base.json ./
+2026-06-16T15:19:45.704152109Z [inf]  [build 13/16] COPY tsconfig.base.json ./
+2026-06-16T15:19:46.092099202Z [inf]  [build 14/16] COPY packages/shared packages/shared
+2026-06-16T15:19:47.223791616Z [inf]  [build 14/16] COPY packages/shared packages/shared
+2026-06-16T15:19:47.343834828Z [inf]  [build 15/16] COPY apps/api apps/api
+2026-06-16T15:19:48.494428761Z [inf]  [build 15/16] COPY apps/api apps/api
+2026-06-16T15:19:48.587536810Z [inf]  [build 16/16] RUN pnpm --filter @goblins/shared build && pnpm --filter @goblins/api db:generate && pnpm --filter @goblins/api build
+2026-06-16T15:19:49.260296845Z [inf]  
+> @goblins/shared@0.1.0 build /repo/packages/shared
+> tsc -p tsconfig.build.json
+
+
+2026-06-16T15:19:50.136511782Z [inf]  
+> @goblins/api@0.1.0 db:generate /repo/apps/api
+> prisma generate
+
+
+2026-06-16T15:19:50.512183147Z [inf]  Prisma schema loaded from prisma/schema.prisma
+
+2026-06-16T15:19:51.842386325Z [inf]  
+✔ Generated Prisma Client (v5.22.0) to ./../../node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client in 667ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+
+2026-06-16T15:19:52.419633062Z [inf]  
+> @goblins/api@0.1.0 build /repo/apps/api
+> nest build
+
+
+2026-06-16T15:19:59.356597558Z [inf]  [build 16/16] RUN pnpm --filter @goblins/shared build && pnpm --filter @goblins/api db:generate && pnpm --filter @goblins/api build
+2026-06-16T15:20:01.370562007Z [inf]  [stage-1 5/5] COPY --from=build /repo ./
+2026-06-16T15:20:05.503793801Z [inf]  [stage-1 5/5] COPY --from=build /repo ./
+2026-06-16T15:20:05.535388656Z [inf]  exporting to docker image format
+2026-06-16T15:20:09.624167092Z [inf]  exporting to docker image format
+2026-06-16T15:20:09.742451555Z [inf]  containerimage.config.digest: sha256:79e04a8bf770912579a10b7faf7026e432cdb4a145991c8989cb295ac2da767e
+2026-06-16T15:20:09.742454890Z [inf]  containerimage.digest: sha256:74ab5665daca1dcbd2ea51d10f5d7611bc4a5c81eb1d0262a2ab324ae8943042
+2026-06-16T15:20:09.742457664Z [inf]  containerimage.descriptor: eyJtZWRpYVR5cGUiOiJhcHBsaWNhdGlvbi92bmQub2NpLmltYWdlLm1hbmlmZXN0LnYxK2pzb24iLCJkaWdlc3QiOiJzaGEyNTY6NzRhYjU2NjVkYWNhMWRjYmQyZWE1MWQxMGY1ZDc2MTFiYzRhNWM4MWViMWQwMjYyYTJhYjMyNGFlODk0MzA0MiIsInNpemUiOjIwMDksImFubm90YXRpb25zIjp7Im9yZy5vcGVuY29udGFpbmVycy5pbWFnZS5jcmVhdGVkIjoiMjAyNi0wNi0xNlQxNToyMDowOFoifSwicGxhdGZvcm0iOnsiYXJjaGl0ZWN0dXJlIjoiYW1kNjQiLCJvcyI6ImxpbnV4In19
+2026-06-16T15:20:18.189622054Z [inf]  image push
+2026-06-16T15:20:21.975751280Z [inf]  
+2026-06-16T15:20:21.975759786Z [inf]  [35m====================
+Starting Healthcheck
+====================
+[0m
+2026-06-16T15:20:21.975760701Z [inf]  [37mPath: /health[0m
+2026-06-16T15:20:21.975761607Z [inf]  [37mRetry window: 1m0s[0m
+2026-06-16T15:20:21.975762748Z [inf]  
+2026-06-16T15:20:23.197013715Z [inf]  [93mAttempt #1 failed with service unavailable. Continuing to retry for 58s[0m
+2026-06-16T15:20:24.231522803Z [inf]  [93mAttempt #2 failed with service unavailable. Continuing to retry for 57s[0m
+2026-06-16T15:20:26.279880768Z [inf]  [93mAttempt #3 failed with service unavailable. Continuing to retry for 55s[0m
+2026-06-16T15:20:30.311621964Z [inf]  [93mAttempt #4 failed with service unavailable. Continuing to retry for 51s[0m
+2026-06-16T15:20:38.345049879Z [inf]  [93mAttempt #5 failed with service unavailable. Continuing to retry for 43s[0m
+2026-06-16T15:20:54.381469832Z [inf]  [93mAttempt #6 failed with service unavailable. Continuing to retry for 27s[0m
+2026-06-16T15:20:54.528101738Z [inf]  
+2026-06-16T15:20:54.528105481Z [inf]  [91m1/1 replicas never became healthy![0m
+2026-06-16T15:20:54.528106480Z [inf]  [91mHealthcheck failed![0m
