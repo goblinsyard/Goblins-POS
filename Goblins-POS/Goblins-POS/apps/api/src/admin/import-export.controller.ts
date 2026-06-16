@@ -443,7 +443,7 @@ export class ImportExportController {
   // -------- Floor Layout Import --------
   @Post('import/floor')
   @RequirePermissions('settings.manage')
-  async importFloor(@Body() body: any[]) {
+  async importFloor(@Req() req: AuthedRequest, @Body() body: any[]) {
     if (!Array.isArray(body)) throw new BadRequestException('Payload must be an array of zones.');
 
     // Build ratePlan name->id map
@@ -468,7 +468,7 @@ export class ImportExportController {
       for (const res of zoneData.resources ?? []) {
         if (!res.name) continue;
         // Match ratePlan by name (case-insensitive partial)
-        let ratePlanId: string | null = null;
+        let ratePlanId: string | null | undefined = undefined;
         if (res.ratePlanName && res.ratePlanName !== 'None') {
           const key = Object.keys(rpMap).find((k) => k.includes(res.ratePlanName.toLowerCase()) || res.ratePlanName.toLowerCase().includes(k));
           if (key) ratePlanId = rpMap[key];
@@ -487,7 +487,8 @@ export class ImportExportController {
             rotation: res.rotation ?? 0,
             isActive: res.isActive ?? true,
             zoneId: zone.id,
-            ...(ratePlanId ? { ratePlanId } : {}),
+            branchId: req.user.branchId,
+            ...(ratePlanId !== undefined ? { ratePlanId } : {}),
           },
         });
         resourcesCreated++;
