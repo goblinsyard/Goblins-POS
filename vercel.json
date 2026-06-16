@@ -1,6 +1,6 @@
 {
   "framework": "vite",
-  "installCommand": "npm install -g pnpm@7 && pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm --filter @goblins/shared build && pnpm --filter @goblins/pos build",
+  "installCommand": "npm install -g yarn && yarn install --ignore-engines",
+  "buildCommand": "yarn workspace @goblins/shared build && yarn workspace @goblins/pos build",
   "outputDirectory": "apps/pos/dist"
 }
