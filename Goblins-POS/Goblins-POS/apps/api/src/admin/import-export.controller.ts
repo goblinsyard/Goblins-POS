@@ -133,192 +133,121 @@ export class ImportExportController {
 
   @Post('import/menu')
   @RequirePermissions('menu.manage')
-  async importMenu(@Req() req: AuthedRequest, @Body() body: ImportedCategory[]) {
-    if (!Array.isArray(body)) {
-      throw new BadRequestException('Payload must be a JSON array of categories.');
+  async importMenu(@Req() req: AuthedRequest, @Body() body: any) {
+    // Accept either flat array OR { clearFirst: bool, categories: [...] }
+    let clearFirst = false;
+    let categories: any[] = [];
+    if (Array.isArray(body)) {
+      categories = body;
+    } else if (body && Array.isArray(body.categories)) {
+      categories = body.categories;
+      clearFirst = !!body.clearFirst;
+    } else {
+      throw new BadRequestException('Payload must be an array or { clearFirst, categories }');
     }
 
-    try {
-      // Find a default tax rate to assign to imported items if none specified
-      const defaultTax = await this.prisma.taxRate.findFirst({
-        where: { isDefault: true },
-      });
+    const defaultTax = await this.prisma.taxRate.findFirst({ where: { isDefault: true } });
+    const stations = await this.prisma.station.findMany();
 
-      // Find standard stations (Kitchen / Bar) to auto-route
-      const stations = await this.prisma.station.findMany();
+    const kitchenStation = stations.find((s) => s.name.toLowerCase().includes('kitchen'));
+    const barStation = stations.find((s) => s.name.toLowerCase().includes('bar'));
 
-      let categoriesCreated = 0;
-      let itemsImported = 0;
+    let categoriesCreated = 0;
+    let itemsImported = 0;
 
-      await this.prisma.$transaction(async (tx) => {
-        for (const catData of body) {
-          if (!catData.name) continue;
+    // Helper: upsert a category and its items, returning the category record
+    const upsertCategory = async (tx: any, catData: any, parentId: string | null) => {
+      let category = await tx.category.findFirst({ where: { name: catData.name } });
+      if (!category) {
+        category = await tx.category.create({
+          data: {
+            name: catData.name,
+            nameAr: catData.nameAr || null,
+            sortOrder: catData.sortOrder ?? 0,
+            color: catData.color || null,
+            isActive: catData.isActive ?? true,
+            ...(parentId ? { parentCategoryId: parentId } : {}),
+          },
+        });
+        categoriesCreated++;
+      } else if (parentId && category.parentCategoryId !== parentId) {
+        category = await tx.category.update({
+          where: { id: category.id },
+          data: { parentCategoryId: parentId },
+        });
+      }
 
-          // 1. Find or create Category
-          let category = await tx.category.findFirst({
-            where: { name: catData.name },
+      // Upsert items
+      if (Array.isArray(catData.items)) {
+        for (const itemData of catData.items) {
+          if (!itemData.name || itemData.priceCents == null) continue;
+          const stationId = itemData.department === 'BAR' ? barStation?.id : kitchenStation?.id;
+
+          const existing = await tx.menuItem.findFirst({
+            where: {
+              OR: [
+                ...(itemData.sku ? [{ sku: itemData.sku }] : []),
+                { name: itemData.name, categoryId: category.id },
+              ],
+            },
           });
 
-          if (!category) {
-            category = await tx.category.create({
-              data: {
-                name: catData.name,
-                nameAr: catData.nameAr || null,
-                sortOrder: catData.sortOrder ?? 0,
-                color: catData.color || null,
-                isActive: catData.isActive ?? true,
-              },
-            });
-            categoriesCreated++;
-          }
+          const payload = {
+            name: itemData.name,
+            nameAr: itemData.nameAr || null,
+            priceCents: itemData.priceCents,
+            sku: itemData.sku || null,
+            categoryId: category.id,
+            taxRateId: defaultTax?.id || null,
+            stationId: stationId || null,
+            isActive: itemData.isActive ?? true,
+          };
 
-          if (!catData.items || !Array.isArray(catData.items)) continue;
-
-          for (const itemData of catData.items) {
-            if (!itemData.name || !(itemData.priceCents >= 0)) continue;
-
-            // Determine routing station
-            let stationId: string | null = null;
-            if (itemData.department === 'BAR') {
-              const barStation = stations.find((s) => s.name.toLowerCase().includes('bar'));
-              if (barStation) stationId = barStation.id;
-            } else {
-              const kitchenStation = stations.find((s) => s.name.toLowerCase().includes('kitchen'));
-              if (kitchenStation) stationId = kitchenStation.id;
-            }
-
-            // 2. Find or create Menu Item
-            let menuItem = await tx.menuItem.findFirst({
-              where: {
-                OR: [
-                  ...(itemData.sku ? [{ sku: itemData.sku }] : []),
-                  { name: itemData.name, categoryId: category.id },
-                ],
-              },
-            });
-
-            const itemPayload = {
-              name: itemData.name,
-              nameAr: itemData.nameAr || null,
-              description: itemData.description || null,
-              sku: itemData.sku || null,
-              priceCents: itemData.priceCents,
-              isActive: itemData.isActive ?? true,
-              isFavorite: itemData.isFavorite ?? false,
-              department: itemData.department ?? 'RESTAURANT',
-              stationId: stationId,
-              taxRateId: defaultTax?.id || null,
-            };
-
-            if (menuItem) {
-              menuItem = await tx.menuItem.update({
-                where: { id: menuItem.id },
-                data: itemPayload,
-              });
-            } else {
-              menuItem = await tx.menuItem.create({
-                data: {
-                  ...itemPayload,
-                  categoryId: category.id,
-                },
-              });
-            }
+          if (!existing) {
+            await tx.menuItem.create({ data: payload });
             itemsImported++;
+          } else {
+            await tx.menuItem.update({ where: { id: existing.id }, data: payload });
+            itemsImported++;
+          }
+        }
+      }
 
-            if (!itemData.modifierGroups || !Array.isArray(itemData.modifierGroups)) continue;
+      return category;
+    };
 
-            for (const groupData of itemData.modifierGroups) {
-              if (!groupData.name) continue;
+    await this.prisma.$transaction(async (tx) => {
+      if (clearFirst) {
+        await tx.menuItem.deleteMany({});
+        await tx.category.deleteMany({});
+      }
 
-              // 3. Find or create Modifier Group
-              let modGroup = await tx.modifierGroup.findFirst({
-                where: { name: groupData.name },
-              });
+      for (const catData of categories) {
+        if (!catData.name) continue;
+        const parent = await upsertCategory(tx, catData, null);
 
-              if (!modGroup) {
-                modGroup = await tx.modifierGroup.create({
-                  data: {
-                    name: groupData.name,
-                    nameAr: groupData.nameAr || null,
-                    minSelect: groupData.minSelect ?? 0,
-                    maxSelect: groupData.maxSelect ?? 1,
-                    isActive: groupData.isActive ?? true,
-                  },
-                });
-              }
+        // Level 2
+        if (Array.isArray(catData.subCategories)) {
+          for (const sub of catData.subCategories) {
+            if (!sub.name) continue;
+            const sub2 = await upsertCategory(tx, sub, parent.id);
 
-              // 4. Ensure linked to MenuItem
-              const link = await tx.itemModifierGroup.findUnique({
-                where: {
-                  itemId_groupId: {
-                    itemId: menuItem.id,
-                    groupId: modGroup.id,
-                  },
-                },
-              });
-
-              if (!link) {
-                await tx.itemModifierGroup.create({
-                  data: {
-                    itemId: menuItem.id,
-                    groupId: modGroup.id,
-                  },
-                });
-              }
-
-              if (!groupData.modifiers || !Array.isArray(groupData.modifiers)) continue;
-
-              for (const modData of groupData.modifiers) {
-                if (!modData.name) continue;
-
-                // 5. Find or create Modifier
-                const existingMod = await tx.modifier.findFirst({
-                  where: { name: modData.name, groupId: modGroup.id },
-                });
-
-                if (!existingMod) {
-                  await tx.modifier.create({
-                    data: {
-                      groupId: modGroup.id,
-                      name: modData.name,
-                      nameAr: modData.nameAr || null,
-                      priceDeltaCents: modData.priceDeltaCents ?? 0,
-                      isActive: modData.isActive ?? true,
-                      sortOrder: modData.sortOrder ?? 0,
-                    },
-                  });
-                } else {
-                  await tx.modifier.update({
-                    where: { id: existingMod.id },
-                    data: {
-                      nameAr: modData.nameAr || null,
-                      priceDeltaCents: modData.priceDeltaCents ?? 0,
-                      isActive: modData.isActive ?? true,
-                    },
-                  });
-                }
+            // Level 3
+            if (Array.isArray(sub.subCategories)) {
+              for (const sub3 of sub.subCategories) {
+                if (!sub3.name) continue;
+                await upsertCategory(tx, sub3, sub2.id);
               }
             }
           }
         }
-      });
+      }
+    }, { timeout: 120000 });
 
-      await this.audit.log({
-        userId: req.user.sub,
-        action: 'menu.import',
-        entity: 'MenuCatalog',
-        entityId: 'import',
-        detail: { categoriesCreated, itemsImported },
-      });
-
-      this.realtime.emitTo('pos', 'menu.changed', {});
-      return { success: true, categoriesCreated, itemsImported };
-    } catch (e) {
-      throw new BadRequestException(e instanceof Error ? e.message : 'Menu import failed.');
-    }
+    return { categoriesCreated, itemsImported };
   }
 
-  @Post('import/customers')
+    @Post('import/customers')
   @RequirePermissions('customer.manage')
   async importCustomers(@Req() req: AuthedRequest, @Body() body: ImportedCustomer[]) {
     if (!Array.isArray(body)) {
