@@ -81,7 +81,6 @@ export class ImportExportController {
       orderBy: { sortOrder: 'asc' },
     });
 
-    // Transform into clean importable structure
     return categories.map((cat) => ({
       name: cat.name,
       nameAr: cat.nameAr,
@@ -139,169 +138,139 @@ export class ImportExportController {
     }
 
     try {
-      // Find a default tax rate to assign to imported items if none specified
-      const defaultTax = await this.prisma.taxRate.findFirst({
-        where: { isDefault: true },
-      });
-
-      // Find standard stations (Kitchen / Bar) to auto-route
+      const defaultTax = await this.prisma.taxRate.findFirst({ where: { isDefault: true } });
       const stations = await this.prisma.station.findMany();
 
       let categoriesCreated = 0;
       let itemsImported = 0;
 
-      await this.prisma.$transaction(async (tx) => {
-        for (const catData of body) {
-          if (!catData.name) continue;
+      // Process each category independently (no giant transaction) to avoid timeout
+      for (const catData of body) {
+        if (!catData.name) continue;
 
-          // 1. Find or create Category
-          let category = await tx.category.findFirst({
-            where: { name: catData.name },
+        let category = await this.prisma.category.findFirst({ where: { name: catData.name } });
+        if (!category) {
+          category = await this.prisma.category.create({
+            data: {
+              name: catData.name,
+              nameAr: catData.nameAr || null,
+              sortOrder: catData.sortOrder ?? 0,
+              color: catData.color || null,
+              isActive: catData.isActive ?? true,
+            },
           });
+          categoriesCreated++;
+        }
 
-          if (!category) {
-            category = await tx.category.create({
-              data: {
-                name: catData.name,
-                nameAr: catData.nameAr || null,
-                sortOrder: catData.sortOrder ?? 0,
-                color: catData.color || null,
-                isActive: catData.isActive ?? true,
-              },
-            });
-            categoriesCreated++;
+        if (!catData.items || !Array.isArray(catData.items)) continue;
+
+        for (const itemData of catData.items) {
+          if (!itemData.name || !(itemData.priceCents >= 0)) continue;
+
+          let stationId: string | null = null;
+          if (itemData.department === 'BAR') {
+            const barStation = stations.find((s) => s.name.toLowerCase().includes('bar'));
+            if (barStation) stationId = barStation.id;
+          } else {
+            const kitchenStation = stations.find((s) => s.name.toLowerCase().includes('kitchen'));
+            if (kitchenStation) stationId = kitchenStation.id;
           }
 
-          if (!catData.items || !Array.isArray(catData.items)) continue;
+          let menuItem = await this.prisma.menuItem.findFirst({
+            where: {
+              OR: [
+                ...(itemData.sku ? [{ sku: itemData.sku }] : []),
+                { name: itemData.name, categoryId: category.id },
+              ],
+            },
+          });
 
-          for (const itemData of catData.items) {
-            if (!itemData.name || !(itemData.priceCents >= 0)) continue;
+          const itemPayload = {
+            name: itemData.name,
+            nameAr: itemData.nameAr || null,
+            description: itemData.description || null,
+            sku: itemData.sku || null,
+            priceCents: itemData.priceCents,
+            isActive: itemData.isActive ?? true,
+            isFavorite: itemData.isFavorite ?? false,
+            department: itemData.department ?? 'RESTAURANT',
+            stationId: stationId,
+            taxRateId: defaultTax?.id || null,
+          };
 
-            // Determine routing station
-            let stationId: string | null = null;
-            if (itemData.department === 'BAR') {
-              const barStation = stations.find((s) => s.name.toLowerCase().includes('bar'));
-              if (barStation) stationId = barStation.id;
-            } else {
-              const kitchenStation = stations.find((s) => s.name.toLowerCase().includes('kitchen'));
-              if (kitchenStation) stationId = kitchenStation.id;
-            }
-
-            // 2. Find or create Menu Item
-            let menuItem = await tx.menuItem.findFirst({
-              where: {
-                OR: [
-                  ...(itemData.sku ? [{ sku: itemData.sku }] : []),
-                  { name: itemData.name, categoryId: category.id },
-                ],
-              },
+          if (menuItem) {
+            menuItem = await this.prisma.menuItem.update({
+              where: { id: menuItem.id },
+              data: itemPayload,
             });
+          } else {
+            menuItem = await this.prisma.menuItem.create({
+              data: { ...itemPayload, categoryId: category.id },
+            });
+          }
+          itemsImported++;
 
-            const itemPayload = {
-              name: itemData.name,
-              nameAr: itemData.nameAr || null,
-              description: itemData.description || null,
-              sku: itemData.sku || null,
-              priceCents: itemData.priceCents,
-              isActive: itemData.isActive ?? true,
-              isFavorite: itemData.isFavorite ?? false,
-              department: itemData.department ?? 'RESTAURANT',
-              stationId: stationId,
-              taxRateId: defaultTax?.id || null,
-            };
+          if (!itemData.modifierGroups || !Array.isArray(itemData.modifierGroups)) continue;
 
-            if (menuItem) {
-              menuItem = await tx.menuItem.update({
-                where: { id: menuItem.id },
-                data: itemPayload,
-              });
-            } else {
-              menuItem = await tx.menuItem.create({
+          for (const groupData of itemData.modifierGroups) {
+            if (!groupData.name) continue;
+
+            let modGroup = await this.prisma.modifierGroup.findFirst({ where: { name: groupData.name } });
+            if (!modGroup) {
+              modGroup = await this.prisma.modifierGroup.create({
                 data: {
-                  ...itemPayload,
-                  categoryId: category.id,
+                  name: groupData.name,
+                  nameAr: groupData.nameAr || null,
+                  minSelect: groupData.minSelect ?? 0,
+                  maxSelect: groupData.maxSelect ?? 1,
+                  isActive: groupData.isActive ?? true,
                 },
               });
             }
-            itemsImported++;
 
-            if (!itemData.modifierGroups || !Array.isArray(itemData.modifierGroups)) continue;
+            const link = await this.prisma.itemModifierGroup.findUnique({
+              where: { itemId_groupId: { itemId: menuItem.id, groupId: modGroup.id } },
+            });
+            if (!link) {
+              await this.prisma.itemModifierGroup.create({
+                data: { itemId: menuItem.id, groupId: modGroup.id },
+              });
+            }
 
-            for (const groupData of itemData.modifierGroups) {
-              if (!groupData.name) continue;
+            if (!groupData.modifiers || !Array.isArray(groupData.modifiers)) continue;
 
-              // 3. Find or create Modifier Group
-              let modGroup = await tx.modifierGroup.findFirst({
-                where: { name: groupData.name },
+            for (const modData of groupData.modifiers) {
+              if (!modData.name) continue;
+
+              const existingMod = await this.prisma.modifier.findFirst({
+                where: { name: modData.name, groupId: modGroup.id },
               });
 
-              if (!modGroup) {
-                modGroup = await tx.modifierGroup.create({
+              if (!existingMod) {
+                await this.prisma.modifier.create({
                   data: {
-                    name: groupData.name,
-                    nameAr: groupData.nameAr || null,
-                    minSelect: groupData.minSelect ?? 0,
-                    maxSelect: groupData.maxSelect ?? 1,
-                    isActive: groupData.isActive ?? true,
+                    groupId: modGroup.id,
+                    name: modData.name,
+                    nameAr: modData.nameAr || null,
+                    priceDeltaCents: modData.priceDeltaCents ?? 0,
+                    isActive: modData.isActive ?? true,
+                    sortOrder: modData.sortOrder ?? 0,
                   },
                 });
-              }
-
-              // 4. Ensure linked to MenuItem
-              const link = await tx.itemModifierGroup.findUnique({
-                where: {
-                  itemId_groupId: {
-                    itemId: menuItem.id,
-                    groupId: modGroup.id,
-                  },
-                },
-              });
-
-              if (!link) {
-                await tx.itemModifierGroup.create({
+              } else {
+                await this.prisma.modifier.update({
+                  where: { id: existingMod.id },
                   data: {
-                    itemId: menuItem.id,
-                    groupId: modGroup.id,
+                    nameAr: modData.nameAr || null,
+                    priceDeltaCents: modData.priceDeltaCents ?? 0,
+                    isActive: modData.isActive ?? true,
                   },
                 });
-              }
-
-              if (!groupData.modifiers || !Array.isArray(groupData.modifiers)) continue;
-
-              for (const modData of groupData.modifiers) {
-                if (!modData.name) continue;
-
-                // 5. Find or create Modifier
-                const existingMod = await tx.modifier.findFirst({
-                  where: { name: modData.name, groupId: modGroup.id },
-                });
-
-                if (!existingMod) {
-                  await tx.modifier.create({
-                    data: {
-                      groupId: modGroup.id,
-                      name: modData.name,
-                      nameAr: modData.nameAr || null,
-                      priceDeltaCents: modData.priceDeltaCents ?? 0,
-                      isActive: modData.isActive ?? true,
-                      sortOrder: modData.sortOrder ?? 0,
-                    },
-                  });
-                } else {
-                  await tx.modifier.update({
-                    where: { id: existingMod.id },
-                    data: {
-                      nameAr: modData.nameAr || null,
-                      priceDeltaCents: modData.priceDeltaCents ?? 0,
-                      isActive: modData.isActive ?? true,
-                    },
-                  });
-                }
               }
             }
           }
         }
-      });
+      }
 
       await this.audit.log({
         userId: req.user.sub,
@@ -326,60 +295,41 @@ export class ImportExportController {
     }
 
     try {
-      let importedCount = 0;
+      let created = 0;
+      let updated = 0;
 
-      await this.prisma.$transaction(async (tx) => {
-        // Find default loyalty tier if any
-        const defaultTier = await tx.loyaltyTier.findFirst({
-          orderBy: { sortOrder: 'asc' },
-        });
+      for (const c of body) {
+        if (!c.name || !c.phone) continue;
 
-        for (const custData of body) {
-          if (!custData.name || !custData.phone) continue;
+        const existing = await this.prisma.customer.findFirst({ where: { phone: c.phone } });
 
-          // Standardize phone (remove spaces)
-          const phone = custData.phone.replace(/\s+/g, '');
+        const payload = {
+          name: c.name,
+          phone: c.phone,
+          email: c.email || null,
+          birthday: c.birthday ? new Date(c.birthday) : null,
+          tags: c.tags || [],
+          notes: c.notes || null,
+        };
 
-          // Find or create customer by phone number
-          const existing = await tx.customer.findUnique({
-            where: { phone },
-          });
-
-          const customerPayload = {
-            name: custData.name,
-            email: custData.email || null,
-            birthday: custData.birthday ? new Date(custData.birthday) : null,
-            tags: custData.tags || [],
-            notes: custData.notes || null,
-          };
-
-          if (existing) {
-            await tx.customer.update({
-              where: { id: existing.id },
-              data: customerPayload,
-            });
-          } else {
-            await tx.customer.create({
-              data: {
-                ...customerPayload,
-                phone,
-                tierId: defaultTier?.id || null,
-              },
-            });
-          }
-          importedCount++;
+        if (existing) {
+          await this.prisma.customer.update({ where: { id: existing.id }, data: payload });
+          updated++;
+        } else {
+          await this.prisma.customer.create({ data: payload });
+          created++;
         }
-      });
+      }
 
       await this.audit.log({
         userId: req.user.sub,
-        action: 'crm.import',
-        entity: 'Customers',
+        action: 'customer.import',
+        entity: 'Customer',
         entityId: 'import',
-        detail: { importedCount },
+        detail: { created, updated },
       });
 
-      return { success: true, importedCount };
+      return { success: true, created, updated };
     } catch (e) {
       throw new BadRequestException(e instanceof Error ? e.message : 'Customer import failed.');
     }
