@@ -14,7 +14,9 @@ const prisma = new PrismaClient();
 const EGP = (v: number) => Math.round(v * 100); // EGP → piasters
 
 async function main() {
-  const existing = await prisma.branch.findFirst();
+  const existingBranch = await prisma.branch.findFirst();
+  const existingPerms = await prisma.permission.findFirst();
+  const existing = existingBranch || existingPerms;
   if (existing && process.env.FORCE_RESEED !== 'true') {
     console.log('Seed skipped — data already present.');
     return;
@@ -40,7 +42,7 @@ async function main() {
     for (const id of ids) groupOf[id] = group;
   }
   for (const [id, label] of Object.entries(PERMISSIONS)) {
-    await prisma.permission.create({ data: { id, label, group: groupOf[id] ?? 'Other' } });
+    await prisma.permission.upsert({ where: { id }, update: { label, group: groupOf[id] ?? 'Other' }, create: { id, label, group: groupOf[id] ?? 'Other' } });
   }
   const allPermIds = Object.keys(PERMISSIONS);
   const roles: Record<string, string> = {};
