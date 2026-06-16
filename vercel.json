@@ -1,6 +1,6 @@
 {
   "framework": "vite",
-  "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npm run build -w packages/shared && npm run build -w apps/pos",
+  "installCommand": "npm install -g pnpm@7 && pnpm install --no-frozen-lockfile",
+  "buildCommand": "pnpm --filter @goblins/shared build && pnpm --filter @goblins/pos build",
   "outputDirectory": "apps/pos/dist"
 }
