@@ -1,12 +1,29 @@
+# Dependencies
 node_modules/
+.pnpm-store/
+
+# Build outputs
 dist/
 build/
+
+# Environment files
 .env
 .env.local
+.env.production
+
+# Logs
 *.log
-coverage/
-.turbo/
+npm-debug.log*
+
+# OS
 .DS_Store
-apps/api/prisma/*.db
-backups/*.sql.gz
-uploads/
+Thumbs.db
+
+# Prisma generated
+apps/api/src/generated/
+
+# Print previews
+print-previews/
+
+# Backups
+backups/
