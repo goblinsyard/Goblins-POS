@@ -1,6 +1,6 @@
 {
   "framework": "vite",
-  "installCommand": "npm install -g pnpm@8 && npm_config_registry=https://registry.npmjs.org/ pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm --filter @goblins/shared build && pnpm --filter @goblins/pos build",
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "npm run build --workspace=packages/shared && npm run build --workspace=apps/pos",
   "outputDirectory": "apps/pos/dist"
 }
