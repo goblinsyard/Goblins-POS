@@ -384,4 +384,97 @@ export class ImportExportController {
       throw new BadRequestException(e instanceof Error ? e.message : 'Customer import failed.');
     }
   }
+  // ─── Fix Category Hierarchy ───────────────────────────────────────────────
+  // Rebuilds parentCategoryId assignments to match Poster's tree exactly.
+  // Safe to run multiple times (idempotent).
+  @Post('fix-category-hierarchy')
+  @RequirePermissions('menu.manage')
+  async fixCategoryHierarchy() {
+    // Map of child name → parent name (from Poster export)
+    const parentMap: Record<string, string> = {
+      // Food sub-categories
+      'Soup': 'Food',
+      'Salad': 'Food',
+      'Appitizers': 'Food',
+      'Appetizers': 'Food',
+      'Sandwiches': 'Food',
+      'Pasta': 'Food',
+      'Pizza': 'Food',
+      'Main Course': 'Food',
+      'Side Items': 'Food',
+      'Food Extras': 'Food',
+      // Sandwiches sub-categories
+      'Chicken Sandwiches': 'Sandwiches',
+      'Meat Sandwiches': 'Sandwiches',
+      'Sea Food Sandwich': 'Sandwiches',
+      // Main Course sub-categories
+      'Chicken Main Course': 'Main Course',
+      'Beef Main Course': 'Main Course',
+      'Seafood Main Course': 'Main Course',
+      // Drinks sub-categories
+      'Coffee': 'Drinks',
+      'Tea & Hot Drinks': 'Drinks',
+      'Soft Drinks': 'Drinks',
+      'Fresh Juices': 'Drinks',
+      'Smoothies': 'Drinks',
+      'Cocktails': 'Drinks',
+      'Milkshakes': 'Drinks',
+      'Hot Chocolate': 'Drinks',
+      'Energy Drinks': 'Drinks',
+      'Frappe': 'Drinks',
+      'Flavor & Soda': 'Drinks',
+      'Drinks Extras': 'Drinks',
+      'Matcha': 'Drinks',
+      // Matcha sub-categories
+      'CREAMY MATCHA': 'Matcha',
+      'ICED MATCHA LATTE': 'Matcha',
+      'HOT MATCHA LATTE': 'Matcha',
+      // Desserts sub-categories
+      'Waffle': 'Desserts',
+      'Popcorn': 'Desserts',
+      'Croissants': 'Desserts',
+      // Ramadan sub-categories
+      'Meals': 'Ramadan',
+      'Ramadan Shoor': 'Ramadan',
+      'Ramadan Desserts': 'Ramadan',
+      'Ramadan Drinks': 'Ramadan',
+      'Tajen': 'Ramadan',
+      'Sides': 'Ramadan',
+      'Soups': 'Ramadan',
+      // Ramadan Shoor sub-categories
+      'Foul': 'Ramadan Shoor',
+      'Eggs': 'Ramadan Shoor',
+      'Cheese': 'Ramadan Shoor',
+      'Sohoor Sides': 'Ramadan Shoor',
+    };
+
+    const allCategories = await this.prisma.category.findMany();
+    const nameToId: Record<string, string> = {};
+    for (const c of allCategories) {
+      nameToId[c.name] = c.id;
+    }
+
+    let fixed = 0;
+    let errors: string[] = [];
+
+    for (const [childName, parentName] of Object.entries(parentMap)) {
+      const childId = nameToId[childName];
+      const parentId = nameToId[parentName];
+      if (!childId) { errors.push(\`Not found: \${childName}\`); continue; }
+      if (!parentId) { errors.push(\`Parent not found: \${parentName}\`); continue; }
+
+      const child = allCategories.find(c => c.id === childId)!;
+      if (child.parentCategoryId === parentId) continue; // already correct
+
+      await this.prisma.category.update({
+        where: { id: childId },
+        data: { parentCategoryId: parentId },
+      });
+      fixed++;
+    }
+
+    return { fixed, errors, total: Object.keys(parentMap).length };
+  }
+
+
 }
