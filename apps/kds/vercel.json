@@ -1,6 +1,6 @@
 {
-  "installCommand": "corepack enable",
-  "buildCommand": "cd ../.. && corepack prepare pnpm@9.15.9 --activate && pnpm install --frozen-lockfile=false && pnpm --filter @goblins/shared build && pnpm --filter @goblins/kds build",
+  "installCommand": "echo skip",
+  "buildCommand": "cd ../.. && corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm install --frozen-lockfile=false && pnpm --filter @goblins/shared build && pnpm --filter @goblins/kds build",
   "outputDirectory": "dist",
   "framework": "vite"
 }
