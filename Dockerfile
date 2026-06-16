@@ -1,5 +1,5 @@
 # Root-level Dockerfile for Railway monorepo build
-# cache-bust: v11 - single stage, no symlink breakage
+# cache-bust: v12 - run from repo root where pnpm hoists modules
 FROM node:20-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -21,7 +21,8 @@ COPY apps/backoffice/package.json apps/backoffice/
 COPY apps/kds/package.json apps/kds/
 COPY apps/print-service/package.json apps/print-service/
 
-RUN pnpm install
+# Install with shamefully-hoist so all modules land in /repo/node_modules
+RUN pnpm install --shamefully-hoist
 
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
@@ -33,4 +34,5 @@ RUN pnpm --filter @goblins/shared build && \
 
 ENV NODE_ENV=production
 EXPOSE 3000
-CMD sh -c "cd /repo/apps/api && npx prisma migrate deploy && echo Migrations-Done && node dist/main.js"
+# Run migrate from api dir for prisma schema, but node from repo root for module resolution
+CMD sh -c "cd /repo/apps/api && npx prisma migrate deploy && echo Migrations-Done && cd /repo && node apps/api/dist/main.js"
