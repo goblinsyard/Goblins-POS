@@ -1,6 +1,6 @@
 {
   "framework": "vite",
   "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npm run build --workspace=packages/shared && npm run build --workspace=apps/pos",
+  "buildCommand": "npm run build -w packages/shared && npm run build -w apps/pos",
   "outputDirectory": "apps/pos/dist"
 }
