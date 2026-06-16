@@ -1,0 +1,6 @@
+{
+  "framework": "vite",
+  "installCommand": "corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm install --frozen-lockfile=false",
+  "buildCommand": "pnpm --filter @goblins/shared build && pnpm --filter @goblins/pos build",
+  "outputDirectory": "apps/pos/dist"
+}
