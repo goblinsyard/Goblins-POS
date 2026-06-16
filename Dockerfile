@@ -1,3 +1,4 @@
+# Root-level Dockerfile for Railway monorepo build
 FROM node:22-slim AS build
 RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /repo
@@ -9,6 +10,7 @@ COPY apps/pos/package.json apps/pos/
 COPY apps/backoffice/package.json apps/backoffice/
 COPY apps/kds/package.json apps/kds/
 COPY apps/print-service/package.json apps/print-service/
+# Install ALL deps including devDeps (needed for tsx to run seed)
 RUN pnpm install --filter @goblins/api --filter @goblins/shared
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
@@ -26,6 +28,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 WORKDIR /repo
 RUN corepack enable && corepack prepare pnpm@latest --activate
 ENV NODE_ENV=production
+# Copy everything from build (includes node_modules with tsx for seeding)
 COPY --from=build /repo ./
 EXPOSE 3000
-CMD ["sh", "-c", "cd apps/api && npx prisma migrate deploy && ([ \"$SEED_ON_START\" = \"true\" ] && npx tsx prisma/seed.ts || true) && node dist/main.js"]
+# Run migrations, optionally seed, then start
+CMD ["sh", "-c", "cd apps/api && npx prisma migrate deploy && echo 'Migrations done' && ([ \"$SEED_ON_START\" = \"true\" ] && npx tsx prisma/seed.ts || echo 'Skipping seed') && echo 'Starting server...' && node dist/main.js"]
