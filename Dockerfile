@@ -1,15 +1,15 @@
 FROM node:22-slim AS build
 RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /repo
-RUN corepack enable
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY pnpm-workspace.yaml package.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
 COPY apps/pos/package.json apps/pos/
 COPY apps/backoffice/package.json apps/backoffice/
 COPY apps/kds/package.json apps/kds/
 COPY apps/print-service/package.json apps/print-service/
-RUN pnpm install --frozen-lockfile --filter @goblins/api --filter @goblins/shared
+RUN pnpm install --filter @goblins/api --filter @goblins/shared
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY apps/api apps/api
@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     apt-get purge -y --auto-remove ca-certificates gnupg curl && \
     rm -rf /var/lib/apt/lists/*
 WORKDIR /repo
-RUN corepack enable
+RUN corepack enable && corepack prepare pnpm@latest --activate
 ENV NODE_ENV=production
 COPY --from=build /repo ./
 EXPOSE 3000
