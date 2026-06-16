@@ -1,6 +1,6 @@
 {
   "framework": "vite",
-  "installCommand": "npm install -g yarn && yarn install --ignore-engines",
+  "installCommand": "find . -name \"package.json\" -not -path \"*/node_modules/*\" -exec sed -i \"s/\"workspace:\\*\"/\"*\"/g\" {} + && npm install -g yarn && yarn install --ignore-engines --network-timeout 300000",
   "buildCommand": "yarn workspace @goblins/shared build && yarn workspace @goblins/pos build",
   "outputDirectory": "apps/pos/dist"
 }
