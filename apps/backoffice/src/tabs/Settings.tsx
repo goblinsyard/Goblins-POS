@@ -1,6 +1,41 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { Btn, ErrorBanner, Field, Modal, Pills, Select, Spinner, Table, TextInput, useLoad } from '../lib/ui';
+import 
+
+  async function exportFloor() {
+    setBusy(true);
+    try {
+      const data = await api<any[]>('/admin/export/floor');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `floor-layout-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      setSuccess('Floor layout exported successfully.');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Export failed');
+    } finally { setBusy(false); }
+  }
+
+  async function handleImportFloor(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      if (!Array.isArray(payload)) throw new Error('File must be a JSON array of floor zones.');
+      const res = await api<any>('/admin/import/floor', { method: 'POST', body: payload });
+      setSuccess(`Floor import complete! Created ${res.zonesCreated} zones and ${res.resourcesCreated} resources.`);
+    } catch (err) {
+      setErr(err instanceof Error ? err.message : 'Floor import failed');
+    } finally {
+      setBusy(false);
+      e.target.value = '';
+    }
+  }
+
+{ Btn, ErrorBanner, Field, Modal, Pills, Select, Spinner, Table, TextInput, useLoad } from '../lib/ui';
 
 interface Printer {
   id: string; name: string; connection: 'NETWORK' | 'USB' | 'PREVIEW'; address: string;
@@ -952,6 +987,29 @@ function DatabaseManager() {
             </div>
           </div>
         </div>
+
+        {/* Floor Layout — full width row below */}
+        <div className="pt-4 border-t">
+          <div className="space-y-3">
+            <h4 className="font-medium text-slate-700 text-sm">Floor Layout & Tables</h4>
+            <div className="flex flex-wrap gap-3 items-start">
+              <div className="flex flex-col gap-2 min-w-[180px]">
+                <Btn onClick={exportFloor} disabled={busy}>Export Floor Layout (JSON)</Btn>
+              </div>
+              <div className="flex-1 min-w-[260px]">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Import Floor Layout</label>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={(e) => void handleImportFloor(e)}
+                  disabled={busy}
+                  className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">Accepts JSON array of zones with resources (name, type, posX, posY, width, height, ratePlanName)</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1124,3 +1182,4 @@ function flattenAccounts(nodes: any[], prefix = ''): { value: string; label: str
   }
   return list;
 }
+
