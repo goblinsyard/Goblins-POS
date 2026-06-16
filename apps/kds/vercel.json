@@ -1,8 +1,8 @@
 {
   "framework": "vite",
-  "installCommand": "cd apps/kds && npm install --legacy-peer-deps",
-  "buildCommand": "cd apps/kds && ./node_modules/.bin/vite build",
-  "outputDirectory": "apps/kds/dist",
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "./node_modules/.bin/vite build",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/api/:path*",
