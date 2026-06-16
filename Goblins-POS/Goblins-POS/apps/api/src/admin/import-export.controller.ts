@@ -460,8 +460,8 @@ export class ImportExportController {
     for (const [childName, parentName] of Object.entries(parentMap)) {
       const childId = nameToId[childName];
       const parentId = nameToId[parentName];
-      if (!childId) { errors.push(\`Not found: \${childName}\`); continue; }
-      if (!parentId) { errors.push(\`Parent not found: \${parentName}\`); continue; }
+      if (!childId) { errors.push(`Not found: ${childName}`); continue; }
+      if (!parentId) { errors.push(`Parent not found: ${parentName}`); continue; }
 
       const child = allCategories.find(c => c.id === childId)!;
       if (child.parentCategoryId === parentId) continue; // already correct
