@@ -49,6 +49,8 @@ interface ImportedCustomer {
   birthday?: string;
   tags?: string[];
   notes?: string;
+  pointsBalance?: number;
+  lifetimeCents?: number;
 }
 
 @Controller('admin')
@@ -280,6 +282,8 @@ export class ImportExportController {
             birthday: custData.birthday ? new Date(custData.birthday) : null,
             tags: custData.tags || [],
             notes: custData.notes || null,
+            ...(custData.pointsBalance != null ? { pointsBalance: custData.pointsBalance } : {}),
+            ...(custData.lifetimeCents != null ? { lifetimeCents: custData.lifetimeCents } : {}),
           };
 
           if (existing) {
