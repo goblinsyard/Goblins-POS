@@ -1,6 +1,16 @@
 {
-  "installCommand": "echo skip",
-  "buildCommand": "cd ../.. && corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm install --frozen-lockfile=false && pnpm --filter @goblins/shared build && pnpm --filter @goblins/backoffice build",
-  "outputDirectory": "dist",
-  "framework": "vite"
+  "framework": "vite",
+  "installCommand": "cd apps/backoffice && npm install --legacy-peer-deps",
+  "buildCommand": "cd apps/backoffice && ./node_modules/.bin/vite build",
+  "outputDirectory": "apps/backoffice/dist",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://api-production-af82.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/ws/:path*",
+      "destination": "https://api-production-af82.up.railway.app/ws/:path*"
+    }
+  ]
 }
