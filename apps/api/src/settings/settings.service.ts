@@ -4,12 +4,13 @@ import { PrismaService } from '../prisma/prisma.service';
 
 /** Well-known setting keys with defaults. */
 export const SETTING_DEFAULTS = {
-  'tax.vatBps': 1400, // 14% Egyptian VAT
-  'tax.serviceChargeBps': 1200, // 12% service charge
+  'tax.vatBps': 1400,
+  'tax.serviceChargeBps': 1200,
   'tax.inclusive': false,
-  'loyalty.earnPointsPer100Egp': 1, // 1 point per 100 EGP
-  'loyalty.redeemCentsPerPoint': 100, // 1 point = 1 EGP
+  'loyalty.earnPointsPer100Egp': 1,
+  'loyalty.redeemCentsPerPoint': 100,
   'reservation.noShowGraceMinutes': 15,
+  'receipt.logo': '',
   'receipt.header': 'Goblins Yard',
   'receipt.headerAr': 'جوبلنز يارد',
   'receipt.footer': 'Thank you! See you soon — goblinsyard.com',
@@ -27,8 +28,8 @@ export const SETTING_DEFAULTS = {
   'expense.allocationManual.BAR': 2000,
   'expense.allocationManual.BILLIARDS': 2000,
   'expense.allocationManual.PLAYSTATION': 2000,
-  'session.prepaidAlertMinutes': 10, // alert when 10 min left on prepaid block
-  'session.prepaidSmsAlertMinutes': 5, // SMS/WhatsApp alert minutes before expiry
+  'session.prepaidAlertMinutes': 10,
+  'session.prepaidSmsAlertMinutes': 5,
   'business.currency': 'EGP',
   'business.timezone': 'Africa/Cairo',
   'business.name': 'Goblins Yard',
