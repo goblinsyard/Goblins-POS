@@ -1,5 +1,5 @@
 # Root-level Dockerfile for Railway monorepo build
-# cache-bust: v9
+# cache-bust: v10
 FROM node:20-slim AS build
 RUN apt-get update && apt-get install -y --no-install-recommends openssl python3 make g++
 WORKDIR /repo
@@ -11,8 +11,8 @@ COPY apps/pos/package.json apps/pos/
 COPY apps/backoffice/package.json apps/backoffice/
 COPY apps/kds/package.json apps/kds/
 COPY apps/print-service/package.json apps/print-service/
-# Install ALL deps (including prod runtime deps like express, reflect-metadata etc)
-RUN pnpm install --filter @goblins/api --filter @goblins/shared
+# Full install so all workspace deps are hoisted correctly
+RUN pnpm install
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY apps/api apps/api
@@ -29,7 +29,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     apt-get purge -y --auto-remove ca-certificates gnupg curl
 WORKDIR /repo
 RUN npm install -g pnpm@8
-# Copy everything including node_modules from build stage
 COPY --from=build /repo ./
 ENV NODE_ENV=production
 EXPOSE 3000
