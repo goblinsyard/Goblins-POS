@@ -2,15 +2,15 @@
   "name": "goblins-pos",
   "version": "0.1.0",
   "private": true,
-  "description": "Goblins Yard \u2014 POS + CRM for restaurant, billiards lounge, and PlayStation rooms",
+  "description": "Goblins Yard POS monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "lint": "eslint .",
-    "typecheck": "pnpm -r typecheck",
-    "db:migrate": "pnpm --filter @goblins/api db:migrate",
-    "db:seed": "pnpm --filter @goblins/api db:seed"
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
