@@ -2,5 +2,15 @@
   "framework": "vite",
   "installCommand": "cd apps/pos && npm install --legacy-peer-deps",
   "buildCommand": "cd apps/pos && ./node_modules/.bin/vite build",
-  "outputDirectory": "apps/pos/dist"
+  "outputDirectory": "apps/pos/dist",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://api-production-af82.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/ws/:path*",
+      "destination": "https://api-production-af82.up.railway.app/ws/:path*"
+    }
+  ]
 }
