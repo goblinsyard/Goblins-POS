@@ -370,4 +370,48 @@ export class ImportExportController {
       throw new BadRequestException(e instanceof Error ? e.message : 'Floor import failed.');
     }
   }
+
+  // ─── SEED BASELINE (stations + printers) ─────────────────────────────────────
+  @Post('seed/baseline')
+  @RequirePermissions('settings.manage')
+  async seedBaseline(@Req() req: AuthedRequest) {
+    try {
+      // Create printers if none exist
+      let kitchenPrinter = await this.prisma.printer.findFirst({ where: { name: 'Kitchen printer' } });
+      if (!kitchenPrinter) {
+        kitchenPrinter = await this.prisma.printer.create({
+          data: { name: 'Kitchen printer', connection: 'PREVIEW', address: 'preview' },
+        });
+      }
+      let barPrinter = await this.prisma.printer.findFirst({ where: { name: 'Bar printer' } });
+      if (!barPrinter) {
+        barPrinter = await this.prisma.printer.create({
+          data: { name: 'Bar printer', connection: 'PREVIEW', address: 'preview' },
+        });
+      }
+
+      // Create stations if none exist
+      let kitchenStation = await this.prisma.station.findFirst({ where: { name: 'Kitchen' } });
+      if (!kitchenStation) {
+        kitchenStation = await this.prisma.station.create({
+          data: { name: 'Kitchen', nameAr: 'المطبخ', printerId: kitchenPrinter.id, sortOrder: 1 },
+        });
+      }
+      let barStation = await this.prisma.station.findFirst({ where: { name: 'Bar' } });
+      if (!barStation) {
+        barStation = await this.prisma.station.create({
+          data: { name: 'Bar', nameAr: 'البار', printerId: barPrinter.id, sortOrder: 2 },
+        });
+      }
+      const expoExists = await this.prisma.station.findFirst({ where: { name: 'Expo' } });
+      if (!expoExists) {
+        await this.prisma.station.create({ data: { name: 'Expo', sortOrder: 3 } });
+      }
+
+      await this.audit.log({ userId: req.user.sub, action: 'admin.seed', entity: 'Station', entityId: 'baseline', detail: {} });
+      return { success: true, stations: ['Kitchen', 'Bar', 'Expo'], printers: ['Kitchen printer', 'Bar printer'] };
+    } catch (e) {
+      throw new BadRequestException(e instanceof Error ? e.message : 'Seed failed.');
+    }
+  }
 }
