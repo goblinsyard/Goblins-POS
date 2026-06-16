@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "dist",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "strictPropertyInitialization": false,
+    "types": ["node"],
+    "paths": {
+      "@goblins/shared": ["../../packages/shared/src"],
+      "@goblins/shared/*": ["../../packages/shared/src/*"]
+    }
+  },
+  "include": ["src", "prisma"]
+}

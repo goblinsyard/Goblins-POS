@@ -1,0 +1,1350 @@
+// ============================================================
+// GOBLINS YARD — Full POS + CRM Schema
+// Money: ALL monetary values are integer piasters (EGP * 100).
+// Time: ALL timestamps are stored UTC; display in Africa/Cairo.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// SETTINGS / INFRASTRUCTURE
+// ============================================================
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  nameAr    String?
+  address   String?
+  phone     String?
+  taxId     String? // tax registration number printed on receipts
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  users          User[]
+  resources      Resource[]
+  orders         Order[]
+  shifts         Shift[]
+  storeLocations StoreLocation[]
+  terminals      Terminal[]
+  expenses       Expense[]
+  reservations   Reservation[]
+}
+
+// Generic key-value settings (VAT rate, service charge, loyalty earn rate,
+// rounding rules, receipt header/footer, no-show grace minutes, ...)
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model TaxRate {
+  id        String  @id @default(cuid())
+  name      String // "VAT 14%"
+  rateBps   Int // basis points: 1400 = 14%
+  isDefault Boolean @default(false)
+  isActive  Boolean @default(true)
+
+  menuItems MenuItem[]
+}
+
+model Terminal {
+  id        String   @id @default(cuid())
+  branchId  String
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  name      String // "POS-1", "Bar terminal"
+  deviceKey String   @unique // pairing key
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  shifts    Shift[]
+  auditLogs AuditLog[]
+}
+
+model Printer {
+  id           String      @id @default(cuid())
+  name         String // "Kitchen printer"
+  connection   PrinterConn
+  address      String // "192.168.1.50:9100" or USB path or "preview"
+  paperWidth   Int         @default(80) // mm: 58 or 80
+  isActive     Boolean     @default(true)
+  charsPerLine Int         @default(48)
+
+  stations Station[]
+}
+
+enum PrinterConn {
+  NETWORK
+  USB
+  PREVIEW // no hardware — renders ticket for on-screen preview
+}
+
+// A prep station: kitchen, bar, shisha, expo... Items route to stations.
+model Station {
+  id          String      @id @default(cuid())
+  name        String // "Kitchen", "Bar"
+  nameAr      String?
+  kind        StationKind @default(PREP)
+  printerId   String?
+  printer     Printer?    @relation(fields: [printerId], references: [id])
+  useKds      Boolean     @default(true)
+  usePrinter  Boolean     @default(false)
+  sortOrder   Int         @default(0)
+  isActive    Boolean     @default(true)
+
+  menuItems MenuItem[]
+  tickets   Ticket[]
+}
+
+enum StationKind {
+  PREP // kitchen, bar
+  EXPO // pass-through display
+}
+
+// ============================================================
+// AUTH / STAFF / AUDIT
+// ============================================================
+
+model User {
+  id           String    @id @default(cuid())
+  branchId     String
+  branch       Branch    @relation(fields: [branchId], references: [id])
+  name         String
+  email        String?   @unique
+  phone        String?
+  passwordHash String? // back-office login
+  pinHash      String? // fast POS login (4-6 digits, hashed)
+  roleId       String
+  role         Role      @relation(fields: [roleId], references: [id])
+  isActive     Boolean   @default(true)
+  language     String    @default("en") // "en" | "ar"
+  salaryType   String    @default("MONTHLY") // "MONTHLY" | "HOURLY"
+  baseSalaryCents Int    @default(0)
+  hourlyRateCents Int    @default(0)
+  tipsPoints      Int      @default(0)
+  deservesBonus   Boolean  @default(false)
+  createdAt    DateTime  @default(now())
+
+  refreshTokens   RefreshToken[]
+  shifts          Shift[]
+  orders          Order[]
+  auditLogs       AuditLog[]
+  timeClocks      TimeClockEntry[]
+  approvedAudits  AuditLog[]       @relation("approver")
+  expenses        Expense[]
+  stockCounts     StockCount[]
+  productionOrders ProductionOrder[]
+  reservations    Reservation[]
+  cashMovements   CashMovement[]
+  hrTransactions  HrTransaction[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Role {
+  id       String  @id @default(cuid())
+  name     String  @unique // Owner, Manager, Cashier, Waiter, Kitchen, Bar, Steward
+  isSystem Boolean @default(false) // system roles can't be deleted
+
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id    String @id // stable code e.g. "order.void", "discount.apply", "drawer.open_no_sale"
+  group String // "POS", "Inventory", "Reports", ...
+  label String
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model TimeClockEntry {
+  id       String    @id @default(cuid())
+  userId   String
+  user     User      @relation(fields: [userId], references: [id])
+  clockIn  DateTime
+  clockOut DateTime?
+  note     String?
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  approverId String? // manager who PIN-approved a gated action
+  approver   User?    @relation("approver", fields: [approverId], references: [id])
+  terminalId String?
+  terminal   Terminal? @relation(fields: [terminalId], references: [id])
+  action     String // "order.void", "discount.apply", "stock.adjust", ...
+  entity     String? // "Order", "OrderItem", ...
+  entityId   String?
+  detail     Json? // before/after, reason code, amounts
+  createdAt  DateTime @default(now())
+
+  @@index([action, createdAt])
+  @@index([entity, entityId])
+}
+
+// ============================================================
+// MENU
+// ============================================================
+
+model Category {
+  id               String     @id @default(cuid())
+  name             String
+  nameAr           String?
+  sortOrder        Int        @default(0)
+  color            String? // tile color on POS
+  isActive         Boolean    @default(true) // e.g. shisha category can be toggled off
+  parentCategoryId String?
+  parentCategory   Category?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id], onDelete: SetNull)
+  subCategories    Category[] @relation("CategoryHierarchy")
+
+  items MenuItem[]
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  name        String
+  nameAr      String?
+  description String?
+  sku         String?  @unique
+  priceCents  Int // piasters
+  taxRateId   String?
+  taxRate     TaxRate? @relation(fields: [taxRateId], references: [id])
+  stationId   String? // routing: kitchen / bar / both handled via RoutingMode
+  station     Station? @relation(fields: [stationId], references: [id])
+  imageUrl    String?
+  is86ed      Boolean  @default(false) // temporarily unavailable — pushed live via WS
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  isFavorite  Boolean  @default(false)
+  // department for revenue split reporting
+  department  Department @default(RESTAURANT)
+  createdAt   DateTime @default(now())
+
+  modifierGroups ItemModifierGroup[]
+  recipe         Recipe?
+  orderItems     OrderItem[]
+  priceSchedules PriceSchedule[]
+  comboLines     ComboLine[]
+  costSnapshots  ItemCostSnapshot[]
+}
+
+enum Department {
+  RESTAURANT
+  BAR
+  BILLIARDS
+  PLAYSTATION
+}
+
+model ModifierGroup {
+  id        String  @id @default(cuid())
+  name      String // "Size", "Extras", "Ice"
+  nameAr    String?
+  minSelect Int     @default(0)
+  maxSelect Int     @default(1)
+  isActive  Boolean @default(true)
+
+  modifiers Modifier[]
+  items     ItemModifierGroup[]
+}
+
+model Modifier {
+  id              String        @id @default(cuid())
+  groupId         String
+  group           ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name            String // "Large", "Extra cheese", "No ice"
+  nameAr          String?
+  priceDeltaCents Int           @default(0)
+  sortOrder       Int           @default(0)
+  isActive        Boolean       @default(true)
+
+  orderItemModifiers OrderItemModifier[]
+}
+
+model ItemModifierGroup {
+  itemId  String
+  groupId String
+  item    MenuItem      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  group   ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, groupId])
+}
+
+// Combos / meals: a parent "virtual" item made of component lines
+model Combo {
+  id         String  @id @default(cuid())
+  name       String
+  nameAr     String?
+  priceCents Int
+  isActive   Boolean @default(true)
+
+  lines ComboLine[]
+}
+
+model ComboLine {
+  id       String   @id @default(cuid())
+  comboId  String
+  combo    Combo    @relation(fields: [comboId], references: [id], onDelete: Cascade)
+  itemId   String
+  item     MenuItem @relation(fields: [itemId], references: [id])
+  quantity Int      @default(1)
+}
+
+// Happy-hour / scheduled pricing for menu items
+model PriceSchedule {
+  id         String   @id @default(cuid())
+  itemId     String
+  item       MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  name       String // "Happy hour"
+  priceCents Int
+  daysOfWeek Int[] // 0=Sun ... 6=Sat
+  startTime  String // "16:00" local Cairo time
+  endTime    String // "19:00"
+  isActive   Boolean  @default(true)
+}
+
+// ============================================================
+// FLOOR / RESOURCES (restaurant tables, billiards, PS rooms)
+// ============================================================
+
+model FloorZone {
+  id        String  @id @default(cuid())
+  name      String // "Main hall", "Billiards lounge", "PS corridor"
+  nameAr    String?
+  sortOrder Int     @default(0)
+
+  resources Resource[]
+}
+
+model Resource {
+  id         String       @id @default(cuid())
+  branchId   String
+  branch     Branch       @relation(fields: [branchId], references: [id])
+  zoneId     String?
+  zone       FloorZone?   @relation(fields: [zoneId], references: [id])
+  type       ResourceType
+  name       String // "T1", "Billiards 2", "PS Room A"
+  nameAr     String?
+  capacity   Int          @default(4)
+  status     ResourceStatus @default(FREE)
+  // floor-plan geometry
+  posX       Float        @default(0)
+  posY       Float        @default(0)
+  width      Float        @default(80)
+  height     Float        @default(80)
+  shape      String       @default("rect") // rect | circle
+  rotation   Float        @default(0)
+  // time-billing config (billiards / PS only)
+  ratePlanId String?
+  ratePlan   RatePlan?    @relation(fields: [ratePlanId], references: [id])
+  isActive   Boolean      @default(true)
+
+  orders       Order[]
+  sessions     Session[]
+  reservations Reservation[]
+}
+
+enum ResourceType {
+  RESTAURANT_TABLE
+  BILLIARDS_TABLE
+  PS_ROOM
+}
+
+enum ResourceStatus {
+  FREE
+  OCCUPIED
+  RESERVED
+  NEEDS_CLEANING
+}
+
+// ============================================================
+// TIME-BASED BILLING (billiards + PS) — core differentiator
+// ============================================================
+
+model RatePlan {
+  id              String  @id @default(cuid())
+  name            String // "Billiards standard", "PS5 Room"
+  // base rates in piasters per hour
+  hourlyCents     Int
+  hourlyMultiCents Int? // PS multiplayer rate; null = N/A
+  minimumCents    Int     @default(0) // minimum charge per session
+  // proration & rounding
+  roundToMinutes  Int     @default(1) // bill rounded to nearest N minutes
+  roundingMode    String  @default("nearest") // nearest | up | down
+  graceMinutes    Int     @default(0) // free minutes at session start
+  isActive        Boolean @default(true)
+
+  rules     RateRule[]
+  resources Resource[]
+  sessions  Session[]
+}
+
+// Time-of-day / day-of-week overrides (happy hour). Highest priority wins.
+model RateRule {
+  id               String   @id @default(cuid())
+  ratePlanId       String
+  ratePlan         RatePlan @relation(fields: [ratePlanId], references: [id], onDelete: Cascade)
+  name             String // "Happy hour"
+  daysOfWeek       Int[] // 0=Sun..6=Sat (Cairo local)
+  startTime        String // "14:00" Cairo local
+  endTime          String // "17:00" — may wrap past midnight ("22:00"→"02:00")
+  hourlyCents      Int
+  hourlyMultiCents Int?
+  priority         Int      @default(0)
+  isActive         Boolean  @default(true)
+}
+
+model Session {
+  id           String        @id @default(cuid())
+  resourceId   String
+  resource     Resource      @relation(fields: [resourceId], references: [id])
+  ratePlanId   String
+  ratePlan     RatePlan      @relation(fields: [ratePlanId], references: [id])
+  orderId      String?       @unique // the combined bill this session charges into
+  order        Order?        @relation(fields: [orderId], references: [id])
+  status       SessionStatus @default(RUNNING)
+  isMultiplayer Boolean      @default(false) // PS single vs multi
+  startedAt    DateTime      @default(now())
+  endedAt      DateTime?
+  // computed at stop-time, frozen onto the order as an OrderItem
+  billedCents  Int?
+  billedMinutes Int?
+  notes        String?
+
+  segments      SessionSegment[]
+  prepaidBlocks PrepaidBlock[]
+
+  @@index([resourceId, status])
+}
+
+enum SessionStatus {
+  RUNNING
+  PAUSED
+  STOPPED
+  CANCELLED
+}
+
+// Each contiguous run of clock-time. Pause = close segment; resume = new one.
+// Transfer to another resource = close segment, new segment records new resource.
+model SessionSegment {
+  id            String    @id @default(cuid())
+  sessionId     String
+  session       Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  resourceId    String // resource during THIS segment (handles transfers)
+  isMultiplayer Boolean   @default(false) // can toggle mid-session
+  startedAt     DateTime
+  endedAt       DateTime?
+
+  @@index([sessionId])
+}
+
+model PrepaidBlock {
+  id         String  @id @default(cuid())
+  sessionId  String
+  session    Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  minutes    Int // purchased minutes
+  paidCents  Int
+  alertFired Boolean @default(false) // near-expiry alert sent
+  createdAt  DateTime @default(now())
+}
+
+// ============================================================
+// ORDERS / PAYMENTS
+// ============================================================
+
+model Order {
+  id            String      @id @default(cuid())
+  branchId      String
+  branch        Branch      @relation(fields: [branchId], references: [id])
+  number        Int // human-friendly sequential per-branch
+  type          OrderType
+  status        OrderStatus @default(OPEN)
+  resourceId    String?
+  resource      Resource?   @relation(fields: [resourceId], references: [id])
+  customerId    String?
+  customer      Customer?   @relation(fields: [customerId], references: [id])
+  openedById    String
+  openedBy      User        @relation(fields: [openedById], references: [id])
+  shiftId       String?
+  shift         Shift?      @relation(fields: [shiftId], references: [id])
+  guestCount    Int         @default(1)
+  // money snapshot (piasters) — recomputed server-side on every mutation
+  subtotalCents      Int @default(0)
+  discountCents      Int @default(0)
+  serviceChargeCents Int @default(0)
+  taxCents           Int @default(0)
+  totalCents         Int @default(0)
+  paidCents          Int @default(0)
+  tipCents           Int @default(0)
+  notes         String?
+  noService     Boolean     @default(false)
+  noVat         Boolean     @default(false)
+  openedAt      DateTime    @default(now())
+  closedAt      DateTime?
+  // split-bill lineage
+  parentOrderId String?
+  parentOrder   Order?      @relation("split", fields: [parentOrderId], references: [id])
+  splitChildren Order[]     @relation("split")
+
+  items     OrderItem[]
+  payments  Payment[]
+  discounts OrderDiscount[]
+  session   Session?
+  tickets   Ticket[]
+  feedback  Feedback?
+  pointsTransactions PointsTransaction[]
+  seatCustomers OrderSeatCustomer[]
+
+  @@unique([branchId, number])
+  @@index([status, openedAt])
+}
+
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+  BILLIARDS
+  PS_ROOM
+  DELIVERY // phase-2 ready
+}
+
+enum OrderStatus {
+  OPEN
+  ON_HOLD
+  PAID
+  VOIDED
+  MERGED // merged into another order
+}
+
+model OrderItem {
+  id          String        @id @default(cuid())
+  orderId     String
+  order       Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemId      String? // null for session-time lines & open-price lines
+  item        MenuItem?     @relation(fields: [itemId], references: [id])
+  description String // frozen name at time of sale (incl. "Billiards time 1h 25m")
+  quantity    Decimal       @db.Decimal(8, 3) // supports 0.5 qty
+  unitCents   Int // frozen unit price incl. schedule pricing
+  modifiersCents Int        @default(0) // sum of modifier deltas per unit
+  lineCents   Int // qty * (unit + modifiers) − line discounts, rounded
+  discountCents Int         @default(0)
+  taxBps      Int           @default(0) // frozen tax rate
+  course      Int           @default(1) // course number for firing
+  seat        Int? // seat number for split-by-seat
+  status      OrderItemStatus @default(PENDING)
+  kdsStatus   KdsStatus     @default(NEW)
+  voidedAt    DateTime?
+  voidReason  String?
+  notes       String? // "no onions"
+  isTimeCharge Boolean      @default(false) // line created from a session
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+
+  modifiers   OrderItemModifier[]
+  ticketItems TicketItem[]
+  stockMovements StockMovement[]
+}
+
+enum OrderItemStatus {
+  PENDING // not yet sent to kitchen
+  SENT
+  VOIDED
+}
+
+enum KdsStatus {
+  NEW
+  IN_PROGRESS
+  READY
+  SERVED
+}
+
+model OrderItemModifier {
+  id          String    @id @default(cuid())
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  modifierId  String
+  modifier    Modifier  @relation(fields: [modifierId], references: [id])
+  name        String // frozen
+  priceCents  Int // frozen delta
+}
+
+model OrderDiscount {
+  id          String       @id @default(cuid())
+  orderId     String
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItemId String? // null = bill-level
+  kind        DiscountKind
+  value       Int // percent (bps, 1000=10%) or fixed piasters depending on kind
+  amountCents Int // resolved amount actually taken off
+  reasonCode  String // mandatory
+  approvedById String?
+  createdAt   DateTime     @default(now())
+}
+
+enum DiscountKind {
+  PERCENT
+  FIXED
+}
+
+model PaymentMethod {
+  id        String  @id @default(cuid())
+  name      String // Cash, Card, Mobile Wallet
+  nameAr    String?
+  kind      PayKind
+  opensDrawer Boolean @default(false)
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  payments Payment[]
+}
+
+enum PayKind {
+  CASH
+  CARD
+  WALLET
+  LOYALTY_POINTS
+  OTHER
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  orderId     String
+  order       Order         @relation(fields: [orderId], references: [id])
+  methodId    String
+  method      PaymentMethod @relation(fields: [methodId], references: [id])
+  amountCents Int
+  tenderedCents Int? // cash given (for change calc)
+  changeCents Int           @default(0)
+  tipCents    Int           @default(0)
+  reference   String? // card auth code etc.
+  shiftId     String?
+  shift       Shift?        @relation(fields: [shiftId], references: [id])
+  refundOfId  String? // points to original payment when refunding
+  createdAt   DateTime      @default(now())
+}
+
+// ============================================================
+// SHIFTS / CASH
+// ============================================================
+
+model Shift {
+  id          String    @id @default(cuid())
+  branchId    String
+  branch      Branch    @relation(fields: [branchId], references: [id])
+  terminalId  String?
+  terminal    Terminal? @relation(fields: [terminalId], references: [id])
+  openedById  String
+  openedBy    User      @relation(fields: [openedById], references: [id])
+  openedAt    DateTime  @default(now())
+  closedAt    DateTime?
+  floatCents  Int       @default(0) // opening float
+  // blind count at close
+  countedCents   Int?
+  expectedCents  Int?
+  varianceCents  Int?
+  zReport     Json? // frozen Z-report snapshot
+  status      ShiftStatus @default(OPEN)
+
+  orders        Order[]
+  payments      Payment[]
+  cashMovements CashMovement[]
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+// Paid-in / paid-out / petty cash / drawer opens
+model CashMovement {
+  id        String       @id @default(cuid())
+  shiftId   String
+  shift     Shift        @relation(fields: [shiftId], references: [id])
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  kind      CashMoveKind
+  amountCents Int // positive in, negative out
+  reason    String
+  createdAt DateTime     @default(now())
+}
+
+enum CashMoveKind {
+  PAID_IN
+  PAID_OUT
+  PETTY_CASH
+  DRAWER_OPEN // no-sale open, amount 0
+  CASH_TRANSFER
+}
+
+
+// ============================================================
+// KDS / TICKETS
+// ============================================================
+
+model Ticket {
+  id        String       @id @default(cuid())
+  orderId   String
+  order     Order        @relation(fields: [orderId], references: [id])
+  stationId String
+  station   Station      @relation(fields: [stationId], references: [id])
+  course    Int          @default(1)
+  status    TicketStatus @default(NEW)
+  firedAt   DateTime     @default(now()) // when course was fired
+  startedAt DateTime?
+  readyAt   DateTime?
+  servedAt  DateTime?
+  recalled  Boolean      @default(false)
+  printedAt DateTime?
+
+  items TicketItem[]
+
+  @@index([stationId, status])
+}
+
+enum TicketStatus {
+  HELD // course not fired yet
+  NEW
+  IN_PROGRESS
+  READY
+  SERVED
+}
+
+model TicketItem {
+  id          String    @id @default(cuid())
+  ticketId    String
+  ticket      Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+  quantity    Decimal   @db.Decimal(8, 3)
+}
+
+// ============================================================
+// INVENTORY
+// ============================================================
+
+model StoreLocation {
+  id       String  @id @default(cuid())
+  branchId String
+  branch   Branch  @relation(fields: [branchId], references: [id])
+  name     String // Main store, Kitchen, Bar
+  nameAr   String?
+  isActive Boolean @default(true)
+
+  stockLevels  StockLevel[]
+  movementsIn  StockMovement[] @relation("toLocation")
+  movementsOut StockMovement[] @relation("fromLocation")
+  stockCounts  StockCount[]
+}
+
+model Uom {
+  id        String @id // "kg", "g", "L", "ml", "pc", "bottle", "case"
+  label     String
+  // conversion to the base unit of its dimension (g for mass, ml for volume, pc for count)
+  baseUnit  String // "g" | "ml" | "pc"
+  factor    Decimal @db.Decimal(14, 6) // 1 kg = 1000 g → factor 1000
+
+  ingredients Ingredient[]
+}
+
+model Ingredient {
+  id          String  @id @default(cuid())
+  name        String
+  nameAr      String?
+  sku         String? @unique
+  uomId       String // stock-keeping unit
+  uom         Uom     @relation(fields: [uomId], references: [id])
+  // costing: moving-average cost in piasters per stock UoM
+  avgCostCents Decimal @db.Decimal(14, 4) @default(0)
+  lastCostCents Decimal @db.Decimal(14, 4) @default(0)
+  reorderPoint Decimal @db.Decimal(12, 3) @default(0)
+  reorderQty   Decimal @db.Decimal(12, 3) @default(0)
+  isPerishable Boolean @default(false)
+  // true when produced by a production order (sub-recipe output)
+  isIntermediate Boolean @default(false)
+  isActive    Boolean @default(true)
+
+  stockLevels   StockLevel[]
+  movements     StockMovement[]
+  recipeLines   RecipeLine[]    @relation("lineIngredient")
+  producedBy    ManufacturingProcess[] @relation("processOutput")
+  processLines  ManufacturingProcessLine[] @relation("processLineIngredient")
+  poLines       PurchaseOrderLine[]
+  supplierPrices SupplierPriceHistory[]
+  batches       Batch[]
+  countLines    StockCountLine[]
+  wasteLogs     WasteLog[]
+}
+
+model StockLevel {
+  ingredientId String
+  locationId   String
+  ingredient   Ingredient    @relation(fields: [ingredientId], references: [id])
+  location     StoreLocation @relation(fields: [locationId], references: [id])
+  quantity     Decimal       @db.Decimal(14, 3) @default(0)
+  updatedAt    DateTime      @updatedAt
+
+  @@id([ingredientId, locationId])
+}
+
+// SINGLE LEDGER: every stock change is one row here. Stock levels are a cache.
+model StockMovement {
+  id             String        @id @default(cuid())
+  ingredientId   String
+  ingredient     Ingredient    @relation(fields: [ingredientId], references: [id])
+  kind           StockMoveKind
+  quantity       Decimal       @db.Decimal(14, 3) // positive number; direction from locations
+  fromLocationId String?
+  fromLocation   StoreLocation? @relation("fromLocation", fields: [fromLocationId], references: [id])
+  toLocationId   String?
+  toLocation     StoreLocation? @relation("toLocation", fields: [toLocationId], references: [id])
+  unitCostCents  Decimal       @db.Decimal(14, 4) @default(0)
+  // provenance
+  orderItemId    String?
+  orderItem      OrderItem?    @relation(fields: [orderItemId], references: [id])
+  goodsReceiptId String?
+  goodsReceipt   GoodsReceipt? @relation(fields: [goodsReceiptId], references: [id])
+  productionOrderId String?
+  productionOrder ProductionOrder? @relation(fields: [productionOrderId], references: [id])
+  wasteLogId     String?       @unique
+  wasteLog       WasteLog?     @relation(fields: [wasteLogId], references: [id])
+  stockCountId   String?
+  stockCount     StockCount?   @relation(fields: [stockCountId], references: [id])
+  batchId        String?
+  batch          Batch?        @relation(fields: [batchId], references: [id])
+  note           String?
+  createdAt      DateTime      @default(now())
+
+  @@index([ingredientId, createdAt])
+  @@index([kind, createdAt])
+}
+
+enum StockMoveKind {
+  RECEIPT // goods received from supplier
+  SALE_DEDUCTION // recipe-driven deduction on sale
+  PRODUCTION_IN // intermediate produced
+  PRODUCTION_OUT // raw consumed by production
+  TRANSFER
+  WASTE
+  COUNT_ADJUSTMENT
+  SUPPLIER_RETURN
+}
+
+model Supplier {
+  id        String  @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  taxId     String?
+  notes     String?
+  isActive  Boolean @default(true)
+
+  purchaseOrders PurchaseOrder[]
+  priceHistory   SupplierPriceHistory[]
+  invoices       SupplierInvoice[]
+}
+
+model PurchaseOrder {
+  id         String   @id @default(cuid())
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  number     Int      @unique @default(autoincrement())
+  status     PoStatus @default(DRAFT)
+  expectedAt DateTime?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  lines    PurchaseOrderLine[]
+  receipts GoodsReceipt[]
+}
+
+enum PoStatus {
+  DRAFT
+  SENT
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrderLine {
+  id            String        @id @default(cuid())
+  poId          String
+  po            PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  ingredientId  String
+  ingredient    Ingredient    @relation(fields: [ingredientId], references: [id])
+  quantity      Decimal       @db.Decimal(14, 3)
+  unitCostCents Decimal       @db.Decimal(14, 4)
+  receivedQty   Decimal       @db.Decimal(14, 3) @default(0)
+}
+
+model GoodsReceipt {
+  id        String        @id @default(cuid())
+  poId      String?
+  po        PurchaseOrder? @relation(fields: [poId], references: [id])
+  receivedAt DateTime     @default(now())
+  notes     String?
+
+  movements StockMovement[]
+  invoiceId String?
+  invoice   SupplierInvoice? @relation(fields: [invoiceId], references: [id])
+  accountId String?
+  account   Account?        @relation(fields: [accountId], references: [id])
+}
+
+model SupplierInvoice {
+  id         String   @id @default(cuid())
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  number     String
+  totalCents Int
+  invoiceDate DateTime
+  dueDate    DateTime?
+  paidAt     DateTime?
+  notes      String?
+
+  receipts GoodsReceipt[]
+}
+
+model SupplierPriceHistory {
+  id            String     @id @default(cuid())
+  supplierId    String
+  supplier      Supplier   @relation(fields: [supplierId], references: [id])
+  ingredientId  String
+  ingredient    Ingredient @relation(fields: [ingredientId], references: [id])
+  unitCostCents Decimal    @db.Decimal(14, 4)
+  recordedAt    DateTime   @default(now())
+
+  @@index([ingredientId, recordedAt])
+}
+
+model Batch {
+  id           String     @id @default(cuid())
+  ingredientId String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  lotCode      String?
+  expiresAt    DateTime? // FEFO ordering key
+  receivedAt   DateTime   @default(now())
+  initialQty   Decimal    @db.Decimal(14, 3)
+  remainingQty Decimal    @db.Decimal(14, 3)
+
+  movements StockMovement[]
+
+  @@index([ingredientId, expiresAt])
+}
+
+model StockCount {
+  id         String        @id @default(cuid())
+  locationId String
+  location   StoreLocation @relation(fields: [locationId], references: [id])
+  kind       CountKind     @default(FULL)
+  status     CountStatus   @default(IN_PROGRESS)
+  countedById String
+  countedBy  User          @relation(fields: [countedById], references: [id])
+  startedAt  DateTime      @default(now())
+  postedAt   DateTime?
+
+  lines     StockCountLine[]
+  movements StockMovement[]
+}
+
+enum CountKind {
+  FULL
+  SPOT
+}
+
+enum CountStatus {
+  IN_PROGRESS
+  POSTED
+  CANCELLED
+}
+
+model StockCountLine {
+  id           String     @id @default(cuid())
+  countId      String
+  count        StockCount @relation(fields: [countId], references: [id], onDelete: Cascade)
+  ingredientId String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  systemQty    Decimal    @db.Decimal(14, 3)
+  countedQty   Decimal    @db.Decimal(14, 3)
+  varianceQty  Decimal    @db.Decimal(14, 3)
+}
+
+model WasteLog {
+  id           String     @id @default(cuid())
+  ingredientId String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  quantity     Decimal    @db.Decimal(14, 3)
+  reason       String // spoilage, breakage, prep error...
+  loggedById   String
+  createdAt    DateTime   @default(now())
+
+  movement StockMovement?
+}
+
+// ============================================================
+// RECIPES / MANUFACTURING / COSTING
+// ============================================================
+
+// A recipe backs a MenuItem (menuItemId set)
+model Recipe {
+  id                 String      @id @default(cuid())
+  menuItemId         String      @unique
+  menuItem           MenuItem    @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name               String
+  // yield: portions for menu items
+  yieldQty           Decimal     @db.Decimal(12, 3) @default(1)
+  prepInstructions   String?
+  // which store location sales deduct from (kitchen vs bar)
+  deductLocationName String      @default("Kitchen")
+  isActive           Boolean     @default(true)
+
+  lines            RecipeLine[]
+}
+
+model RecipeLine {
+  id           String     @id @default(cuid())
+  recipeId     String
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredientId String // may point at an intermediate ingredient → sub-recipe consumption
+  ingredient   Ingredient @relation("lineIngredient", fields: [ingredientId], references: [id])
+  quantity     Decimal    @db.Decimal(12, 4) // per ONE unit of yield
+  wastePct     Decimal    @db.Decimal(5, 2) @default(0) // trim/loss factor
+}
+
+model ManufacturingProcess {
+  id                 String      @id @default(cuid())
+  name               String
+  outputIngredientId String      @unique
+  outputIngredient   Ingredient  @relation("processOutput", fields: [outputIngredientId], references: [id], onDelete: Cascade)
+  yieldQty           Decimal     @db.Decimal(12, 3) @default(1)
+  prepInstructions   String?
+  // store location where raw ingredients deduct from
+  deductLocationName String      @default("Kitchen")
+  isActive           Boolean     @default(true)
+
+  lines            ManufacturingProcessLine[]
+  productionOrders ProductionOrder[]
+}
+
+model ManufacturingProcessLine {
+  id                     String               @id @default(cuid())
+  manufacturingProcessId String
+  manufacturingProcess   ManufacturingProcess @relation(fields: [manufacturingProcessId], references: [id], onDelete: Cascade)
+  ingredientId           String
+  ingredient             Ingredient           @relation("processLineIngredient", fields: [ingredientId], references: [id])
+  quantity               Decimal              @db.Decimal(12, 4) // per ONE unit of yield
+  wastePct               Decimal              @db.Decimal(5, 2) @default(0)
+}
+
+model ProductionOrder {
+  id                     String               @id @default(cuid())
+  manufacturingProcessId String
+  manufacturingProcess   ManufacturingProcess @relation(fields: [manufacturingProcessId], references: [id])
+  batchQty               Decimal              @db.Decimal(12, 3) // in yield units
+  status                 ProdStatus           @default(DRAFT)
+  producedById           String
+  producedBy             User                 @relation(fields: [producedById], references: [id])
+  laborMinutes           Int?
+  notes                  String?
+  createdAt              DateTime             @default(now())
+  completedAt            DateTime?
+
+  movements StockMovement[]
+}
+
+enum ProdStatus {
+  DRAFT
+  COMPLETED
+  CANCELLED
+}
+
+// Periodic snapshot of an item's theoretical cost for trend + margin alerts
+model ItemCostSnapshot {
+  id         String   @id @default(cuid())
+  itemId     String
+  item       MenuItem @relation(fields: [itemId], references: [id])
+  costCents  Int
+  priceCents Int
+  costPctBps Int // cost/price in basis points
+  createdAt  DateTime @default(now())
+
+  @@index([itemId, createdAt])
+}
+
+// ============================================================
+// EXPENSES
+// ============================================================
+
+model ExpenseCategory {
+  id        String   @id @default(cuid())
+  name      String // Rent, Utilities, Salaries, Marketing, Maintenance...
+  nameAr    String?
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id])
+
+  expenses Expense[]
+}
+
+model Expense {
+  id            String          @id @default(cuid())
+  branchId      String
+  branch        Branch          @relation(fields: [branchId], references: [id])
+  categoryId    String
+  category      ExpenseCategory @relation(fields: [categoryId], references: [id])
+  description   String
+  amountCents   Int
+  paymentMethod String          @default("cash")
+  attachmentUrl String? // receipt photo
+  expenseDate   DateTime
+  department    Department?
+  // recurring template support
+  isRecurring   Boolean         @default(false)
+  recurrence    String? // "monthly", "weekly"
+  enteredById   String
+  enteredBy     User            @relation(fields: [enteredById], references: [id])
+  accountId     String?
+  account       Account?        @relation(fields: [accountId], references: [id])
+  createdAt     DateTime        @default(now())
+
+  @@index([expenseDate])
+}
+
+// ============================================================
+// CRM / LOYALTY / RESERVATIONS
+// ============================================================
+
+model Customer {
+  id        String    @id @default(cuid())
+  phone     String    @unique // primary lookup key
+  name      String
+  email     String?
+  birthday  DateTime?
+  tags      String[]
+  notes     String?
+  language  String    @default("en")
+  isActive  Boolean   @default(true)
+  // denormalized aggregates (maintained on order close)
+  visitCount     Int @default(0)
+  lifetimeCents  Int @default(0)
+  pointsBalance  Int @default(0)
+  walletBalanceCents Int @default(0)
+  tierId    String?
+  tier      LoyaltyTier? @relation(fields: [tierId], references: [id])
+  groupId   String?
+  group     CustomerGroup? @relation(fields: [groupId], references: [id])
+  createdAt DateTime  @default(now())
+
+  orders       Order[]
+  reservations Reservation[]
+  pointsTransactions PointsTransaction[]
+  feedback     Feedback[]
+  seatCustomers OrderSeatCustomer[]
+}
+
+/// Manually-assigned customer group (Staff, VIP, Corporate…) whose
+/// discount is auto-applied to any order the customer is attached to.
+model CustomerGroup {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  nameAr      String?
+  discountBps Int     @default(0) // 1000 = 10% off the bill, applied automatically
+  isActive    Boolean @default(true)
+
+  customers Customer[]
+}
+
+model LoyaltyTier {
+  id            String @id @default(cuid())
+  name          String // Goblin, Hobgoblin, Goblin King
+  nameAr        String?
+  minLifetimeCents Int  @default(0)
+  earnRateBps   Int    @default(100) // points per 100 EGP, expressed in bps of spend
+  perks         String?
+  sortOrder     Int    @default(0)
+
+  customers Customer[]
+}
+
+model PointsTransaction {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  orderId    String?
+  order      Order?   @relation(fields: [orderId], references: [id])
+  points     Int // positive earn, negative redeem
+  kind       PointsKind
+  note       String?
+  createdAt  DateTime @default(now())
+}
+
+enum PointsKind {
+  EARN
+  REDEEM
+  ADJUST
+  EXPIRE
+}
+
+model Feedback {
+  id         String   @id @default(cuid())
+  orderId    String   @unique
+  order      Order    @relation(fields: [orderId], references: [id])
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  rating     Int // 1-5
+  comment    String?
+  createdAt  DateTime @default(now())
+}
+
+model Reservation {
+  id          String            @id @default(cuid())
+  branchId    String
+  branch      Branch            @relation(fields: [branchId], references: [id])
+  resourceId  String
+  resource    Resource          @relation(fields: [resourceId], references: [id])
+  customerId  String?
+  customer    Customer?         @relation(fields: [customerId], references: [id])
+  // walk-in name if no customer profile
+  guestName   String?
+  guestPhone  String?
+  partySize   Int               @default(2)
+  startAt     DateTime
+  endAt       DateTime
+  status      ReservationStatus @default(PENDING)
+  depositCents Int              @default(0)
+  notes       String?
+  createdById String?
+  createdBy   User?             @relation(fields: [createdById], references: [id])
+  seatedAt    DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@index([resourceId, startAt])
+  @@index([status, startAt])
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  SEATED
+  COMPLETED
+  NO_SHOW
+  CANCELLED
+}
+
+model OrderSeatCustomer {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  seat       Int
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, seat])
+}
+
+// ============================================================
+// ACCOUNTING
+// ============================================================
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model Account {
+  id               String            @id @default(cuid())
+  code             String            @unique
+  name             String
+  nameAr           String?
+  type             AccountType
+  parentAccountId  String?
+  parentAccount    Account?          @relation("AccountHierarchy", fields: [parentAccountId], references: [id], onDelete: SetNull)
+  subAccounts      Account[]         @relation("AccountHierarchy")
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  initialBalanceCents Int            @default(0)
+  isPaymentSource  Boolean           @default(false)
+
+  journalLines     JournalLine[]
+  expenseCategories ExpenseCategory[]
+  expenses         Expense[]
+  goodsReceipts    GoodsReceipt[]
+  paymentMethods   PaymentMethod[]
+}
+
+model JournalEntry {
+  id          String        @id @default(cuid())
+  date        DateTime      @default(now())
+  description String
+  reference   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  lines       JournalLine[]
+  hrTransactions HrTransaction[]
+}
+
+
+model JournalLine {
+  id             String       @id @default(cuid())
+  entryId        String
+  entry          JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  accountId      String
+  account        Account      @relation(fields: [accountId], references: [id])
+  debitCents     Int          @default(0)
+  creditCents    Int          @default(0)
+  createdAt      DateTime     @default(now())
+}
+
+model HrTransaction {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           HrTxType
+  amountCents    Int
+  date           DateTime      @default(now())
+  notes          String?
+  createdById    String?
+  journalEntryId String?
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
+}
+
+enum HrTxType {
+  ADVANCE
+  BONUS
+  DEDUCTION
+  SALARY_PAYMENT
+  TIPS
+}
+

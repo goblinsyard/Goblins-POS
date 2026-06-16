@@ -1,0 +1,22 @@
+               Goblins Yard
+               Cairo, Egypt
+          Tax ID: EG-123-456-789
+==========================================
+Order #319                       BILLIARDS
+Table/Room:                    Billiards 4
+Server:                     Mona (Manager)
+Date:                6/11/2026, 3:44:36 PM
+------------------------------------------
+Billiards time — 0m              EGP 30.00
+------------------------------------------
+Subtotal                         EGP 30.00
+Service                           EGP 3.60
+VAT                               EGP 4.70
+==========================================
+TOTAL                            EGP 38.30
+==========================================
+Cash                             EGP 38.30
+  Tendered                       EGP 38.30
+  Change                          EGP 0.00
+
+Thank you! See you soon — goblinsyard.com

@@ -1,0 +1,23 @@
+               Goblins Yard
+               Cairo, Egypt
+          Tax ID: EG-123-456-789
+==========================================
+Order #320                         PS ROOM
+Table/Room:                      PS Room C
+Server:                     Mona (Manager)
+Date:                6/11/2026, 3:44:36 PM
+------------------------------------------
+2 x Cola                         EGP 60.00
+PS room time — 0m                EGP 20.00
+------------------------------------------
+Subtotal                         EGP 80.00
+Service                           EGP 9.60
+VAT                              EGP 12.54
+==========================================
+TOTAL                           EGP 102.14
+==========================================
+Cash                            EGP 102.14
+  Tendered                      EGP 102.14
+  Change                          EGP 0.00
+
+Thank you! See you soon — goblinsyard.com

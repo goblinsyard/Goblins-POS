@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: goblins
+      POSTGRES_PASSWORD: goblins_dev_pw
+      POSTGRES_DB: goblins_pos
+    ports:
+      - "5433:5432" # host 5433 to avoid clashing with a locally-installed PostgreSQL
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U goblins -d goblins_pos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://goblins:goblins_dev_pw@db:5432/goblins_pos
+      JWT_SECRET: change-me-in-production
+      JWT_REFRESH_SECRET: change-me-too-in-production
+      PORT: "3000"
+      TZ: Africa/Cairo
+      SEED_ON_START: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # serves POS at /, back office at /admin, KDS at /kds; proxies /api + /ws to api
+  web:
+    build:
+      context: .
+      dockerfile: apps/web.Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+  print-service:
+    build:
+      context: .
+      dockerfile: apps/print-service/Dockerfile
+    environment:
+      API_URL: http://api:3000
+      PRINT_MODE: live # set "live" once real printers are configured in Settings → Printers
+    volumes:
+      - print-previews:/previews
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  print-previews:

@@ -1,0 +1,20 @@
+               Goblins Yard
+               Cairo, Egypt
+          Tax ID: EG-123-456-789
+==========================================
+Order #311                        TAKEAWAY
+Server:                     Mona (Manager)
+Date:                6/11/2026, 3:28:39 PM
+------------------------------------------
+Water                            EGP 15.00
+------------------------------------------
+Subtotal                         EGP 15.00
+VAT                               EGP 2.10
+==========================================
+TOTAL                            EGP 17.10
+==========================================
+Cash                             EGP 17.10
+  Tendered                       EGP 17.10
+  Change                          EGP 0.00
+
+Thank you! See you soon — goblinsyard.com
