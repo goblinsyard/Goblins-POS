@@ -15,6 +15,7 @@ export interface PinUser {
 }
 
 export interface Modifier {
+  exclusionGroup?: string | null;
   id: string;
   name: string;
   nameAr?: string | null;

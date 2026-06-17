@@ -787,7 +787,7 @@ export class AdminController {
   async createModifierOption(
     @Req() req: AuthedRequest,
     @Param('groupId') groupId: string,
-    @Body() body: { name: string; nameAr?: string; priceDeltaCents?: number; sortOrder?: number },
+    @Body() body: { name: string; nameAr?: string; priceDeltaCents?: number; sortOrder?: number; exclusionGroup?: string | null },
   ) {
     if (!body.name) throw new BadRequestException('Name is required');
     const modifier = await this.prisma.modifier.create({
@@ -797,6 +797,7 @@ export class AdminController {
         nameAr: body.nameAr || null,
         priceDeltaCents: body.priceDeltaCents ?? 0,
         sortOrder: body.sortOrder ?? 0,
+        exclusionGroup: body.exclusionGroup ?? null,
       },
     });
     await this.audit.log({ userId: req.user.sub, action: 'menu.modifier_create', entity: 'Modifier', entityId: modifier.id });
@@ -809,7 +810,7 @@ export class AdminController {
   async updateModifierOption(
     @Req() req: AuthedRequest,
     @Param('id') id: string,
-    @Body() body: { name?: string; nameAr?: string; priceDeltaCents?: number; isActive?: boolean; sortOrder?: number },
+    @Body() body: { name?: string; nameAr?: string; priceDeltaCents?: number; isActive?: boolean; sortOrder?: number; exclusionGroup?: string | null },
   ) {
     const data: Record<string, any> = {};
     if (body.name !== undefined) data.name = body.name;
@@ -817,6 +818,7 @@ export class AdminController {
     if (body.priceDeltaCents !== undefined) data.priceDeltaCents = body.priceDeltaCents;
     if (body.isActive !== undefined) data.isActive = body.isActive;
     if (body.sortOrder !== undefined) data.sortOrder = body.sortOrder;
+    if (body.exclusionGroup !== undefined) data.exclusionGroup = body.exclusionGroup;
 
     const modifier = await this.prisma.modifier.update({ where: { id }, data });
     await this.audit.log({ userId: req.user.sub, action: 'menu.modifier_update', entity: 'Modifier', entityId: id, detail: data as any });

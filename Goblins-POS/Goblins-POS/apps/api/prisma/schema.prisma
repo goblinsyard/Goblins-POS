@@ -285,6 +285,7 @@ model Modifier {
   priceDeltaCents Int           @default(0)
   sortOrder       Int           @default(0)
   isActive        Boolean       @default(true)
+  exclusionGroup  String?       // If set, selecting this modifier disables modifiers with a DIFFERENT exclusionGroup in the same ModifierGroup
 
   orderItemModifiers OrderItemModifier[]
 }

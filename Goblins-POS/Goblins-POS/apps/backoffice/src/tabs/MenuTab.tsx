@@ -31,6 +31,7 @@ interface Modifier {
   priceDeltaCents: number;
   sortOrder: number;
   isActive: boolean;
+  exclusionGroup?: string | null;
 }
 
 interface ModifierGroup {
@@ -869,7 +870,7 @@ function ModifiersView({
               {g.modifiers.map((m) => (
                 <div key={m.id} className="flex items-center justify-between gap-4 text-xs bg-slate-50 border border-slate-100 rounded px-2 py-1">
                   <span className={m.isActive ? 'text-slate-700 font-medium' : 'text-slate-400 line-through'}>
-                    {m.name} {m.nameAr ? `(${m.nameAr})` : ''} — <span className="font-semibold">{m.priceDeltaCents >= 0 ? '+' : ''}{egp(m.priceDeltaCents)}</span>
+                    {m.name} {m.nameAr ? `(${m.nameAr})` : ''} — <span className="font-semibold">{m.priceDeltaCents >= 0 ? '+' : ''}{egp(m.priceDeltaCents)}</span>{m.exclusionGroup && <span className="ml-2 text-xs bg-amber-100 text-amber-700 rounded px-1">group: {m.exclusionGroup}</span>}
                   </span>
                   <div className="flex items-center gap-1.5">
                     <button onClick={() => setOptionModalOpen({ groupId: g.id, modifier: m })} className="text-blue-600 hover:text-blue-800 font-semibold">Edit</button>
@@ -1014,6 +1015,7 @@ function OptionFormModal({
   const [nameAr, setNameAr] = useState(modifier?.nameAr ?? '');
   const [priceDelta, setPriceDelta] = useState(String((modifier?.priceDeltaCents ?? 0) / 100));
   const [sortOrder, setSortOrder] = useState(String(modifier?.sortOrder ?? 0));
+  const [exclusionGroup, setExclusionGroup] = useState(modifier?.exclusionGroup ?? '');
   const [err, setErr] = useState('');
 
   async function submit() {
@@ -1037,6 +1039,7 @@ function OptionFormModal({
       nameAr: nameAr.trim() || undefined,
       priceDeltaCents: cents,
       sortOrder: sort,
+      exclusionGroup: exclusionGroup.trim() || null,
     };
 
     try {
@@ -1059,6 +1062,14 @@ function OptionFormModal({
         <Field label="Option Name (Arabic)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
         <Field label="Price Delta (EGP, e.g. +15 or -5)"><TextInput type="number" value={priceDelta} onChange={setPriceDelta} /></Field>
         <Field label="Sort Order"><TextInput type="number" value={sortOrder} onChange={setSortOrder} /></Field>
+        <Field label="Exclusion Group (optional)">
+          <TextInput value={exclusionGroup} onChange={setExclusionGroup} />
+          <p className="mt-1 text-xs text-slate-500">
+            Tag options with a group name (e.g. <strong>pasta</strong> or <strong>sides</strong>).
+            When a customer picks from one group, the other group is dimmed out.
+            Leave empty for normal behaviour.
+          </p>
+        </Field>
         <Btn kind="primary" onClick={() => void submit()}>{modifier ? 'Save' : 'Create'}</Btn>
       </div>
     </Modal>
