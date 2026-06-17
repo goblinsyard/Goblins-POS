@@ -565,7 +565,7 @@ function DatabaseManager() {
   async function exportFloor() {
     setBusy(true);
     try {
-      const data = await api<any[]>('/admin/export/floor');
+      const data = await api<any[]>('/admin/export/layout');
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -585,7 +585,7 @@ function DatabaseManager() {
       const text = await file.text();
       const payload = JSON.parse(text);
       if (!Array.isArray(payload)) throw new Error('Floor layout file must be a JSON array of zones.');
-      const res = await api<any>('/admin/import/floor', { method: 'POST', body: payload });
+      const res = await api<any>('/admin/import/layout', { method: 'POST', body: payload });
       setSuccess(`Floor import complete! ${res.zonesCreated} zones, ${res.resourcesCreated} resources imported.`);
     } catch (err) {
       setErr(err instanceof Error ? err.message : 'Import failed');
