@@ -1189,10 +1189,30 @@ function CategoryFormModal({
   const [stationId, setStationId] = useState<string>(category?.stationId ?? '');
   const [isActive, setIsActive] = useState(category?.isActive ?? true);
   const [err, setErr] = useState('');
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [applyResult, setApplyResult] = useState<string | null>(null);
 
   const parentOptions = categories
     .filter((c) => !c.parentCategoryId && c.id !== category?.id)
     .map((c) => ({ value: c.id, label: c.name }));
+
+  async function applyToAllItems() {
+    if (!category) return;
+    setApplyLoading(true);
+    setApplyResult(null);
+    setErr('');
+    try {
+      const res = await api<{ updated: number; categories: number }>(
+        `/admin/menu/categories/${category.id}/apply-station`,
+        { method: 'POST', body: { stationId: stationId || null } },
+      );
+      setApplyResult(`✅ Updated ${res.updated} item${res.updated !== 1 ? 's' : ''} across ${res.categories} category${res.categories !== 1 ? '/sub-categories' : ''}`);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to apply station');
+    } finally {
+      setApplyLoading(false);
+    }
+  }
 
   async function submit() {
     if (!name.trim()) {
@@ -1286,18 +1306,39 @@ function CategoryFormModal({
           </label>
         )}
         {(stations ?? []).length > 0 && (
-          <Field label="Default Station (items in this category inherit this if they have no own station)">
-            <select
-              value={stationId}
-              onChange={(e) => setStationId(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm"
-            >
-              <option value="">— None (items must set own station) —</option>
-              {(stations ?? []).map((st) => (
-                <option key={st.id} value={st.id}>{st.name}</option>
-              ))}
-            </select>
-          </Field>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+            <Field label="Default Routing Station (inherited by items)">
+              <select
+                value={stationId}
+                onChange={(e) => { setStationId(e.target.value); setApplyResult(null); }}
+                className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm"
+              >
+                <option value="">— None (items must set own station) —</option>
+                {(stations ?? []).map((st) => (
+                  <option key={st.id} value={st.id}>{st.name}</option>
+                ))}
+              </select>
+            </Field>
+            {category && stationId && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-slate-500">
+                  Items with no own station will <strong>inherit</strong> this automatically.
+                  To also overwrite items that already have a station, use the button below.
+                </p>
+                <button
+                  type="button"
+                  disabled={applyLoading}
+                  onClick={() => void applyToAllItems()}
+                  className="w-full rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 transition"
+                >
+                  {applyLoading ? '⏳ Applying…' : `📍 Apply station to ALL items in this category`}
+                </button>
+                {applyResult && (
+                  <p className="text-xs font-medium text-emerald-700 bg-emerald-50 rounded px-2 py-1 border border-emerald-200">{applyResult}</p>
+                )}
+              </div>
+            )}
+          </div>
         )}
         <Btn kind="primary" onClick={() => void submit()}>{category ? 'Save' : 'Create'}</Btn>
       </div>

@@ -293,6 +293,46 @@ export class AdminController {
     return { updated: result.count };
   }
 
+
+  /** Bulk-assign category's stationId to all items in this category + sub-categories */
+  @Post('menu/categories/:id/apply-station')
+  @RequirePermissions('menu.manage')
+  async applyStationToCategory(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { stationId: string | null },
+  ) {
+    // Collect all category IDs in the subtree (the category itself + all descendants)
+    const allCatIds: string[] = [id];
+    const queue = [id];
+    while (queue.length) {
+      const parentId = queue.shift()!;
+      const children = await this.prisma.category.findMany({
+        where: { parentCategoryId: parentId },
+        select: { id: true },
+      });
+      for (const child of children) {
+        allCatIds.push(child.id);
+        queue.push(child.id);
+      }
+    }
+
+    const result = await this.prisma.menuItem.updateMany({
+      where: { categoryId: { in: allCatIds } },
+      data: { stationId: body.stationId ?? null },
+    });
+
+    await this.audit.log({
+      userId: req.user.sub,
+      action: 'menu.category_apply_station',
+      entity: 'Category',
+      entityId: id,
+      detail: { stationId: body.stationId, updatedItems: result.count, categories: allCatIds.length } as any,
+    });
+    this.realtime.emitTo('pos', 'menu.changed', {});
+    return { updated: result.count, categories: allCatIds.length };
+  }
+
   // ---------- recipes & ingredients (costing master data) ----------
 
   @Get('uoms')
