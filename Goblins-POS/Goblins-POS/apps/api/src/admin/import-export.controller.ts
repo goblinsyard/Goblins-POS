@@ -680,10 +680,10 @@ export class ImportExportController {
                   discountBps: custData.groupDiscountBps ?? 0,
                 },
               });
-            } else if (custData.groupDiscountBps !== undefined && custData.groupDiscountBps !== group.discountBps) {
+            } else if (custData.groupDiscountBps != null && custData.groupDiscountBps !== group.discountBps) {
               group = await tx.customerGroup.update({
                 where: { id: group.id },
-                data: { discountBps: custData.groupDiscountBps },
+                data: { discountBps: custData.groupDiscountBps ?? 0 },
               });
             }
             groupId = group.id;
