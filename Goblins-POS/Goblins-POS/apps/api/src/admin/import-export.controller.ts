@@ -656,72 +656,65 @@ export class ImportExportController {
 
     try {
       let importedCount = 0;
+      const groupCache = new Map<string, string>(); // groupName -> groupId
 
-      await this.prisma.$transaction(async (tx) => {
-        // Find default loyalty tier if any
-        const defaultTier = await tx.loyaltyTier.findFirst({
-          orderBy: { sortOrder: 'asc' },
-        });
+      // Find default loyalty tier (one query, outside any transaction)
+      const defaultTier = await this.prisma.loyaltyTier.findFirst({
+        orderBy: { sortOrder: 'asc' },
+      });
 
-        for (const custData of body) {
-          if (!custData.name || !custData.phone) continue;
+      for (const custData of body) {
+        if (!custData.name || !custData.phone) continue;
 
-          // Standardize phone (remove spaces)
-          const phone = custData.phone.replace(/\s+/g, '');
+        const phone = custData.phone.replace(/\s+/g, '');
 
-          // Find or create customer group if groupName is specified
-          let groupId: string | null = null;
-          if (custData.groupName) {
-            let group = await tx.customerGroup.findUnique({
+        // Resolve group without transaction
+        let groupId: string | null = null;
+        if (custData.groupName) {
+          if (groupCache.has(custData.groupName)) {
+            groupId = groupCache.get(custData.groupName)!;
+          } else {
+            let group = await this.prisma.customerGroup.findUnique({
               where: { name: custData.groupName },
             });
             if (!group) {
-              group = await tx.customerGroup.create({
+              group = await this.prisma.customerGroup.create({
                 data: {
                   name: custData.groupName,
                   discountBps: custData.groupDiscountBps ?? 0,
                 },
               });
             } else if (custData.groupDiscountBps != null && custData.groupDiscountBps !== group.discountBps) {
-              group = await tx.customerGroup.update({
+              group = await this.prisma.customerGroup.update({
                 where: { id: group.id },
-                data: { discountBps: custData.groupDiscountBps ?? 0 },
+                data: { discountBps: custData.groupDiscountBps },
               });
             }
+            groupCache.set(custData.groupName, group.id);
             groupId = group.id;
           }
-
-          // Find or create customer by phone number
-          const existing = await tx.customer.findUnique({
-            where: { phone },
-          });
-
-          const customerPayload = {
-            name: custData.name,
-            email: custData.email || null,
-            birthday: custData.birthday ? new Date(custData.birthday) : null,
-            tags: custData.tags || [],
-            notes: custData.notes || null,
-            groupId,
-          };
-
-          if (existing) {
-            await tx.customer.update({
-              where: { id: existing.id },
-              data: customerPayload,
-            });
-          } else {
-            await tx.customer.create({
-              data: {
-                ...customerPayload,
-                phone,
-                tierId: defaultTier?.id || null,
-              },
-            });
-          }
-          importedCount++;
         }
-      });
+
+        const customerPayload = {
+          name: custData.name,
+          email: custData.email || null,
+          birthday: custData.birthday ? new Date(custData.birthday) : null,
+          tags: custData.tags || [],
+          notes: custData.notes || null,
+          groupId,
+        };
+
+        const existing = await this.prisma.customer.findUnique({ where: { phone } });
+
+        if (existing) {
+          await this.prisma.customer.update({ where: { id: existing.id }, data: customerPayload });
+        } else {
+          await this.prisma.customer.create({
+            data: { ...customerPayload, phone, tierId: defaultTier?.id || null },
+          });
+        }
+        importedCount++;
+      }
 
       await this.audit.log({
         userId: req.user.sub,
