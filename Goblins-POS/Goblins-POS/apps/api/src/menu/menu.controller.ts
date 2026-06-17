@@ -28,6 +28,7 @@ export class MenuController {
           where: { isActive: true },
           orderBy: { sortOrder: 'asc' },
           include: {
+            station: { select: { id: true, name: true } },
             taxRate: true,
             priceSchedules: { where: { isActive: true } },
             modifierGroups: {

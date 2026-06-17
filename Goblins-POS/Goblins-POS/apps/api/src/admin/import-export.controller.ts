@@ -59,6 +59,7 @@ interface ImportedMenuItem {
   isActive?: boolean;
   isFavorite?: boolean;
   department?: 'RESTAURANT' | 'BAR' | 'BILLIARDS' | 'PLAYSTATION';
+  stationName?: string;   // station name to look up on import
   modifierGroups?: ImportedModifierGroup[];
   recipe?: ImportedRecipe;
   priceSchedules?: ImportedPriceSchedule[];
@@ -71,6 +72,7 @@ interface ImportedCategory {
   color?: string;
   isActive?: boolean;
   parentCategoryName?: string;
+  stationName?: string;   // resolved station name for fallback routing
   items?: ImportedMenuItem[];
 }
 
@@ -127,8 +129,10 @@ export class ImportExportController {
             name: true,
           },
         },
+        station: { select: { name: true } },
         items: {
           include: {
+            station: { select: { name: true } },
             priceSchedules: true,
             recipe: {
               include: {
@@ -162,6 +166,7 @@ export class ImportExportController {
       color: cat.color,
       isActive: cat.isActive,
       parentCategoryName: cat.parentCategory?.name || null,
+      stationName: (cat as any).station?.name || null,
       items: cat.items.map((item) => ({
         name: item.name,
         nameAr: item.nameAr,
@@ -171,6 +176,7 @@ export class ImportExportController {
         isActive: item.isActive,
         isFavorite: item.isFavorite,
         department: item.department,
+        stationName: (item as any).station?.name || null,
         recipe: item.recipe ? {
           name: item.recipe.name,
           yieldQty: Number(item.recipe.yieldQty),
@@ -336,6 +342,20 @@ export class ImportExportController {
         }
       }
 
+      // Pass 1b: Set stationId on each category by stationName
+      for (const catData of body) {
+        if (!catData.name || !catData.stationName) continue;
+        const stationRec = stations.find((s) => s.name.toLowerCase() === catData.stationName!.toLowerCase());
+        if (!stationRec) continue;
+        const cat = await this.prisma.category.findFirst({ where: { name: catData.name } });
+        if (cat) {
+          await this.prisma.category.update({
+            where: { id: cat.id },
+            data: { stationId: stationRec.id },
+          });
+        }
+      }
+
       // Pass 2: Set parent-child category linkages
       for (const catData of body) {
         if (!catData.name) continue;
@@ -378,14 +398,20 @@ export class ImportExportController {
         for (const itemData of catData.items) {
           if (!itemData.name || !(itemData.priceCents >= 0)) continue;
 
-          // Determine routing station
+          // Determine routing station: stationName > department > null
           let stationId: string | null = null;
-          if (itemData.department === 'BAR') {
-            const barStation = stations.find((s) => s.name.toLowerCase().includes('bar'));
-            if (barStation) stationId = barStation.id;
-          } else {
-            const kitchenStation = stations.find((s) => s.name.toLowerCase().includes('kitchen'));
-            if (kitchenStation) stationId = kitchenStation.id;
+          if (itemData.stationName) {
+            const byName = stations.find((s) => s.name.toLowerCase() === itemData.stationName!.toLowerCase());
+            if (byName) stationId = byName.id;
+          }
+          if (!stationId) {
+            if (itemData.department === 'BAR') {
+              const barStation = stations.find((s) => s.name.toLowerCase().includes('bar'));
+              if (barStation) stationId = barStation.id;
+            } else if (itemData.department) {
+              const kitchenStation = stations.find((s) => s.name.toLowerCase().includes('kitchen'));
+              if (kitchenStation) stationId = kitchenStation.id;
+            }
           }
 
           // Find or create Menu Item

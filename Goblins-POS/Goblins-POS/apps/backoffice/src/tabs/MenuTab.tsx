@@ -20,6 +20,7 @@ interface MenuCat {
     priceCents: number;
     is86ed: boolean;
     stationId?: string | null;
+    station?: { id: string; name: string } | null;
     department?: string;
     taxRate?: TaxRate | null;
     isFavorite?: boolean;
@@ -210,14 +211,15 @@ export function MenuView() {
                   const matchCatName = cat.name.toLowerCase().includes(q) || (cat.nameAr?.toLowerCase().includes(q) ?? false);
                   if (!matchItemName && !matchCatName) return false;
                 }
-                // Station filter
-                if (itemsStation && item.stationId !== itemsStation) return false;
+                // Station filter — item stationId first, then inherit from parent category
+                const effectiveStationId = item.stationId ?? cat.stationId ?? null;
+                if (itemsStation && effectiveStationId !== itemsStation) return false;
                 // Status filter
                 if (itemsStatus !== 'all') {
                   if (itemsStatus === '86ed' && !item.is86ed) return false;
                   if (itemsStatus === 'active' && item.is86ed) return false;
                   if (itemsStatus === 'favorite' && !item.isFavorite) return false;
-                  if (itemsStatus === 'no-station' && item.stationId) return false;
+                  if (itemsStatus === 'no-station' && effectiveStationId) return false;
                 }
                 return true;
               });
