@@ -1142,7 +1142,6 @@ function CloseShiftWizard() {
           {!isReconciling ? (
             <div className="flex justify-end pt-1">
               <Btn
-                size="xs"
                 onClick={() => {
                   setNewCountedAmount(String((lastClosedShift.countedCents ?? 0) / 100));
                   setReconcileError('');
