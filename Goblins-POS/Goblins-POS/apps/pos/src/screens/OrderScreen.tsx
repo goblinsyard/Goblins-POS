@@ -678,24 +678,24 @@ export function OrderScreen() {
               ))}
               {line.notes && <div className="ms-3 text-sm italic text-goblin-400">{line.notes}</div>}
               {!isPaid && line.status !== 'VOIDED' && (
-                <div className="mt-1.5 flex gap-2">
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {!line.isTimeCharge && can(user, 'order.void') && (
-                    <button onClick={() => setVoiding(line.id)} className="text-xs text-red-400 hover:underline">
+                    <button onClick={() => setVoiding(line.id)} className="rounded-lg bg-red-950/40 text-red-400 border border-red-900/30 px-2.5 py-1 text-xs font-semibold hover:bg-red-900/30 transition-all active:scale-95">
                       {t(lang, 'voidItem')}
                     </button>
                   )}
                   {!line.isTimeCharge && (
-                    <button onClick={() => setMovingItem(line)} className="text-xs text-sky-400 hover:underline">
+                    <button onClick={() => setMovingItem(line)} className="rounded-lg bg-sky-950/40 text-sky-400 border border-sky-900/30 px-2.5 py-1 text-xs font-semibold hover:bg-sky-900/30 transition-all active:scale-95">
                       {lang === 'ar' ? 'نقل' : 'Move'}
                     </button>
                   )}
                   {!line.isTimeCharge && (
-                    <button onClick={() => setQuantityEditingItem(line)} className="text-xs text-emerald-400 hover:underline">
+                    <button onClick={() => setQuantityEditingItem(line)} className="rounded-lg bg-emerald-950/40 text-emerald-400 border border-emerald-900/30 px-2.5 py-1 text-xs font-semibold hover:bg-emerald-900/30 transition-all active:scale-95">
                       {lang === 'ar' ? 'كمية' : 'Qty'}
                     </button>
                   )}
                   {!line.isTimeCharge && (
-                    <button onClick={() => setCommentingItem(line)} className="text-xs text-amber-400 hover:underline">
+                    <button onClick={() => setCommentingItem(line)} className="rounded-lg bg-amber-950/40 text-amber-400 border border-amber-900/30 px-2.5 py-1 text-xs font-semibold hover:bg-amber-900/30 transition-all active:scale-95">
                       {lang === 'ar' ? 'تعليق' : 'Comment'}
                     </button>
                   )}
@@ -703,7 +703,7 @@ export function OrderScreen() {
                     <button onClick={() => {
                       setSplittingTimeItem(line);
                       setSelectedTimeSeats([]);
-                    }} className="text-xs text-sky-400 hover:underline">
+                    }} className="rounded-lg bg-sky-950/40 text-sky-400 border border-sky-900/30 px-2.5 py-1 text-xs font-semibold hover:bg-sky-900/30 transition-all active:scale-95">
                       {lang === 'ar' ? 'تقسيم الوقت' : 'Split Time'}
                     </button>
                   )}

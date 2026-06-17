@@ -1,12 +1,187 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, AccountType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+async function ensureChartOfAccounts(prisma: PrismaClient) {
+  console.log('Ensuring baseline Chart of Accounts exists...');
+  const coa = [
+    // Assets
+    { code: '1000', name: 'Assets', nameAr: 'الأصول', type: 'ASSET' as AccountType },
+    { code: '1100', name: 'Cash on Hand', nameAr: 'النقدية بالصندوق', type: 'ASSET' as AccountType, parentCode: '1000' },
+    { code: '1110', name: 'Cash Drawer / Safe', nameAr: 'درج الكاشير / الخزينة', type: 'ASSET' as AccountType, parentCode: '1100' },
+    { code: '1120', name: 'Main Safe', nameAr: 'الخزينة الرئيسية', type: 'ASSET' as AccountType, parentCode: '1100' },
+    { code: '1125', name: 'Tips Drawer', nameAr: 'درج البقشيش', type: 'ASSET' as AccountType, parentCode: '1100' },
+    { code: '1130', name: 'Custody', nameAr: 'العهدة', type: 'ASSET' as AccountType, parentCode: '1100' },
+    { code: '1200', name: 'Bank Accounts', nameAr: 'الحسابات البنكية', type: 'ASSET' as AccountType, parentCode: '1000' },
+    { code: '1210', name: 'Main Bank Account', nameAr: 'الحساب البنكي الرئيسي', type: 'ASSET' as AccountType, parentCode: '1200' },
+    { code: '1220', name: 'Fawry Account', nameAr: 'حساب فوري', type: 'ASSET' as AccountType, parentCode: '1200' },
+    { code: '1300', name: 'Accounts Receivable', nameAr: 'العملاء / المدينون', type: 'ASSET' as AccountType, parentCode: '1000' },
+    { code: '1400', name: 'Food & Beverage Inventory', nameAr: 'مخزون الأغذية والمشروبات', type: 'ASSET' as AccountType, parentCode: '1000' },
+    { code: '1500', name: 'Prepaid Expenses', nameAr: 'المصروفات المقدمة', type: 'ASSET' as AccountType, parentCode: '1000' },
+    { code: '1600', name: 'Equipment & Furniture', nameAr: 'المعدات والأثاث', type: 'ASSET' as AccountType, parentCode: '1000' },
+ 
+    // Liabilities
+    { code: '2000', name: 'Liabilities', nameAr: 'الخصوم', type: 'LIABILITY' as AccountType },
+    { code: '2100', name: 'Accounts Payable', nameAr: 'الموردون / الدائنون', type: 'LIABILITY' as AccountType, parentCode: '2000' },
+    { code: '2200', name: 'Sales Tax (VAT) Payable', nameAr: 'ضريبة القيمة المضافة المستحقة', type: 'LIABILITY' as AccountType, parentCode: '2000' },
+    { code: '2300', name: 'Accrued Salaries', nameAr: 'الرواتب المستحقة', type: 'LIABILITY' as AccountType, parentCode: '2000' },
+    { code: '2400', name: 'Customer Deposits', nameAr: 'تأمين عملاء', type: 'LIABILITY' as AccountType, parentCode: '2000' },
+    { code: '2500', name: 'Tips Payable', nameAr: 'بقشيش مستحق للعامليين', type: 'LIABILITY' as AccountType, parentCode: '2000' },
+ 
+    // Equity
+    { code: '3000', name: 'Equity', nameAr: 'حقوق الملكية', type: 'EQUITY' as AccountType },
+    { code: '3100', name: "Owner's Capital", nameAr: 'رأس المال', type: 'EQUITY' as AccountType, parentCode: '3000' },
+    { code: '3200', name: 'Retained Earnings', nameAr: 'الأرباح المحتجزة', type: 'EQUITY' as AccountType, parentCode: '3000' },
+ 
+    // Revenue
+    { code: '4000', name: 'Revenue', nameAr: 'الإيرادات', type: 'REVENUE' as AccountType },
+    { code: '4100', name: 'Food & Beverage Sales', nameAr: 'مبيعات الأغذية والمشروبات', type: 'REVENUE' as AccountType, parentCode: '4000' },
+    { code: '4200', name: 'PlayStation Services Revenue', nameAr: 'إيرادات بلايستيشن', type: 'REVENUE' as AccountType, parentCode: '4000' },
+    { code: '4300', name: 'Billiards Services Revenue', nameAr: 'إيرادات البلياردو', type: 'REVENUE' as AccountType, parentCode: '4000' },
+    { code: '4400', name: 'Event Bookings & Room Rental', nameAr: 'حجز الفعاليات وإيجار الغرف', type: 'REVENUE' as AccountType, parentCode: '4000' },
+    { code: '4500', name: 'Other Income', nameAr: 'إيرادات أخرى', type: 'REVENUE' as AccountType, parentCode: '4000' },
+    { code: '4600', name: 'Service Charge Revenue', nameAr: 'إيرادات الخدمة', type: 'REVENUE' as AccountType, parentCode: '4000' },
+ 
+    // Expenses
+    { code: '5000', name: 'Expenses', nameAr: 'المصروفات', type: 'EXPENSE' as AccountType },
+    { code: '5100', name: 'Cost of Goods Sold (COGS)', nameAr: 'تكلفة المبيعات', type: 'EXPENSE' as AccountType, parentCode: '5000' },
+    { code: '5110', name: 'Food & Beverage Cost', nameAr: 'تكلفة الأغذية والمشروبات', type: 'EXPENSE' as AccountType, parentCode: '5100' },
+    { code: '5120', name: 'PlayStation & Billiards Maintenance Cost', nameAr: 'تكلفة صيانة البلايستيشن والبلياردو', type: 'EXPENSE' as AccountType, parentCode: '5100' },
+    { code: '5200', name: 'Operating Expenses', nameAr: 'المصاريف التشغيلية', type: 'EXPENSE' as AccountType, parentCode: '5000' },
+    { code: '5210', name: 'Salaries & Wages', nameAr: 'الرواتب والأجور', type: 'EXPENSE' as AccountType, parentCode: '5200' },
+    { code: '5220', name: 'Rent', nameAr: 'الإيجار', type: 'EXPENSE' as AccountType, parentCode: '5200' },
+    { code: '5230', name: 'Utilities', nameAr: 'المنافع العامة', type: 'EXPENSE' as AccountType, parentCode: '5200' },
+    { code: '5240', name: 'Marketing & Advertising', nameAr: 'التسويق والإعلان', type: 'EXPENSE' as AccountType, parentCode: '5200' },
+    { code: '5250', name: 'Repairs & Maintenance', nameAr: 'الإصلاحات والصيانة', type: 'EXPENSE' as AccountType, parentCode: '5200' },
+    { code: '5260', name: 'Supplies', nameAr: 'المستلزمات', type: 'EXPENSE' as AccountType, parentCode: '5200' },
+    { code: '5270', name: 'Printing & Stationery', nameAr: 'الطباعة والأدوات المكتبية', type: 'EXPENSE' as AccountType, parentCode: '5200' },
+    { code: '5280', name: 'Bank Fees & Commission', nameAr: 'عمولات ومصاريف بنكية', type: 'EXPENSE' as AccountType, parentCode: '5200' },
+    { code: '5290', name: 'Miscellaneous Expense', nameAr: 'مصاريف متنوعة', type: 'EXPENSE' as AccountType, parentCode: '5200' },
+  ];
+
+  const createdAccounts: Record<string, string> = {};
+  for (const a of coa) {
+    let acc = await prisma.account.findUnique({ where: { code: a.code } });
+    if (!acc) {
+      const parentId = a.parentCode ? createdAccounts[a.parentCode] : null;
+      acc = await prisma.account.create({
+        data: {
+          code: a.code,
+          name: a.name,
+          nameAr: a.nameAr,
+          type: a.type,
+          parentAccountId: parentId,
+          isPaymentSource: ['1110', '1210', '1220'].includes(a.code),
+        },
+      });
+      console.log(`- Created account: ${acc.code} - ${acc.name}`);
+    } else {
+      const parentId = a.parentCode ? createdAccounts[a.parentCode] : null;
+      acc = await prisma.account.update({
+        where: { id: acc.id },
+        data: {
+          isActive: true,
+          isPaymentSource: ['1110', '1210', '1220'].includes(a.code),
+          parentAccountId: acc.parentAccountId || parentId,
+        }
+      });
+    }
+    createdAccounts[a.code] = acc.id;
+  }
+
+  // Link payment methods to accounts
+  const cashAccId = createdAccounts['1110'];
+  const bankAccId = createdAccounts['1210'];
+  const walletAccId = createdAccounts['1220'];
+
+  if (cashAccId) {
+    await prisma.paymentMethod.updateMany({
+      where: { kind: 'CASH', accountId: null },
+      data: { accountId: cashAccId },
+    });
+  }
+  if (bankAccId) {
+    await prisma.paymentMethod.updateMany({
+      where: { kind: 'CARD', accountId: null },
+      data: { accountId: bankAccId },
+    });
+  }
+  if (walletAccId) {
+    await prisma.paymentMethod.updateMany({
+      where: { kind: 'WALLET', accountId: null },
+      data: { accountId: walletAccId },
+    });
+  }
+
+  // Link expense categories to accounts
+  const expCats = [
+    { name: 'Rent', code: '5220' },
+    { name: 'Utilities', code: '5230' },
+    { name: 'Salaries', code: '5210' },
+    { name: 'Marketing', code: '5240' },
+    { name: 'Maintenance', code: '5250' },
+    { name: 'COGS adjustment', code: '5110' },
+  ];
+  for (const cat of expCats) {
+    const accId = createdAccounts[cat.code];
+    if (accId) {
+      await prisma.expenseCategory.updateMany({
+        where: { name: cat.name, accountId: null },
+        data: { accountId: accId },
+      });
+    }
+  }
+}
+
 async function main() {
+  console.log('Ensuring default accounts exist first...');
+  await ensureChartOfAccounts(prisma);
+
+  console.log('Deleting all transactional and activity data...');
+
+  // Delete transaction records in strict dependency order (children first)
+  await prisma.pointsTransaction.deleteMany();
+  await prisma.feedback.deleteMany();
+  await prisma.prepaidBlock.deleteMany();
+  await prisma.sessionSegment.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.ticketItem.deleteMany();
+  await prisma.ticket.deleteMany();
+  await prisma.orderItemModifier.deleteMany();
+  await prisma.orderItem.deleteMany();
+  await prisma.orderDiscount.deleteMany();
+  await prisma.payment.deleteMany();
+  await prisma.orderSeatCustomer.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.cashMovement.deleteMany();
+  await prisma.shift.deleteMany();
+  await prisma.timeClockEntry.deleteMany();
+  await prisma.productionOrder.deleteMany();
+  await prisma.reservation.deleteMany();
+  await prisma.expense.deleteMany();
+  await prisma.hrTransaction.deleteMany();
+  await prisma.journalLine.deleteMany();
+  await prisma.journalEntry.deleteMany();
+  await prisma.stockMovement.deleteMany();
+  await prisma.stockCountLine.deleteMany();
+  await prisma.stockCount.deleteMany();
+  await prisma.wasteLog.deleteMany();
+  await prisma.purchaseOrderLine.deleteMany();
+  await prisma.purchaseOrder.deleteMany();
+  await prisma.goodsReceipt.deleteMany();
+  await prisma.supplierInvoice.deleteMany();
+  await prisma.supplierPriceHistory.deleteMany();
+  await prisma.batch.deleteMany();
+  await prisma.auditLog.deleteMany();
+
+  console.log('Resetting Chart of Accounts initial balances to 0...');
+  await prisma.account.updateMany({
+    data: { initialBalanceCents: 0 }
+  });
+
   console.log('Deleting demo menu items, categories, ingredients, and recipes...');
 
   // Helper to check if string is a CUID (alphanumeric, starts with c, length > 15)
-  // Poster IDs are numeric strings (like '77', '864') or short integers.
   const isCuid = (id: string) => id.startsWith('c') && id.length > 15;
 
   // 1. Delete price schedules for demo items
@@ -138,53 +313,7 @@ async function main() {
     });
   }
 
-  // 8. Delete related records for demo ingredients (to prevent FK violations)
-  const stockMovements = await prisma.stockMovement.findMany();
-  const stockMovementsToDelete = stockMovements.filter(s => isCuid(s.ingredientId));
-  console.log(`Deleting ${stockMovementsToDelete.length} demo stock movements...`);
-  if (stockMovementsToDelete.length > 0) {
-    await prisma.stockMovement.deleteMany({
-      where: { id: { in: stockMovementsToDelete.map(s => s.id) } }
-    });
-  }
-
-  const poLines = await prisma.purchaseOrderLine.findMany();
-  const poLinesToDelete = poLines.filter(p => isCuid(p.ingredientId));
-  console.log(`Deleting ${poLinesToDelete.length} demo PO lines...`);
-  if (poLinesToDelete.length > 0) {
-    await prisma.purchaseOrderLine.deleteMany({
-      where: { id: { in: poLinesToDelete.map(p => p.id) } }
-    });
-  }
-
-  const batches = await prisma.batch.findMany();
-  const batchesToDelete = batches.filter(b => isCuid(b.ingredientId));
-  console.log(`Deleting ${batchesToDelete.length} demo batches...`);
-  if (batchesToDelete.length > 0) {
-    await prisma.batch.deleteMany({
-      where: { id: { in: batchesToDelete.map(b => b.id) } }
-    });
-  }
-
-  const countLines = await prisma.stockCountLine.findMany();
-  const countLinesToDelete = countLines.filter(c => isCuid(c.ingredientId));
-  console.log(`Deleting ${countLinesToDelete.length} demo stock count lines...`);
-  if (countLinesToDelete.length > 0) {
-    await prisma.stockCountLine.deleteMany({
-      where: { id: { in: countLinesToDelete.map(c => c.id) } }
-    });
-  }
-
-  const wasteLogs = await prisma.wasteLog.findMany();
-  const wasteLogsToDelete = wasteLogs.filter(w => isCuid(w.ingredientId));
-  console.log(`Deleting ${wasteLogsToDelete.length} demo waste logs...`);
-  if (wasteLogsToDelete.length > 0) {
-    await prisma.wasteLog.deleteMany({
-      where: { id: { in: wasteLogsToDelete.map(w => w.id) } }
-    });
-  }
-
-  // 9. Delete stock levels for demo ingredients
+  // 8. Delete stock levels for demo ingredients
   const stockLevels = await prisma.stockLevel.findMany();
   const stockLevelsToDelete = stockLevels.filter(s => isCuid(s.ingredientId));
   console.log(`Deleting ${stockLevelsToDelete.length} demo stock levels...`);
@@ -198,17 +327,7 @@ async function main() {
     });
   }
 
-  // 9. Delete supplier prices for demo ingredients
-  const supplierPrices = await prisma.supplierPriceHistory.findMany();
-  const supplierPricesToDelete = supplierPrices.filter(s => isCuid(s.ingredientId));
-  console.log(`Deleting ${supplierPricesToDelete.length} demo supplier prices...`);
-  if (supplierPricesToDelete.length > 0) {
-    await prisma.supplierPriceHistory.deleteMany({
-      where: { id: { in: supplierPricesToDelete.map(s => s.id) } }
-    });
-  }
-
-  // 10. Delete ingredients that are demo
+  // 9. Delete ingredients that are demo
   const ingredients = await prisma.ingredient.findMany();
   const ingredientsToDelete = ingredients.filter(i => isCuid(i.id));
   console.log(`Deleting ${ingredientsToDelete.length} demo ingredients...`);

@@ -61,7 +61,7 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
     rect: DOMRect;
   } | null>(null);
 
-  const handleTrackMouseDown = (e: React.MouseEvent<HTMLDivElement>, resourceId: string) => {
+  const handleTrackPointerDown = (e: React.PointerEvent<HTMLDivElement>, resourceId: string) => {
     if (e.button !== 0) return;
     const target = e.target as HTMLElement;
     if (target.closest('button')) {
@@ -280,14 +280,14 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
   useEffect(() => {
     if (!dragInfo) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
       const rect = dragInfo.rect;
       const currentX = e.clientX - rect.left;
       const currentPercent = Math.max(0, Math.min(1, currentX / rect.width));
       setDragInfo((prev) => (prev ? { ...prev, currentPercent } : null));
     };
 
-    const handleMouseUp = () => {
+    const handlePointerUp = () => {
       const startPct = Math.min(dragInfo.startPercent, dragInfo.currentPercent);
       const endPct = Math.max(dragInfo.startPercent, dragInfo.currentPercent);
 
@@ -327,11 +327,11 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
       setDragInfo(null);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
     };
   }, [dragInfo, targetDateStr]);
 
@@ -596,7 +596,8 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
 
                           <div
                             className="flex-1 relative h-full cursor-crosshair select-none"
-                            onMouseDown={(e) => handleTrackMouseDown(e, res.id)}
+                            style={{ touchAction: 'none' }}
+                            onPointerDown={(e) => handleTrackPointerDown(e, res.id)}
                           >
                             {/* Backdrop vertical lines */}
                             <div className="absolute inset-0 pointer-events-none h-full" style={{ display: 'grid', gridTemplateColumns: 'repeat(14, minmax(0, 1fr))' }}>

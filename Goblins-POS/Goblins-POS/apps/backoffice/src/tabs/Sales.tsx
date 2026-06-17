@@ -386,6 +386,7 @@ function ShiftsReport() {
         <ShiftReportDetailModal
           shiftId={selectedShiftId}
           onClose={() => setSelectedShiftId(null)}
+          onDone={reload}
         />
       )}
     </div>
@@ -439,8 +440,34 @@ interface ShiftDetails {
   };
 }
 
-function ShiftReportDetailModal({ shiftId, onClose }: { shiftId: string; onClose: () => void }) {
-  const { data, error } = useLoad(() => api<ShiftDetails>(`/shifts/${shiftId}/details`), [shiftId]);
+function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string; onClose: () => void; onDone?: () => void }) {
+  const { data, error, reload } = useLoad(() => api<ShiftDetails>(`/shifts/${shiftId}/details`), [shiftId]);
+  const [isEditingCount, setIsEditingCount] = useState(false);
+  const [newCount, setNewCount] = useState('');
+  const [reconcileErr, setReconcileErr] = useState('');
+  const [reconcileLoading, setReconcileLoading] = useState(false);
+
+  async function handleReconcile() {
+    setReconcileErr('');
+    setReconcileLoading(true);
+    try {
+      const cents = Math.round(parseFloat(newCount) * 100);
+      if (isNaN(cents) || cents < 0) {
+        throw new Error('Please enter a valid count amount');
+      }
+      await api(`/shifts/${shiftId}/reconcile`, {
+        method: 'POST',
+        body: { countedCents: cents },
+      });
+      setIsEditingCount(false);
+      reload();
+      if (onDone) onDone();
+    } catch (e) {
+      setReconcileErr(e instanceof Error ? e.message : 'Reconciliation failed');
+    } finally {
+      setReconcileLoading(false);
+    }
+  }
 
   if (error) {
     return (
@@ -550,10 +577,49 @@ function ShiftReportDetailModal({ shiftId, onClose }: { shiftId: string; onClose
 
               {isClosed ? (
                 <>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-slate-500 font-semibold">Actual Counted Cash</span>
-                    <span className="font-bold text-slate-800">{egp(report.countedCents ?? shift.countedCents ?? 0)}</span>
+                    {!isEditingCount ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-800">{egp(report.countedCents ?? shift.countedCents ?? 0)}</span>
+                        <button
+                          onClick={() => {
+                            setNewCount(String((report.countedCents ?? shift.countedCents ?? 0) / 100));
+                            setReconcileErr('');
+                            setIsEditingCount(true);
+                          }}
+                          className="text-xs text-indigo-600 hover:text-indigo-800 underline font-semibold"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <input
+                          type="number"
+                          value={newCount}
+                          onChange={(e) => setNewCount(e.target.value)}
+                          className="w-24 rounded border border-slate-300 p-1 text-xs text-right font-mono"
+                          disabled={reconcileLoading}
+                        />
+                        <button
+                          onClick={() => void handleReconcile()}
+                          className="px-1.5 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-bold hover:bg-indigo-700"
+                          disabled={reconcileLoading}
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setIsEditingCount(false)}
+                          className="px-1.5 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px] hover:bg-slate-300"
+                          disabled={reconcileLoading}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
+                  {reconcileErr && <p className="text-[10px] text-red-600 text-right mt-1">{reconcileErr}</p>}
                   <div className="flex justify-between border-t pt-2 font-bold text-base">
                     <span>Variance (Difference)</span>
                     <span className={(report.varianceCents ?? shift.varianceCents ?? 0) < 0 ? 'text-red-600' : (report.varianceCents ?? shift.varianceCents ?? 0) > 0 ? 'text-emerald-700' : 'text-slate-800'}>

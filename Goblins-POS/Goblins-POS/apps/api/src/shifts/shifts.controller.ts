@@ -18,6 +18,10 @@ class CashMovementDto {
   @IsString() reason!: string;
 }
 
+class ReconcileShiftDto {
+  @IsInt() @Min(0) countedCents!: number;
+}
+
 @Controller('shifts')
 export class ShiftsController {
   constructor(private readonly shifts: ShiftsService) {}
@@ -46,6 +50,12 @@ export class ShiftsController {
   @RequirePermissions('shift.close')
   close(@Req() req: AuthedRequest, @Param('id') id: string, @Body() dto: CloseShiftDto) {
     return this.shifts.close({ shiftId: id, userId: req.user.sub, countedCents: dto.countedCents });
+  }
+
+  @Post(':id/reconcile')
+  @RequirePermissions('shift.close')
+  reconcile(@Req() req: AuthedRequest, @Param('id') id: string, @Body() dto: ReconcileShiftDto) {
+    return this.shifts.reconcileCount({ shiftId: id, userId: req.user.sub, countedCents: dto.countedCents });
   }
 
   @Post(':id/cash-movement')

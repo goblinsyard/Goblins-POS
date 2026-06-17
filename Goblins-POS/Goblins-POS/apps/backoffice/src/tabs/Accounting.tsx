@@ -938,7 +938,7 @@ function findAccountByCode(nodes: Account[], code: string): Account | null {
 }
 
 function CloseShiftWizard() {
-  const { data: shifts, error: shiftsError } = useLoad(() => api<any[]>('/shifts'));
+  const { data: shifts, error: shiftsError, reload: reloadShifts } = useLoad(() => api<any[]>('/shifts'));
   const { data: accounts, error: accountsError, reload: reloadAccounts } = useLoad(() => api<Account[]>('/accounting/accounts'));
   const { data: transfers, reload: reloadTransfers } = useLoad(() => api<any[]>('/accounting/transfers'));
 
@@ -951,6 +951,34 @@ function CloseShiftWizard() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [isReconciling, setIsReconciling] = useState(false);
+  const [newCountedAmount, setNewCountedAmount] = useState('');
+  const [reconcileError, setReconcileError] = useState('');
+  const [reconcileLoading, setReconcileLoading] = useState(false);
+
+  async function submitReconciliation() {
+    if (!lastClosedShift) return;
+    setReconcileError('');
+    setReconcileLoading(true);
+    try {
+      const cents = parseEgp(newCountedAmount);
+      if (cents === null || cents < 0) {
+        throw new Error('Please enter a valid non-negative count amount.');
+      }
+      await api(`/shifts/${lastClosedShift.id}/reconcile`, {
+        method: 'POST',
+        body: { countedCents: cents },
+      });
+      setIsReconciling(false);
+      await reloadShifts();
+      await reloadAccounts();
+    } catch (e) {
+      setReconcileError(e instanceof Error ? e.message : 'Reconciliation failed');
+    } finally {
+      setReconcileLoading(false);
+    }
+  }
 
   const cashDrawerAcc = useMemo(() => (accounts ? findAccountByCode(accounts, '1110') : null), [accounts]);
   const mainSafeAcc = useMemo(() => (accounts ? findAccountByCode(accounts, '1120') : null), [accounts]);
@@ -1075,13 +1103,88 @@ function CloseShiftWizard() {
     <div className="space-y-6 max-w-3xl mx-auto">
       <div>
         <h2 className="text-lg font-bold text-slate-700 font-sans">Accountant's Shift Close Wizard</h2>
-        <p className="text-xs text-slate-400 font-sans">Step-by-step process to reconcile and move cash from POS registers to the Main Safe and Tips Drawer.</p>
-        <div className="mt-2 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200 inline-block font-sans">
-          <span className="font-semibold text-slate-600">Last Closed Shift: </span>
-          <span className="font-mono bg-slate-200 px-1 py-0.5 rounded text-slate-700 text-[10px]">ID: {lastClosedShift.id.slice(-6)}</span>
-          <span className="mx-2 text-slate-300">|</span>
-          <span className="font-semibold text-slate-600">Closed At: </span>
-          <span className="text-slate-600">{new Date(lastClosedShift.closedAt).toLocaleString('en-EG')}</span>
+        <p className="text-xs text-slate-400 font-sans mb-3">Step-by-step process to reconcile and move cash from POS registers to the Main Safe and Tips Drawer.</p>
+        
+        <div className="bg-white rounded-xl p-5 shadow border border-slate-100 font-sans space-y-4">
+          <div className="flex justify-between items-center border-b pb-3">
+            <div>
+              <h3 className="font-bold text-slate-800 text-sm">Last Closed Shift Summary</h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Closed At: {new Date(lastClosedShift.closedAt).toLocaleString('en-EG')} | Operator: {lastClosedShift.openedBy?.name ?? '—'}
+              </p>
+            </div>
+            <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-700 text-[10px] font-semibold">
+              ID: {lastClosedShift.id.slice(-6)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+              <p className="text-slate-400 font-medium">Opening Float</p>
+              <p className="font-bold font-mono text-slate-700 mt-1">{egp(lastClosedShift.floatCents)}</p>
+            </div>
+            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+              <p className="text-slate-400 font-medium">Expected Drawer Cash</p>
+              <p className="font-bold font-mono text-slate-700 mt-1">{egp(lastClosedShift.expectedCents ?? 0)}</p>
+            </div>
+            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+              <p className="text-slate-400 font-medium">Actual Counted Cash</p>
+              <p className="font-bold font-mono text-slate-700 mt-1">{egp(lastClosedShift.countedCents ?? 0)}</p>
+            </div>
+            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+              <p className="text-slate-400 font-medium">Difference (Variance)</p>
+              <p className={`font-bold font-mono mt-1 ${(lastClosedShift.varianceCents ?? 0) < 0 ? 'text-red-600' : (lastClosedShift.varianceCents ?? 0) > 0 ? 'text-emerald-700' : 'text-slate-700'}`}>
+                {(lastClosedShift.varianceCents ?? 0) > 0 ? '+' : ''}{egp(lastClosedShift.varianceCents ?? 0)}
+              </p>
+            </div>
+          </div>
+
+          {!isReconciling ? (
+            <div className="flex justify-end pt-1">
+              <Btn
+                size="xs"
+                onClick={() => {
+                  setNewCountedAmount(String((lastClosedShift.countedCents ?? 0) / 100));
+                  setReconcileError('');
+                  setIsReconciling(true);
+                }}
+              >
+                Correct Count / Reconcile
+              </Btn>
+            </div>
+          ) : (
+            <div className="bg-indigo-50/50 p-3.5 rounded-lg border border-indigo-100 space-y-3">
+              <p className="text-xs font-semibold text-indigo-900">Correct Cash Drawer Count</p>
+              {reconcileError && <ErrorBanner message={reconcileError} />}
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="w-44">
+                  <Field label="New Counted Amount (EGP)">
+                    <TextInput
+                      value={newCountedAmount}
+                      onChange={setNewCountedAmount}
+                      type="number"
+                      disabled={reconcileLoading}
+                    />
+                  </Field>
+                </div>
+                <div className="flex gap-2">
+                  <Btn
+                    kind="primary"
+                    disabled={reconcileLoading}
+                    onClick={() => void submitReconciliation()}
+                  >
+                    Save & Reconcile
+                  </Btn>
+                  <Btn
+                    disabled={reconcileLoading}
+                    onClick={() => setIsReconciling(false)}
+                  >
+                    Cancel
+                  </Btn>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -314,4 +314,129 @@ export class ShiftsService {
       report,
     };
   }
+
+  async reconcileCount(params: { shiftId: string; userId: string; countedCents: number }) {
+    const shift = await this.prisma.shift.findUniqueOrThrow({
+      where: { id: params.shiftId },
+    });
+    if (shift.status !== 'CLOSED') {
+      throw new BadRequestException('Can only reconcile closed shifts');
+    }
+
+    const expectedCents = shift.expectedCents ?? 0;
+    const variance = params.countedCents - expectedCents;
+
+    // Retrieve previous zReport to update it
+    let zReportObj: any = {};
+    if (shift.zReport) {
+      if (typeof shift.zReport === 'string') {
+        try {
+          zReportObj = JSON.parse(shift.zReport);
+        } catch (e) {
+          zReportObj = {};
+        }
+      } else {
+        zReportObj = shift.zReport;
+      }
+    }
+    zReportObj.countedCents = params.countedCents;
+    zReportObj.varianceCents = variance;
+
+    const reconciled = await this.prisma.$transaction(async (tx) => {
+      // 1. Delete previous shortage/overage journal entries for this shift
+      const ref = `Shift #${params.shiftId}`;
+      const existingEntries = await tx.journalEntry.findMany({
+        where: { reference: ref },
+      });
+      for (const entry of existingEntries) {
+        await tx.journalEntry.delete({ where: { id: entry.id } });
+      }
+
+      // 2. Create new shortage/overage journal entry if variance is not 0
+      if (variance !== 0) {
+        const cashAccount = await tx.account.findUnique({ where: { code: '1110' } });
+        if (!cashAccount) {
+          throw new BadRequestException('Cash account (1110) not found in accounting system');
+        }
+
+        if (variance < 0) {
+          const miscExpenseAccount = await tx.account.findUnique({ where: { code: '5290' } });
+          if (!miscExpenseAccount) {
+            throw new BadRequestException('Miscellaneous Expense account (5290) not found');
+          }
+          await tx.journalEntry.create({
+            data: {
+              description: `Shift Close Cash Shortage: Shift #${params.shiftId} (Reconciled)`,
+              reference: ref,
+              date: new Date(),
+              lines: {
+                create: [
+                  {
+                    accountId: miscExpenseAccount.id,
+                    debitCents: Math.abs(variance),
+                    creditCents: 0,
+                  },
+                  {
+                    accountId: cashAccount.id,
+                    debitCents: 0,
+                    creditCents: Math.abs(variance),
+                  },
+                ],
+              },
+            },
+          });
+        } else {
+          const otherIncomeAccount = await tx.account.findUnique({ where: { code: '4500' } });
+          if (!otherIncomeAccount) {
+            throw new BadRequestException('Other Income account (4500) not found');
+          }
+          await tx.journalEntry.create({
+            data: {
+              description: `Shift Close Cash Overage: Shift #${params.shiftId} (Reconciled)`,
+              reference: ref,
+              date: new Date(),
+              lines: {
+                create: [
+                  {
+                    accountId: cashAccount.id,
+                    debitCents: Math.abs(variance),
+                    creditCents: 0,
+                  },
+                  {
+                    accountId: otherIncomeAccount.id,
+                    debitCents: 0,
+                    creditCents: Math.abs(variance),
+                  },
+                ],
+              },
+            },
+          });
+        }
+      }
+
+      // 3. Update the shift
+      return tx.shift.update({
+        where: { id: params.shiftId },
+        data: {
+          countedCents: params.countedCents,
+          varianceCents: variance,
+          zReport: zReportObj as any,
+        },
+      });
+    });
+
+    await this.audit.log({
+      userId: params.userId,
+      action: 'shift.reconcile_count',
+      entity: 'Shift',
+      entityId: params.shiftId,
+      detail: {
+        previousCountedCents: shift.countedCents,
+        newCountedCents: params.countedCents,
+        varianceCents: variance,
+      },
+    });
+
+    return reconciled;
+  }
 }
