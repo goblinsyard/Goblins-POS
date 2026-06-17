@@ -59,7 +59,8 @@ interface ImportedMenuItem {
   isActive?: boolean;
   isFavorite?: boolean;
   department?: 'RESTAURANT' | 'BAR' | 'BILLIARDS' | 'PLAYSTATION';
-  stationName?: string;   // station name to look up on import
+  stationName?: string;                 // plain string form
+  station?: { name?: string } | null;  // object form (from export)
   modifierGroups?: ImportedModifierGroup[];
   recipe?: ImportedRecipe;
   priceSchedules?: ImportedPriceSchedule[];
@@ -72,7 +73,8 @@ interface ImportedCategory {
   color?: string;
   isActive?: boolean;
   parentCategoryName?: string;
-  stationName?: string;   // resolved station name for fallback routing
+  stationName?: string;                 // plain string form
+  station?: { name?: string } | null;  // object form (from export)
   items?: ImportedMenuItem[];
 }
 
@@ -311,97 +313,105 @@ export class ImportExportController {
       let categoriesCreated = 0;
       let itemsImported = 0;
 
-      // Pass 1: Create or update all categories (without parent linkage)
-      for (const catData of body) {
+      // ── Pass 1: Create/update all categories — build an index keyed by position ──
+      // We use a positional map (index → DB id) so duplicate-named categories stay distinct.
+      const catIndexMap = new Map<number, string>(); // body index → db category id
+
+      for (let i = 0; i < body.length; i++) {
+        const catData = body[i];
         if (!catData.name) continue;
 
-        let category = await this.prisma.category.findFirst({
-          where: { name: catData.name },
-        });
+        // Resolve station (support both string stationName and object station.name)
+        const resolvedStationName = catData.stationName || catData.station?.name || null;
+        const stationRec = resolvedStationName
+          ? stations.find((s) => s.name.toLowerCase() === resolvedStationName.toLowerCase())
+          : null;
 
         const catPayload = {
           nameAr: catData.nameAr || null,
           sortOrder: catData.sortOrder ?? 0,
           color: catData.color || null,
           isActive: catData.isActive ?? true,
+          stationId: stationRec?.id ?? null,
         };
 
-        if (!category) {
+        // For duplicate-named categories, try to match by name+sortOrder to avoid conflating them.
+        // Strategy: find existing by name, but only reuse if its sortOrder matches OR it has no sortOrder yet.
+        let existing = await this.prisma.category.findFirst({
+          where: { name: catData.name, sortOrder: catData.sortOrder ?? 0 },
+        });
+        if (!existing) {
+          // Check if ANY with this name exists — if none, create fresh
+          const anyWithName = await this.prisma.category.findFirst({ where: { name: catData.name } });
+          if (!anyWithName || anyWithName.sortOrder !== (catData.sortOrder ?? 0)) {
+            existing = null; // create new
+          } else {
+            existing = anyWithName;
+          }
+        }
+
+        let category: { id: string };
+        if (!existing) {
           category = await this.prisma.category.create({
-            data: {
-              name: catData.name,
-              ...catPayload,
-            },
+            data: { name: catData.name, ...catPayload },
           });
           categoriesCreated++;
         } else {
           category = await this.prisma.category.update({
-            where: { id: category.id },
+            where: { id: existing.id },
             data: catPayload,
           });
         }
+        catIndexMap.set(i, category.id);
       }
 
-      // Pass 1b: Set stationId on each category by stationName
-      for (const catData of body) {
-        if (!catData.name || !catData.stationName) continue;
-        const stationRec = stations.find((s) => s.name.toLowerCase() === catData.stationName!.toLowerCase());
-        if (!stationRec) continue;
-        const cat = await this.prisma.category.findFirst({ where: { name: catData.name } });
-        if (cat) {
-          await this.prisma.category.update({
-            where: { id: cat.id },
-            data: { stationId: stationRec.id },
-          });
-        }
-      }
+      // ── Pass 2: Set parent-child linkages using the index map ──
+      for (let i = 0; i < body.length; i++) {
+        const catData = body[i];
+        const catId = catIndexMap.get(i);
+        if (!catId) continue;
 
-      // Pass 2: Set parent-child category linkages
-      for (const catData of body) {
-        if (!catData.name) continue;
-
-        const currentCat = await this.prisma.category.findFirst({
-          where: { name: catData.name },
-        });
-
-        if (currentCat) {
-          if (catData.parentCategoryName) {
-            const parentCategory = await this.prisma.category.findFirst({
-              where: { name: catData.parentCategoryName },
-            });
-
-            if (parentCategory && currentCat.id !== parentCategory.id) {
-              await this.prisma.category.update({
-                where: { id: currentCat.id },
-                data: { parentCategoryId: parentCategory.id },
-              });
-            }
-          } else {
-            await this.prisma.category.update({
-              where: { id: currentCat.id },
-              data: { parentCategoryId: null },
-            });
+        if (catData.parentCategoryName) {
+          // Find the parent's id — prefer a category we just created (in catIndexMap)
+          // that matches the parent name; pick the first match.
+          let parentId: string | null = null;
+          for (const [, pid] of catIndexMap) {
+            const p = await this.prisma.category.findUnique({ where: { id: pid }, select: { name: true } });
+            if (p?.name === catData.parentCategoryName && pid !== catId) { parentId = pid; break; }
           }
+          if (!parentId) {
+            // Fall back: search DB
+            const dbParent = await this.prisma.category.findFirst({ where: { name: catData.parentCategoryName } });
+            if (dbParent && dbParent.id !== catId) parentId = dbParent.id;
+          }
+          if (parentId) {
+            await this.prisma.category.update({ where: { id: catId }, data: { parentCategoryId: parentId } });
+          }
+        } else {
+          await this.prisma.category.update({ where: { id: catId }, data: { parentCategoryId: null } });
         }
       }
 
-      // Pass 3: Create items, modifier groups, modifiers, recipes, and price schedules
-      for (const catData of body) {
-        if (!catData.name) continue;
+      // ── Pass 3: Create items using the positional index map ──
+      for (let i = 0; i < body.length; i++) {
+        const catData = body[i];
+        const catId = catIndexMap.get(i);
+        if (!catId) continue;
 
-        const category = await this.prisma.category.findFirstOrThrow({
-          where: { name: catData.name },
-        });
+        // We need the full category object for the findFirstOrThrow equivalent
+        const category = await this.prisma.category.findUnique({ where: { id: catId } });
+        if (!category) continue;
 
         if (!catData.items || !Array.isArray(catData.items)) continue;
 
         for (const itemData of catData.items) {
           if (!itemData.name || !(itemData.priceCents >= 0)) continue;
 
-          // Determine routing station: stationName > department > null
+          // Determine routing station: station.name > stationName > department > inherit from category
           let stationId: string | null = null;
-          if (itemData.stationName) {
-            const byName = stations.find((s) => s.name.toLowerCase() === itemData.stationName!.toLowerCase());
+          const itemStationName = itemData.station?.name || itemData.stationName || null;
+          if (itemStationName) {
+            const byName = stations.find((s) => s.name.toLowerCase() === itemStationName.toLowerCase());
             if (byName) stationId = byName.id;
           }
           if (!stationId) {
@@ -413,13 +423,17 @@ export class ImportExportController {
               if (kitchenStation) stationId = kitchenStation.id;
             }
           }
+          // If still no station, inherit from the category's station
+          if (!stationId && category.stationId) {
+            stationId = category.stationId;
+          }
 
           // Find or create Menu Item
           let menuItem = await this.prisma.menuItem.findFirst({
             where: {
               OR: [
                 ...(itemData.sku ? [{ sku: itemData.sku }] : []),
-                { name: itemData.name, categoryId: category.id },
+                { name: itemData.name, categoryId: catId },
               ],
             },
           });
@@ -446,7 +460,7 @@ export class ImportExportController {
             menuItem = await this.prisma.menuItem.create({
               data: {
                 ...itemPayload,
-                categoryId: category.id,
+                categoryId: catId,
               },
             });
           }
