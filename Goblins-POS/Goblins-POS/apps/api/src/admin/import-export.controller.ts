@@ -629,7 +629,7 @@ export class ImportExportController {
       try {
         await this.costing.runSnapshot();
       } catch (snapErr) {
-        console.warn('costing.runSnapshot failed after import (non-fatal):', snapErr?.message);
+        console.warn('costing.runSnapshot failed after import (non-fatal):', (snapErr as any)?.message);
       }
 
       await this.audit.log({

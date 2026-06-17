@@ -285,7 +285,7 @@ export class AdminController {
   ) {
     if (!body.departments?.length) throw new BadRequestException('departments required');
     const result = await this.prisma.menuItem.updateMany({
-      where: { department: { in: body.departments } },
+      where: { department: { in: body.departments as any[] } },
       data: { stationId: id },
     });
     await this.audit.log({ userId: req.user.sub, action: 'station.bulk_assign', entity: 'Station', entityId: id, detail: { departments: body.departments, count: result.count } as any });
