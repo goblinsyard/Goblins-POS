@@ -318,7 +318,7 @@ export class ImportExportController {
       const catIndexMap = new Map<number, string>(); // body index → db category id
 
       for (let i = 0; i < body.length; i++) {
-        const catData = body[i];
+        const catData = body[i]!;
         if (!catData.name) continue;
 
         // Resolve station (support both string stationName and object station.name)
@@ -367,7 +367,7 @@ export class ImportExportController {
 
       // ── Pass 2: Set parent-child linkages using the index map ──
       for (let i = 0; i < body.length; i++) {
-        const catData = body[i];
+        const catData = body[i]!;
         const catId = catIndexMap.get(i);
         if (!catId) continue;
 
@@ -394,7 +394,7 @@ export class ImportExportController {
 
       // ── Pass 3: Create items using the positional index map ──
       for (let i = 0; i < body.length; i++) {
-        const catData = body[i];
+        const catData = body[i]!;
         const catId = catIndexMap.get(i);
         if (!catId) continue;
 
