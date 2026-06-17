@@ -305,327 +305,325 @@ export class ImportExportController {
       let categoriesCreated = 0;
       let itemsImported = 0;
 
-      await this.prisma.$transaction(async (tx) => {
-        // Pass 1: Create or update all categories (without parent linkage)
-        for (const catData of body) {
-          if (!catData.name) continue;
+      // Pass 1: Create or update all categories (without parent linkage)
+      for (const catData of body) {
+        if (!catData.name) continue;
 
-          let category = await tx.category.findFirst({
-            where: { name: catData.name },
+        let category = await this.prisma.category.findFirst({
+          where: { name: catData.name },
+        });
+
+        const catPayload = {
+          nameAr: catData.nameAr || null,
+          sortOrder: catData.sortOrder ?? 0,
+          color: catData.color || null,
+          isActive: catData.isActive ?? true,
+        };
+
+        if (!category) {
+          category = await this.prisma.category.create({
+            data: {
+              name: catData.name,
+              ...catPayload,
+            },
+          });
+          categoriesCreated++;
+        } else {
+          category = await this.prisma.category.update({
+            where: { id: category.id },
+            data: catPayload,
+          });
+        }
+      }
+
+      // Pass 2: Set parent-child category linkages
+      for (const catData of body) {
+        if (!catData.name) continue;
+
+        const currentCat = await this.prisma.category.findFirst({
+          where: { name: catData.name },
+        });
+
+        if (currentCat) {
+          if (catData.parentCategoryName) {
+            const parentCategory = await this.prisma.category.findFirst({
+              where: { name: catData.parentCategoryName },
+            });
+
+            if (parentCategory && currentCat.id !== parentCategory.id) {
+              await this.prisma.category.update({
+                where: { id: currentCat.id },
+                data: { parentCategoryId: parentCategory.id },
+              });
+            }
+          } else {
+            await this.prisma.category.update({
+              where: { id: currentCat.id },
+              data: { parentCategoryId: null },
+            });
+          }
+        }
+      }
+
+      // Pass 3: Create items, modifier groups, modifiers, recipes, and price schedules
+      for (const catData of body) {
+        if (!catData.name) continue;
+
+        const category = await this.prisma.category.findFirstOrThrow({
+          where: { name: catData.name },
+        });
+
+        if (!catData.items || !Array.isArray(catData.items)) continue;
+
+        for (const itemData of catData.items) {
+          if (!itemData.name || !(itemData.priceCents >= 0)) continue;
+
+          // Determine routing station
+          let stationId: string | null = null;
+          if (itemData.department === 'BAR') {
+            const barStation = stations.find((s) => s.name.toLowerCase().includes('bar'));
+            if (barStation) stationId = barStation.id;
+          } else {
+            const kitchenStation = stations.find((s) => s.name.toLowerCase().includes('kitchen'));
+            if (kitchenStation) stationId = kitchenStation.id;
+          }
+
+          // Find or create Menu Item
+          let menuItem = await this.prisma.menuItem.findFirst({
+            where: {
+              OR: [
+                ...(itemData.sku ? [{ sku: itemData.sku }] : []),
+                { name: itemData.name, categoryId: category.id },
+              ],
+            },
           });
 
-          const catPayload = {
-            nameAr: catData.nameAr || null,
-            sortOrder: catData.sortOrder ?? 0,
-            color: catData.color || null,
-            isActive: catData.isActive ?? true,
+          const itemPayload = {
+            name: itemData.name,
+            nameAr: itemData.nameAr || null,
+            description: itemData.description || null,
+            sku: itemData.sku || null,
+            priceCents: itemData.priceCents,
+            isActive: itemData.isActive ?? true,
+            isFavorite: itemData.isFavorite ?? false,
+            department: itemData.department ?? 'RESTAURANT',
+            stationId: stationId,
+            taxRateId: defaultTax?.id || null,
           };
 
-          if (!category) {
-            category = await tx.category.create({
-              data: {
-                name: catData.name,
-                ...catPayload,
-              },
+          if (menuItem) {
+            menuItem = await this.prisma.menuItem.update({
+              where: { id: menuItem.id },
+              data: itemPayload,
             });
-            categoriesCreated++;
           } else {
-            category = await tx.category.update({
-              where: { id: category.id },
-              data: catPayload,
-            });
-          }
-        }
-
-        // Pass 2: Set parent-child category linkages
-        for (const catData of body) {
-          if (!catData.name) continue;
-
-          const currentCat = await tx.category.findFirst({
-            where: { name: catData.name },
-          });
-
-          if (currentCat) {
-            if (catData.parentCategoryName) {
-              const parentCategory = await tx.category.findFirst({
-                where: { name: catData.parentCategoryName },
-              });
-
-              if (parentCategory && currentCat.id !== parentCategory.id) {
-                await tx.category.update({
-                  where: { id: currentCat.id },
-                  data: { parentCategoryId: parentCategory.id },
-                });
-              }
-            } else {
-              await tx.category.update({
-                where: { id: currentCat.id },
-                data: { parentCategoryId: null },
-              });
-            }
-          }
-        }
-
-        // Pass 3: Create items, modifier groups, modifiers, recipes, and price schedules
-        for (const catData of body) {
-          if (!catData.name) continue;
-
-          const category = await tx.category.findFirstOrThrow({
-            where: { name: catData.name },
-          });
-
-          if (!catData.items || !Array.isArray(catData.items)) continue;
-
-          for (const itemData of catData.items) {
-            if (!itemData.name || !(itemData.priceCents >= 0)) continue;
-
-            // Determine routing station
-            let stationId: string | null = null;
-            if (itemData.department === 'BAR') {
-              const barStation = stations.find((s) => s.name.toLowerCase().includes('bar'));
-              if (barStation) stationId = barStation.id;
-            } else {
-              const kitchenStation = stations.find((s) => s.name.toLowerCase().includes('kitchen'));
-              if (kitchenStation) stationId = kitchenStation.id;
-            }
-
-            // Find or create Menu Item
-            let menuItem = await tx.menuItem.findFirst({
-              where: {
-                OR: [
-                  ...(itemData.sku ? [{ sku: itemData.sku }] : []),
-                  { name: itemData.name, categoryId: category.id },
-                ],
+            menuItem = await this.prisma.menuItem.create({
+              data: {
+                ...itemPayload,
+                categoryId: category.id,
               },
             });
+          }
+          itemsImported++;
 
-            const itemPayload = {
-              name: itemData.name,
-              nameAr: itemData.nameAr || null,
-              description: itemData.description || null,
-              sku: itemData.sku || null,
-              priceCents: itemData.priceCents,
-              isActive: itemData.isActive ?? true,
-              isFavorite: itemData.isFavorite ?? false,
-              department: itemData.department ?? 'RESTAURANT',
-              stationId: stationId,
-              taxRateId: defaultTax?.id || null,
+          // Import/update Recipe if specified
+          if (itemData.recipe) {
+            let recipe = await this.prisma.recipe.findUnique({
+              where: { menuItemId: menuItem.id },
+            });
+
+            const recipePayload = {
+              name: itemData.recipe.name || `${menuItem.name} Recipe`,
+              yieldQty: itemData.recipe.yieldQty ?? 1,
+              prepInstructions: itemData.recipe.prepInstructions || null,
+              deductLocationName: itemData.recipe.deductLocationName ?? 'Kitchen',
+              isActive: itemData.recipe.isActive ?? true,
             };
 
-            if (menuItem) {
-              menuItem = await tx.menuItem.update({
-                where: { id: menuItem.id },
-                data: itemPayload,
+            if (recipe) {
+              recipe = await this.prisma.recipe.update({
+                where: { id: recipe.id },
+                data: recipePayload,
+              });
+              // Clear old lines before re-inserting
+              await this.prisma.recipeLine.deleteMany({
+                where: { recipeId: recipe.id },
               });
             } else {
-              menuItem = await tx.menuItem.create({
+              recipe = await this.prisma.recipe.create({
                 data: {
-                  ...itemPayload,
-                  categoryId: category.id,
+                  ...recipePayload,
+                  menuItemId: menuItem.id,
                 },
               });
             }
-            itemsImported++;
 
-            // Import/update Recipe if specified
-            if (itemData.recipe) {
-              let recipe = await tx.recipe.findUnique({
-                where: { menuItemId: menuItem.id },
-              });
-
-              const recipePayload = {
-                name: itemData.recipe.name || `${menuItem.name} Recipe`,
-                yieldQty: itemData.recipe.yieldQty ?? 1,
-                prepInstructions: itemData.recipe.prepInstructions || null,
-                deductLocationName: itemData.recipe.deductLocationName ?? 'Kitchen',
-                isActive: itemData.recipe.isActive ?? true,
-              };
-
-              if (recipe) {
-                recipe = await tx.recipe.update({
-                  where: { id: recipe.id },
-                  data: recipePayload,
-                });
-                // Clear old lines before re-inserting
-                await tx.recipeLine.deleteMany({
-                  where: { recipeId: recipe.id },
-                });
-              } else {
-                recipe = await tx.recipe.create({
-                  data: {
-                    ...recipePayload,
-                    menuItemId: menuItem.id,
+            if (itemData.recipe.lines && Array.isArray(itemData.recipe.lines)) {
+              for (const line of itemData.recipe.lines) {
+                // Find ingredient by SKU or Name
+                let ingredient = await this.prisma.ingredient.findFirst({
+                  where: {
+                    OR: [
+                      ...(line.ingredientSku ? [{ sku: line.ingredientSku }] : []),
+                      { name: line.ingredientName },
+                    ],
                   },
                 });
-              }
 
-              if (itemData.recipe.lines && Array.isArray(itemData.recipe.lines)) {
-                for (const line of itemData.recipe.lines) {
-                  // Find ingredient by SKU or Name
-                  let ingredient = await tx.ingredient.findFirst({
-                    where: {
-                      OR: [
-                        ...(line.ingredientSku ? [{ sku: line.ingredientSku }] : []),
-                        { name: line.ingredientName },
-                      ],
-                    },
-                  });
-
-                  if (!ingredient) {
-                    // Create ingredient if missing
-                    const uomId = line.uomId || 'pc';
-                    const uomExists = await tx.uom.findUnique({ where: { id: uomId } });
-                    if (!uomExists) {
-                      await tx.uom.create({
-                        data: { id: uomId, label: uomId, baseUnit: uomId, factor: 1 },
-                      });
-                    }
-
-                    ingredient = await tx.ingredient.create({
-                      data: {
-                        name: line.ingredientName,
-                        sku: line.ingredientSku || null,
-                        uomId: uomId,
-                        avgCostCents: line.avgCostCents ?? 0,
-                        lastCostCents: line.lastCostCents ?? 0,
-                        isActive: true,
-                      },
-                    });
-                  } else {
-                    // Update costs if they changed
-                    const updateData: Record<string, any> = {};
-                    if (line.avgCostCents !== undefined && Number(ingredient.avgCostCents) !== line.avgCostCents) {
-                      updateData.avgCostCents = line.avgCostCents;
-                    }
-                    if (line.lastCostCents !== undefined && Number(ingredient.lastCostCents) !== line.lastCostCents) {
-                      updateData.lastCostCents = line.lastCostCents;
-                    }
-                    if (Object.keys(updateData).length > 0) {
-                      await tx.ingredient.update({
-                        where: { id: ingredient.id },
-                        data: updateData,
-                      });
-                    }
-                  }
-
-                  if (ingredient) {
-                    await tx.recipeLine.create({
-                      data: {
-                        recipeId: recipe.id,
-                        ingredientId: ingredient.id,
-                        quantity: line.quantity,
-                        wastePct: line.wastePct ?? 0,
-                      },
+                if (!ingredient) {
+                  // Create ingredient if missing
+                  const uomId = line.uomId || 'pc';
+                  const uomExists = await this.prisma.uom.findUnique({ where: { id: uomId } });
+                  if (!uomExists) {
+                    await this.prisma.uom.create({
+                      data: { id: uomId, label: uomId, baseUnit: uomId, factor: 1 },
                     });
                   }
-                }
-              }
-            }
 
-            // Import/update Price Schedules if specified
-            if (itemData.priceSchedules && Array.isArray(itemData.priceSchedules)) {
-              await tx.priceSchedule.deleteMany({
-                where: { itemId: menuItem.id },
-              });
-
-              for (const schedule of itemData.priceSchedules) {
-                await tx.priceSchedule.create({
-                  data: {
-                    itemId: menuItem.id,
-                    name: schedule.name,
-                    priceCents: schedule.priceCents,
-                    daysOfWeek: schedule.daysOfWeek,
-                    startTime: schedule.startTime,
-                    endTime: schedule.endTime,
-                    isActive: schedule.isActive ?? true,
-                  },
-                });
-              }
-            }
-
-            // Import/update Modifier Groups if specified
-            if (itemData.modifierGroups && Array.isArray(itemData.modifierGroups)) {
-              // Clear existing modifier group links for this menu item
-              await tx.itemModifierGroup.deleteMany({
-                where: { itemId: menuItem.id },
-              });
-
-              for (const groupData of itemData.modifierGroups) {
-                if (!groupData.name) continue;
-
-                // Find or create Modifier Group
-                let modGroup = await tx.modifierGroup.findFirst({
-                  where: { name: groupData.name },
-                });
-
-                if (!modGroup) {
-                  modGroup = await tx.modifierGroup.create({
+                  ingredient = await this.prisma.ingredient.create({
                     data: {
-                      name: groupData.name,
-                      nameAr: groupData.nameAr || null,
-                      minSelect: groupData.minSelect ?? 0,
-                      maxSelect: groupData.maxSelect ?? 1,
-                      isActive: groupData.isActive ?? true,
+                      name: line.ingredientName,
+                      sku: line.ingredientSku || null,
+                      uomId: uomId,
+                      avgCostCents: line.avgCostCents ?? 0,
+                      lastCostCents: line.lastCostCents ?? 0,
+                      isActive: true,
                     },
                   });
                 } else {
-                  modGroup = await tx.modifierGroup.update({
-                    where: { id: modGroup.id },
+                  // Update costs if they changed
+                  const updateData: Record<string, any> = {};
+                  if (line.avgCostCents !== undefined && Number(ingredient.avgCostCents) !== line.avgCostCents) {
+                    updateData.avgCostCents = line.avgCostCents;
+                  }
+                  if (line.lastCostCents !== undefined && Number(ingredient.lastCostCents) !== line.lastCostCents) {
+                    updateData.lastCostCents = line.lastCostCents;
+                  }
+                  if (Object.keys(updateData).length > 0) {
+                    await this.prisma.ingredient.update({
+                      where: { id: ingredient.id },
+                      data: updateData,
+                    });
+                  }
+                }
+
+                if (ingredient) {
+                  await this.prisma.recipeLine.create({
                     data: {
-                      nameAr: groupData.nameAr || null,
-                      minSelect: groupData.minSelect ?? 0,
-                      maxSelect: groupData.maxSelect ?? 1,
-                      isActive: groupData.isActive ?? true,
+                      recipeId: recipe.id,
+                      ingredientId: ingredient.id,
+                      quantity: line.quantity,
+                      wastePct: line.wastePct ?? 0,
                     },
                   });
                 }
+              }
+            }
+          }
 
-                // Link to MenuItem
-                await tx.itemModifierGroup.create({
+          // Import/update Price Schedules if specified
+          if (itemData.priceSchedules && Array.isArray(itemData.priceSchedules)) {
+            await this.prisma.priceSchedule.deleteMany({
+              where: { itemId: menuItem.id },
+            });
+
+            for (const schedule of itemData.priceSchedules) {
+              await this.prisma.priceSchedule.create({
+                data: {
+                  itemId: menuItem.id,
+                  name: schedule.name,
+                  priceCents: schedule.priceCents,
+                  daysOfWeek: schedule.daysOfWeek,
+                  startTime: schedule.startTime,
+                  endTime: schedule.endTime,
+                  isActive: schedule.isActive ?? true,
+                },
+              });
+            }
+          }
+
+          // Import/update Modifier Groups if specified
+          if (itemData.modifierGroups && Array.isArray(itemData.modifierGroups)) {
+            // Clear existing modifier group links for this menu item
+            await this.prisma.itemModifierGroup.deleteMany({
+              where: { itemId: menuItem.id },
+            });
+
+            for (const groupData of itemData.modifierGroups) {
+              if (!groupData.name) continue;
+
+              // Find or create Modifier Group
+              let modGroup = await this.prisma.modifierGroup.findFirst({
+                where: { name: groupData.name },
+              });
+
+              if (!modGroup) {
+                modGroup = await this.prisma.modifierGroup.create({
                   data: {
-                    itemId: menuItem.id,
-                    groupId: modGroup.id,
+                    name: groupData.name,
+                    nameAr: groupData.nameAr || null,
+                    minSelect: groupData.minSelect ?? 0,
+                    maxSelect: groupData.maxSelect ?? 1,
+                    isActive: groupData.isActive ?? true,
                   },
                 });
+              } else {
+                modGroup = await this.prisma.modifierGroup.update({
+                  where: { id: modGroup.id },
+                  data: {
+                    nameAr: groupData.nameAr || null,
+                    minSelect: groupData.minSelect ?? 0,
+                    maxSelect: groupData.maxSelect ?? 1,
+                    isActive: groupData.isActive ?? true,
+                  },
+                });
+              }
 
-                if (groupData.modifiers && Array.isArray(groupData.modifiers)) {
-                  for (const modData of groupData.modifiers) {
-                    if (!modData.name) continue;
+              // Link to MenuItem
+              await this.prisma.itemModifierGroup.create({
+                data: {
+                  itemId: menuItem.id,
+                  groupId: modGroup.id,
+                },
+              });
 
-                    // Find or create Modifier
-                    const existingMod = await tx.modifier.findFirst({
-                      where: { name: modData.name, groupId: modGroup.id },
+              if (groupData.modifiers && Array.isArray(groupData.modifiers)) {
+                for (const modData of groupData.modifiers) {
+                  if (!modData.name) continue;
+
+                  // Find or create Modifier
+                  const existingMod = await this.prisma.modifier.findFirst({
+                    where: { name: modData.name, groupId: modGroup.id },
+                  });
+
+                  if (!existingMod) {
+                    await this.prisma.modifier.create({
+                      data: {
+                        groupId: modGroup.id,
+                        name: modData.name,
+                        nameAr: modData.nameAr || null,
+                        priceDeltaCents: modData.priceDeltaCents ?? 0,
+                        isActive: modData.isActive ?? true,
+                        sortOrder: modData.sortOrder ?? 0,
+                      },
                     });
-
-                    if (!existingMod) {
-                      await tx.modifier.create({
-                        data: {
-                          groupId: modGroup.id,
-                          name: modData.name,
-                          nameAr: modData.nameAr || null,
-                          priceDeltaCents: modData.priceDeltaCents ?? 0,
-                          isActive: modData.isActive ?? true,
-                          sortOrder: modData.sortOrder ?? 0,
-                        },
-                      });
-                    } else {
-                      await tx.modifier.update({
-                        where: { id: existingMod.id },
-                        data: {
-                          nameAr: modData.nameAr || null,
-                          priceDeltaCents: modData.priceDeltaCents ?? 0,
-                          isActive: modData.isActive ?? true,
-                          sortOrder: modData.sortOrder ?? 0,
-                        },
-                      });
-                    }
+                  } else {
+                    await this.prisma.modifier.update({
+                      where: { id: existingMod.id },
+                      data: {
+                        nameAr: modData.nameAr || null,
+                        priceDeltaCents: modData.priceDeltaCents ?? 0,
+                        isActive: modData.isActive ?? true,
+                        sortOrder: modData.sortOrder ?? 0,
+                      },
+                    });
                   }
                 }
               }
             }
           }
         }
-      });
+      }
 
       // Recalculate theoretical costs and generate item cost snapshots
       await this.costing.runSnapshot();
