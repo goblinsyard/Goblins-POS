@@ -16,36 +16,6 @@ const SECTIONS = ['general', 'receipt customizer', 'printers', 'stations', 'paym
 export function SettingsView() {
   const [section, setSection] = useState<(typeof SECTIONS)[number]>('general');
 
-  async function exportFloor() {
-    setBusy(true);
-    try {
-      const data = await api<any[]>('/admin/export/floor');
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `floor-layout-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      setSuccess('Floor layout exported successfully.');
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Export failed');
-    } finally { setBusy(false); }
-  }
-
-  async function handleFloorImport(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setBusy(true);
-    try {
-      const text = await file.text();
-      const payload = JSON.parse(text);
-      if (!Array.isArray(payload)) throw new Error('Floor layout file must be a JSON array of zones.');
-      const res = await api<any>('/admin/import/floor', { method: 'POST', body: payload });
-      setSuccess(`Floor import complete! ${res.zonesCreated} zones, ${res.resourcesCreated} resources imported.`);
-    } catch (err) {
-      setErr(err instanceof Error ? err.message : 'Import failed');
-    } finally { setBusy(false); e.target.value = ''; }
-  }
-
   return (
     <div>
       <div className="mb-4"><Pills value={section} onChange={setSection} options={SECTIONS} /></div>
@@ -591,6 +561,36 @@ function DatabaseManager() {
   const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
   const [autoBackupInterval, setAutoBackupInterval] = useState('24');
   const [autoBackupKeep, setAutoBackupKeep] = useState('10');
+
+  async function exportFloor() {
+    setBusy(true);
+    try {
+      const data = await api<any[]>('/admin/export/floor');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `floor-layout-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      setSuccess('Floor layout exported successfully.');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Export failed');
+    } finally { setBusy(false); }
+  }
+
+  async function handleFloorImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      if (!Array.isArray(payload)) throw new Error('Floor layout file must be a JSON array of zones.');
+      const res = await api<any>('/admin/import/floor', { method: 'POST', body: payload });
+      setSuccess(`Floor import complete! ${res.zonesCreated} zones, ${res.resourcesCreated} resources imported.`);
+    } catch (err) {
+      setErr(err instanceof Error ? err.message : 'Import failed');
+    } finally { setBusy(false); e.target.value = ''; }
+  }
 
   const loadBackups = useCallback(() => {
     api<{ files: string[] }>('/admin/db/backups')
