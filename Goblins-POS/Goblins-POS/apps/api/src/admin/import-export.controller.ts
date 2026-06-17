@@ -625,8 +625,12 @@ export class ImportExportController {
         }
       }
 
-      // Recalculate theoretical costs and generate item cost snapshots
-      await this.costing.runSnapshot();
+      // Recalculate theoretical costs and generate item cost snapshots (non-fatal)
+      try {
+        await this.costing.runSnapshot();
+      } catch (snapErr) {
+        console.warn('costing.runSnapshot failed after import (non-fatal):', snapErr?.message);
+      }
 
       await this.audit.log({
         userId: req.user.sub,

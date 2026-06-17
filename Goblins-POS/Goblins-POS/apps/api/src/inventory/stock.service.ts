@@ -138,7 +138,7 @@ export class StockService {
   }
 
   /** Theoretical unit cost of a recipe (recursive over sub-processes), in piasters. */
-  async recipeUnitCost(tx: Prisma.TransactionClient, recipeId: string, seen = new Set<string>()): Promise<Prisma.Decimal> {
+  async recipeUnitCost(tx: Prisma.TransactionClient | any, recipeId: string, seen = new Set<string>()): Promise<Prisma.Decimal> {
     if (seen.has(recipeId)) throw new BadRequestException('Recipe cycle detected');
     seen.add(recipeId);
     const recipe = await tx.recipe.findUniqueOrThrow({
@@ -158,7 +158,7 @@ export class StockService {
   }
 
   /** Theoretical unit cost of a manufacturing process (recursive), in piasters. */
-  async processUnitCost(tx: Prisma.TransactionClient, processId: string, seen = new Set<string>()): Promise<Prisma.Decimal> {
+  async processUnitCost(tx: Prisma.TransactionClient | any, processId: string, seen = new Set<string>()): Promise<Prisma.Decimal> {
     if (seen.has(processId)) throw new BadRequestException('Manufacturing process cycle detected');
     seen.add(processId);
     const process = await tx.manufacturingProcess.findUniqueOrThrow({

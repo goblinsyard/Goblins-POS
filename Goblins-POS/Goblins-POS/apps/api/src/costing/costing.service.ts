@@ -17,30 +17,29 @@ export class CostingService {
 
   /** Theoretical cost per menu item (walks recipe tree incl. sub-recipes). */
   async itemCosts() {
-    return this.prisma.$transaction(async (tx) => {
-      const items = await tx.menuItem.findMany({
-        where: { isActive: true, recipe: { isNot: null } },
-        include: { recipe: true, category: { select: { name: true } } },
-      });
-      const results = [];
-      for (const item of items) {
-        const unitCost = await this.stock.recipeUnitCost(tx, item.recipe!.id);
-        const costCents = Math.round(unitCost.toNumber());
-        const costPctBps =
-          item.priceCents > 0 ? Math.round((costCents / item.priceCents) * 10_000) : 0;
-        results.push({
-          itemId: item.id,
-          name: item.name,
-          category: item.category.name,
-          department: item.department,
-          priceCents: item.priceCents,
-          costCents,
-          costPctBps,
-          marginCents: item.priceCents - costCents,
-        });
-      }
-      return results.sort((a, b) => b.costPctBps - a.costPctBps);
+    // No transaction needed — pure reads + in-memory computation
+    const items = await this.prisma.menuItem.findMany({
+      where: { isActive: true, recipe: { isNot: null } },
+      include: { recipe: true, category: { select: { name: true } } },
     });
+    const results = [];
+    for (const item of items) {
+      const unitCost = await this.stock.recipeUnitCost(this.prisma, item.recipe!.id);
+      const costCents = Math.round(unitCost.toNumber());
+      const costPctBps =
+        item.priceCents > 0 ? Math.round((costCents / item.priceCents) * 10_000) : 0;
+      results.push({
+        itemId: item.id,
+        name: item.name,
+        category: item.category.name,
+        department: item.department,
+        priceCents: item.priceCents,
+        costCents,
+        costPctBps,
+        marginCents: item.priceCents - costCents,
+      });
+    }
+    return results.sort((a, b) => b.costPctBps - a.costPctBps);
   }
 
   /** Theoretical vs ACTUAL cost % per day: actual = SALE_DEDUCTION ledger value / revenue. */
