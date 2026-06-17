@@ -24,6 +24,10 @@ apps/api/src/generated/
 
 # Print previews
 print-previews/
+apps/print-service/preview/
 
 # Backups
 backups/
+
+# Lock files (managed by Railway/Vercel build)
+pnpm-lock.yaml
