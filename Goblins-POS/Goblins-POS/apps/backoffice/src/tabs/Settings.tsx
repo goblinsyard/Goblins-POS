@@ -1135,7 +1135,7 @@ function DatabaseManager() {
           <p className="text-xs text-slate-500 mt-0.5">Import and export your Menu Catalog, Floor Layout, Customers Directory, or Vendors Directory in JSON or CSV formats.</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 pt-2 border-t divide-x divide-slate-100">
+        <div className="grid grid-cols-4 gap-6 pt-2 border-t divide-x divide-slate-100">
           {/* Menu Catalog */}
           <div className="space-y-3">
             <h4 className="font-medium text-slate-700 text-sm">Menu Catalog</h4>
