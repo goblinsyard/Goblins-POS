@@ -880,52 +880,81 @@ export class ImportExportController {
     }
   }
 
-  // ---------- Vendors Export ----------
-
+  // ─── Vendor / Supplier Export ─────────────────────────────────────────────
   @Get('export/vendors')
-  @RequirePermissions('settings.manage')
+  @RequirePermissions('admin')
   async exportVendors() {
-    const vendors = await this.prisma.supplier.findMany({
+    const suppliers = await this.prisma.supplier.findMany({
       orderBy: { name: 'asc' },
     });
-    return vendors;
+    return suppliers.map(s => ({
+      name: s.name,
+      phone: s.phone ?? null,
+      email: s.email ?? null,
+      taxId: s.taxId ?? null,
+      notes: s.notes ?? null,
+      isActive: s.isActive,
+    }));
   }
 
-  // ---------- Vendors Import ----------
-
+  // ─── Vendor / Supplier Import ─────────────────────────────────────────────
   @Post('import/vendors')
-  @RequirePermissions('settings.manage')
-  async importVendors(@Req() req: AuthedRequest, @Body() body: any[]) {
-    if (!Array.isArray(body)) throw new BadRequestException('Expected an array of vendors.');
-    let importedCount = 0;
-    for (const v of body) {
-      if (!v.name) continue;
-      const existing = await this.prisma.supplier.findFirst({ where: { name: v.name } });
-      if (existing) {
-        await this.prisma.supplier.update({
-          where: { id: existing.id },
-          data: {
-            phone: v.phone ?? existing.phone,
-            email: v.email ?? existing.email,
-            address: v.address ?? existing.address,
-            notes: v.notes ?? existing.notes,
-          },
+  @RequirePermissions('admin')
+  async importVendors(
+    @Req() req: AuthedRequest,
+    @Body() body: { name: string; phone?: string; email?: string; taxId?: string; notes?: string; isActive?: boolean }[],
+  ) {
+    try {
+      if (!Array.isArray(body) || body.length === 0)
+        throw new BadRequestException('Expected a non-empty array of vendors.');
+
+      let importedCount = 0;
+      let skippedCount = 0;
+
+      for (const v of body) {
+        if (!v.name?.trim()) continue;
+        const existing = await this.prisma.supplier.findFirst({
+          where: { name: { equals: v.name.trim(), mode: 'insensitive' } },
         });
-      } else {
-        await this.prisma.supplier.create({
-          data: {
-            name: v.name,
-            phone: v.phone ?? null,
-            email: v.email ?? null,
-            address: v.address ?? null,
-            notes: v.notes ?? null,
-          },
-        });
+        if (existing) {
+          await this.prisma.supplier.update({
+            where: { id: existing.id },
+            data: {
+              phone: v.phone ?? existing.phone,
+              email: v.email ?? existing.email,
+              taxId: v.taxId ?? existing.taxId,
+              notes: v.notes ?? existing.notes,
+              isActive: v.isActive ?? existing.isActive,
+            },
+          });
+          skippedCount++;
+        } else {
+          await this.prisma.supplier.create({
+            data: {
+              name: v.name.trim(),
+              phone: v.phone ?? null,
+              email: v.email ?? null,
+              taxId: v.taxId ?? null,
+              notes: v.notes ?? null,
+              isActive: v.isActive ?? true,
+            },
+          });
+          importedCount++;
+        }
       }
-      importedCount++;
+
+      await this.audit.log({
+        userId: req.user.sub,
+        action: 'vendor.import',
+        entity: 'Supplier',
+        entityId: 'import',
+        detail: { importedCount, skippedCount },
+      });
+
+      return { success: true, importedCount, skippedCount };
+    } catch (e) {
+      throw new BadRequestException(e instanceof Error ? e.message : 'Vendor import failed.');
     }
-    await this.audit.log({ userId: req.user.sub, action: 'vendors.import', entity: 'Supplier', entityId: 'bulk', detail: { importedCount } });
-    return { importedCount };
   }
 
   // ---------- Sync Vendors from Poster POS ----------
@@ -957,7 +986,6 @@ export class ImportExportController {
           data: {
             phone: s.supplier_phone ?? s.phone ?? existing.phone,
             email: s.supplier_email ?? s.email ?? existing.email,
-            address: s.supplier_address ?? s.address ?? existing.address,
           },
         });
       } else {
@@ -966,7 +994,6 @@ export class ImportExportController {
             name,
             phone: s.supplier_phone ?? s.phone ?? null,
             email: s.supplier_email ?? s.email ?? null,
-            address: s.supplier_address ?? s.address ?? null,
           },
         });
       }
@@ -976,5 +1003,5 @@ export class ImportExportController {
     await this.audit.log({ userId: req.user.sub, action: 'vendors.sync_poster', entity: 'Supplier', entityId: 'bulk', detail: { importedCount } });
     return { importedCount };
   }
-
 }
+
