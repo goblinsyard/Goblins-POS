@@ -699,10 +699,14 @@ function DatabaseManager() {
     try {
       const data = await api<any[]>('/admin/export/layout');
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
+      a.href = url;
       a.download = `floor-layout-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       setSuccess('Floor layout exported successfully.');
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Export failed');
@@ -823,7 +827,10 @@ function DatabaseManager() {
       const a = document.createElement('a');
       a.href = url;
       a.download = `menu-catalog-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       setSuccess('Menu catalog exported successfully.');
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Export failed');
@@ -839,7 +846,10 @@ function DatabaseManager() {
       const a = document.createElement('a');
       a.href = url;
       a.download = `customers-directory-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       setSuccess('Customers directory exported successfully.');
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Export failed');
@@ -855,7 +865,10 @@ function DatabaseManager() {
       const a = document.createElement('a');
       a.href = url;
       a.download = `vendors-directory-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       setSuccess('Vendors directory exported successfully.');
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Export failed');
