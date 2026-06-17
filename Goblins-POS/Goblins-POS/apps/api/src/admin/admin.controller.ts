@@ -75,7 +75,7 @@ export class AdminController {
 
   @Post('menu/categories')
   @RequirePermissions('menu.manage')
-  async createCategory(@Req() req: AuthedRequest, @Body() body: { name: string; nameAr?: string; color?: string; sortOrder?: number; parentCategoryId?: string | null }) {
+  async createCategory(@Req() req: AuthedRequest, @Body() body: { name: string; nameAr?: string; color?: string; sortOrder?: number; parentCategoryId?: string | null; stationId?: string | null }) {
     if (!body.name) throw new BadRequestException();
     const cat = await this.prisma.category.create({ data: body });
     await this.audit.log({ userId: req.user.sub, action: 'menu.category_create', entity: 'Category', entityId: cat.id });
@@ -88,7 +88,7 @@ export class AdminController {
   async updateCategory(
     @Req() req: AuthedRequest,
     @Param('id') id: string,
-    @Body() body: { name?: string; nameAr?: string; color?: string; sortOrder?: number; parentCategoryId?: string | null; isActive?: boolean }
+    @Body() body: { name?: string; nameAr?: string; color?: string; sortOrder?: number; parentCategoryId?: string | null; isActive?: boolean; stationId?: string | null }
   ) {
     if (body.parentCategoryId === id) {
       throw new BadRequestException('A category cannot be its own parent.');

@@ -99,8 +99,9 @@ model Station {
   sortOrder   Int         @default(0)
   isActive    Boolean     @default(true)
 
-  menuItems MenuItem[]
-  tickets   Ticket[]
+  menuItems  MenuItem[]
+  categories Category[]
+  tickets    Ticket[]
 }
 
 enum StationKind {
@@ -223,6 +224,8 @@ model Category {
   parentCategoryId String?
   parentCategory   Category?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id], onDelete: SetNull)
   subCategories    Category[] @relation("CategoryHierarchy")
+  stationId        String?    // default routing station (fallback when item has no stationId)
+  station          Station?   @relation(fields: [stationId], references: [id])
 
   items MenuItem[]
 }

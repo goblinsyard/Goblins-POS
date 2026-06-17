@@ -28,11 +28,14 @@ export class KdsService {
       const order = await tx.order.findUniqueOrThrow({
         where: { id: orderId },
         include: {
-          items: { where: { status: 'PENDING' }, include: { item: { select: { stationId: true } } } },
+          items: {
+            where: { status: 'PENDING' },
+            include: { item: { select: { stationId: true, categoryId: true, category: { select: { stationId: true } } } } },
+          },
         },
       });
       if (order.status !== 'OPEN') throw new BadRequestException('Order not open');
-      const sendable = order.items.filter((i) => i.item?.stationId && !i.isTimeCharge);
+      const sendable = order.items.filter((i) => (i.item?.stationId || i.item?.category?.stationId) && !i.isTimeCharge);
       if (!sendable.length) {
         // surface misconfiguration loudly: pending food that routes nowhere never reaches a monitor
         const pendingFood = order.items.filter((i) => !i.isTimeCharge);
@@ -44,10 +47,11 @@ export class KdsService {
         return [];
       }
 
-      // group by station + course
+      // group by station + course — item stationId takes priority, then category default
       const groups = new Map<string, typeof sendable>();
       for (const item of sendable) {
-        const key = `${item.item!.stationId}|${item.course}`;
+        const effectiveStationId = item.item!.stationId ?? item.item!.category?.stationId;
+        const key = `${effectiveStationId}|${item.course}`;
         const arr = groups.get(key) ?? [];
         arr.push(item);
         groups.set(key, arr);
@@ -55,7 +59,9 @@ export class KdsService {
 
       const created = [];
       for (const [key, items] of groups) {
-        const [stationId, courseStr] = key.split('|');
+        const pipeIdx = key.indexOf('|');
+        const stationId = key.slice(0, pipeIdx);
+        const courseStr = key.slice(pipeIdx + 1);
         const course = Number(courseStr);
         const ticket = await tx.ticket.create({
           data: {

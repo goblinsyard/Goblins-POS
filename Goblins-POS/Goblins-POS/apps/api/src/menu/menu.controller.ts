@@ -19,10 +19,11 @@ export class MenuController {
   @Get()
   @RequirePermissions('pos.use')
   async fullMenu() {
-    return this.prisma.category.findMany({
+    const categories = await this.prisma.category.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
       include: {
+        station: { select: { id: true, name: true } },
         items: {
           where: { isActive: true },
           orderBy: { sortOrder: 'asc' },
@@ -40,6 +41,7 @@ export class MenuController {
         },
       },
     });
+    return categories;
   }
 
   /** 86 an item — pushes live to all POS + KDS instantly. */

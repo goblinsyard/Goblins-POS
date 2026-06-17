@@ -11,6 +11,8 @@ interface MenuCat {
   isActive?: boolean;
   parentCategoryId?: string | null;
   sortOrder?: number;
+  stationId?: string | null;
+  station?: { id: string; name: string } | null;
   items: {
     id: string;
     name: string;
@@ -18,6 +20,7 @@ interface MenuCat {
     priceCents: number;
     is86ed: boolean;
     stationId?: string | null;
+    department?: string;
     taxRate?: TaxRate | null;
     isFavorite?: boolean;
   }[];
@@ -136,7 +139,7 @@ export function MenuView() {
     await run(() => api(`/admin/menu/items/${itemId}`, { method: 'PATCH', body: { name: input } }));
   }
 
-  const [stationPickerItem, setStationPickerItem] = useState<{ id: string; name: string; stationId: string | null } | null>(null);
+  const [editItemOpen, setEditItemOpen] = useState<any | null>(null);
   async function deleteItem(itemId: string, itemName: string) {
     if (!confirm(`Are you sure you want to delete or deactivate menu item "${itemName}"?`)) return;
     await run(() => api(`/admin/menu/items/${itemId}`, { method: 'DELETE' }));
@@ -381,12 +384,20 @@ export function MenuView() {
                                   <span>
                                     {i.name} {i.nameAr ? `(${i.nameAr})` : ''}
                                   </span>
-                                  {!i.stationId && (
+                                  {!i.stationId && !cat.stationId && (
                                     <span
                                       className="ms-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700"
                                       title="Without a station this item never appears on a kitchen/bar monitor"
                                     >
                                       ⚠ no station
+                                    </span>
+                                  )}
+                                  {!i.stationId && cat.stationId && (
+                                    <span
+                                      className="ms-2 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-600"
+                                      title={`Inherits station from category: ${cat.station?.name ?? cat.stationId}`}
+                                    >
+                                      inherits {cat.station?.name ?? '…'}
                                     </span>
                                   )}
                                 </div>
@@ -404,26 +415,10 @@ export function MenuView() {
                                   {i.isFavorite ? '★ Unfav' : '☆ Fav'}
                                 </button>
                                 <button
-                                  onClick={() => void rename(i.id, i.name)}
-                                  className="mr-2 rounded border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                                  onClick={() => setEditItemOpen({ ...i, categoryId: cat.id })}
+                                  className="mr-2 rounded border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50 font-medium"
                                 >
-                                  Rename
-                                </button>
-                                <button
-                                  onClick={() => void setPrice(i.id, i.priceCents)}
-                                  className="mr-2 rounded border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
-                                >
-                                  Price
-                                </button>
-                                <button
-                                  onClick={() => setStationPickerItem({ id: i.id, name: i.name, stationId: i.stationId ?? null })}
-                                  className={`mr-2 rounded border px-2.5 py-1 text-xs font-medium transition ${
-                                    i.stationId
-                                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                      : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                  }`}
-                                >
-                                  {i.stationId ? `📍 ${(stations ?? []).find((s) => s.id === i.stationId)?.name ?? 'Station'}` : '⚠ Set Station'}
+                                  Edit
                                 </button>
                                 <button
                                   onClick={() => {
@@ -506,23 +501,26 @@ export function MenuView() {
       )}
 
       {newCatOpen && (
-        <CategoryFormModal categories={menu ?? []} onClose={() => setNewCatOpen(false)} onDone={() => { setNewCatOpen(false); reload(); }} />
+        <CategoryFormModal categories={menu ?? []} stations={stations ?? []} onClose={() => setNewCatOpen(false)} onDone={() => { setNewCatOpen(false); reload(); }} />
       )}
       {editCatOpen && (
-        <CategoryFormModal category={editCatOpen} categories={menu ?? []} onClose={() => setEditCatOpen(null)} onDone={() => { setEditCatOpen(null); reload(); }} />
+        <CategoryFormModal category={editCatOpen} categories={menu ?? []} stations={stations ?? []} onClose={() => setEditCatOpen(null)} onDone={() => { setEditCatOpen(null); reload(); }} />
       )}
-      {stationPickerItem && (
-        <StationPickerModal
-          item={stationPickerItem}
+      {editItemOpen && (
+        <ItemFormModal
+          mode="edit"
+          item={editItemOpen}
           stations={stations ?? []}
-          onClose={() => setStationPickerItem(null)}
-          onDone={() => { setStationPickerItem(null); reload(); }}
+          defaultTaxRateId={defaultTaxRateId}
+          onClose={() => setEditItemOpen(null)}
+          onDone={() => { setEditItemOpen(null); reload(); }}
         />
       )}
       {newItemCat && (
-        <NewItemModal
+        <ItemFormModal
+          mode={duplicatingItem ? 'duplicate' : 'create'}
           category={newItemCat}
-          duplicateFrom={duplicatingItem}
+          item={duplicatingItem}
           stations={stations ?? []}
           defaultTaxRateId={defaultTaxRateId}
           onClose={() => {
@@ -1174,11 +1172,13 @@ function LinkItemsModal({
 function CategoryFormModal({
   category,
   categories,
+  stations,
   onClose,
   onDone,
 }: {
   category?: MenuCat;
   categories: MenuCat[];
+  stations?: { id: string; name: string }[];
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -1186,6 +1186,7 @@ function CategoryFormModal({
   const [nameAr, setNameAr] = useState(category?.nameAr ?? '');
   const [color, setColor] = useState(category?.color ?? '');
   const [parentCategoryId, setParentCategoryId] = useState<string>(category?.parentCategoryId ?? '');
+  const [stationId, setStationId] = useState<string>(category?.stationId ?? '');
   const [isActive, setIsActive] = useState(category?.isActive ?? true);
   const [err, setErr] = useState('');
 
@@ -1203,6 +1204,7 @@ function CategoryFormModal({
       nameAr: nameAr.trim() || undefined,
       color: color.trim() || null,
       parentCategoryId: parentCategoryId || null,
+      stationId: stationId || null,
       isActive,
     };
 
@@ -1283,131 +1285,127 @@ function CategoryFormModal({
             <span>Active Category</span>
           </label>
         )}
+        {(stations ?? []).length > 0 && (
+          <Field label="Default Station (items in this category inherit this if they have no own station)">
+            <select
+              value={stationId}
+              onChange={(e) => setStationId(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm"
+            >
+              <option value="">— None (items must set own station) —</option>
+              {(stations ?? []).map((st) => (
+                <option key={st.id} value={st.id}>{st.name}</option>
+              ))}
+            </select>
+          </Field>
+        )}
         <Btn kind="primary" onClick={() => void submit()}>{category ? 'Save' : 'Create'}</Btn>
       </div>
     </Modal>
   );
 }
 
-function NewItemModal({ category, duplicateFrom, stations, defaultTaxRateId, onClose, onDone }: {
-  category: { id: string; name: string }; duplicateFrom?: any; stations: { id: string; name: string }[];
-  defaultTaxRateId?: string; onClose: () => void; onDone: () => void;
-}) {
-  const [name, setName] = useState(duplicateFrom ? `${duplicateFrom.name} (Copy)` : '');
-  const [nameAr, setNameAr] = useState(duplicateFrom ? (duplicateFrom.nameAr ?? '') : '');
-  const [price, setPrice] = useState(duplicateFrom ? String(duplicateFrom.priceCents / 100) : '');
-  const [department, setDepartment] = useState(duplicateFrom?.department ?? 'RESTAURANT');
-  const [stationId, setStationId] = useState(duplicateFrom?.stationId ?? (stations[0]?.id ?? ''));
-  const [isFavorite, setIsFavorite] = useState(duplicateFrom?.isFavorite ?? false);
-  const [err, setErr] = useState('');
-
-  async function submit() {
-    const priceCents = parseEgp(price);
-    if (!name.trim() || priceCents == null || priceCents <= 0) { setErr('Name and a positive price are required'); return; }
-    try {
-      await api('/admin/menu/items', {
-        method: 'POST',
-        body: {
-          categoryId: category.id, name: name.trim(), nameAr: nameAr.trim() || undefined,
-          priceCents, department, stationId: stationId || stations[0]?.id, taxRateId: defaultTaxRateId,
-          isFavorite,
-        },
-      });
-      onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
-  }
-  return (
-    <Modal title={duplicateFrom ? `Duplicate ${duplicateFrom.name}` : `New item in ${category.name}`} onClose={onClose}>
-      <ErrorBanner message={err} />
-      <div className="space-y-3">
-        <Field label="Name"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Name (Arabic)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
-        <Field label="Price (EGP)"><TextInput value={price} onChange={setPrice} type="number" /></Field>
-        <Field label="Department">
-          <Select value={department} onChange={setDepartment} options={DEPARTMENTS.map((d) => ({ value: d, label: d }))} />
-        </Field>
-        <Field label="Station (kitchen routing — required to reach the monitors)">
-          <Select value={stationId} onChange={setStationId}
-            options={stations.map((s) => ({ value: s.id, label: s.name }))} />
-        </Field>
-        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer py-1">
-          <input
-            type="checkbox"
-            checked={isFavorite}
-            onChange={(e) => setIsFavorite(e.target.checked)}
-            className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-500"
-          />
-          <span>Add to Favorites (POS Quick Access)</span>
-        </label>
-        <Btn kind="primary" onClick={() => void submit()}>Create item</Btn>
-      </div>
-    </Modal>
-  );
-}
-
-function StationPickerModal({
+/** Unified create / duplicate / edit modal for menu items */
+function ItemFormModal({
+  mode,
   item,
+  category,
   stations,
+  defaultTaxRateId,
   onClose,
   onDone,
 }: {
-  item: { id: string; name: string; stationId: string | null };
+  mode: 'create' | 'duplicate' | 'edit';
+  item?: any;
+  category?: { id: string; name: string };
   stations: { id: string; name: string; kind: string }[];
+  defaultTaxRateId?: string;
   onClose: () => void;
   onDone: () => void;
 }) {
-  const [stationId, setStationId] = useState(item.stationId ?? '');
+  const isEdit = mode === 'edit';
+  const isDupe = mode === 'duplicate';
+
+  const [name, setName] = useState(isDupe ? `${item?.name ?? ''} (Copy)` : (item?.name ?? ''));
+  const [nameAr, setNameAr] = useState(item?.nameAr ?? '');
+  const [price, setPrice] = useState(item?.priceCents != null ? String(item.priceCents / 100) : '');
+  const [department, setDepartment] = useState(item?.department ?? 'RESTAURANT');
+  const [stationId, setStationId] = useState<string>(item?.stationId ?? '');
+  const [isFavorite, setIsFavorite] = useState<boolean>(item?.isFavorite ?? false);
   const [err, setErr] = useState('');
 
+  const prepStations = stations.filter((s) => s.kind !== 'EXPO');
+
   async function submit() {
+    if (!name.trim()) { setErr('Name is required'); return; }
+    const priceCents = parseEgp(price);
+    if (priceCents == null) { setErr('Invalid price'); return; }
+
+    const body: Record<string, unknown> = {
+      name: name.trim(),
+      nameAr: nameAr.trim() || null,
+      priceCents,
+      department,
+      stationId: stationId || null,
+      isFavorite,
+    };
+
+    setErr('');
     try {
-      await api(`/admin/menu/items/${item.id}`, {
-        method: 'PATCH',
-        body: { stationId: stationId || null },
-      });
+      if (isEdit) {
+        await api(`/admin/menu/items/${item.id}`, { method: 'PATCH', body });
+      } else {
+        await api('/admin/menu/items', {
+          method: 'POST',
+          body: { ...body, categoryId: category!.id, taxRateId: defaultTaxRateId },
+        });
+      }
       onDone();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to update station');
-    }
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
   }
 
+  const title = isEdit
+    ? `Edit Item: ${item?.name}`
+    : isDupe
+    ? `Duplicate: ${item?.name}`
+    : `New item in ${category?.name}`;
+
   return (
-    <Modal title={`Set Station — ${item.name}`} onClose={onClose}>
+    <Modal title={title} onClose={onClose}>
       <ErrorBanner message={err} />
-      <div className="space-y-4">
-        <p className="text-sm text-slate-500">
-          Choose which kitchen or bar station should receive tickets for this item.
-          Items without a station won't appear on any KDS monitor.
-        </p>
-        <div className="grid grid-cols-1 gap-2">
-          <button
-            onClick={() => setStationId('')}
-            className={`rounded-lg border p-3 text-left text-sm transition ${
-              stationId === ''
-                ? 'border-amber-400 bg-amber-50 text-amber-800'
-                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <span className="font-medium">⚠ No Station</span>
-            <span className="ml-2 text-xs text-slate-400">(item won't show on any monitor)</span>
-          </button>
-          {stations.filter((s) => s.kind !== 'EXPO').map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setStationId(s.id)}
-              className={`rounded-lg border p-3 text-left text-sm font-medium transition ${
-                stationId === s.id
-                  ? 'border-emerald-400 bg-emerald-50 text-emerald-800'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              📍 {s.name}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2 pt-2">
+      <div className="space-y-3">
+        <Field label="Name">
+          <TextInput value={name} onChange={setName} placeholder="English name" />
+        </Field>
+        <Field label="Name (Arabic)">
+          <TextInput value={nameAr} onChange={setNameAr} placeholder="اسم عربي" />
+        </Field>
+        <Field label="Price (EGP)">
+          <TextInput value={price} onChange={setPrice} type="number" placeholder="0.00" />
+        </Field>
+        <Field label="Department">
+          <select value={department} onChange={(e) => setDepartment(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm">
+            {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </Field>
+        <Field label="Station (Kitchen Routing — required to reach KDS / Printer)">
+          <select value={stationId} onChange={(e) => setStationId(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm">
+            <option value="">— none (inherit from category or unrouted) —</option>
+            {prepStations.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </Field>
+        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer py-1">
+          <input type="checkbox" checked={isFavorite} onChange={(e) => setIsFavorite(e.target.checked)}
+            className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-500" />
+          <span>Add to Favorites (POS Quick Access)</span>
+        </label>
+        <div className="flex gap-2 pt-1">
           <Btn kind="ghost" onClick={onClose}>Cancel</Btn>
-          <Btn kind="primary" onClick={() => void submit()}>Save Station</Btn>
+          <Btn kind="primary" onClick={() => void submit()}>
+            {isEdit ? 'Save Changes' : isDupe ? 'Create Copy' : 'Create Item'}
+          </Btn>
         </div>
       </div>
     </Modal>

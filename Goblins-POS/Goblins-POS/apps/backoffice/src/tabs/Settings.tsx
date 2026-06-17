@@ -463,9 +463,10 @@ function PrinterFormModal({ onClose, onDone, printer }: { onClose: () => void; o
 // ---------- stations ----------
 
 function Stations() {
-  const { data: stations, error, reload } = useLoad(() => api<Station[]>('/kds/stations'));
+  const { data: stations, error, reload } = useLoad(() => api<Station[]>('/admin/stations'));
   const { data: printers } = useLoad(() => api<Printer[]>('/admin/printers'));
   const [err, setErr] = useState('');
+  const [formOpen, setFormOpen] = useState<{ station?: Station } | null>(null);
 
   async function patch(id: string, body: Record<string, unknown>) {
     setErr('');
@@ -473,40 +474,171 @@ function Stations() {
     catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
   }
 
+  async function deleteStation(id: string, name: string) {
+    if (!confirm(`Delete station "${name}"? Items assigned to it will become unrouted.`)) return;
+    setErr('');
+    try { await api(`/admin/stations/${id}`, { method: 'DELETE' }); reload(); }
+    catch (e) { setErr(e instanceof Error ? e.message : 'Failed to delete'); }
+  }
+
   if (error) return <p className="p-8 text-red-600">{error}</p>;
   return (
-    <div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">Prep Stations</h2>
+          <p className="text-sm text-slate-500">Manage kitchen and bar prep stations where order items are routed.</p>
+        </div>
+        <Btn kind="primary" onClick={() => setFormOpen({})}>+ New Prep Station</Btn>
+      </div>
       <ErrorBanner message={err} />
-      <div className="overflow-hidden rounded-xl bg-white shadow">
+      <div className="overflow-hidden rounded-xl bg-white shadow border border-slate-100">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-500">
-            <tr><th className="p-3">Station</th><th className="p-3">Kind</th><th className="p-3">Printer</th><th className="p-3">KDS screen</th><th className="p-3">Print tickets</th></tr>
+          <thead className="bg-slate-50 text-left text-slate-500 text-xs uppercase tracking-wide">
+            <tr>
+              <th className="p-3">Station</th>
+              <th className="p-3">Kind</th>
+              <th className="p-3">Printer</th>
+              <th className="p-3">KDS Screen</th>
+              <th className="p-3">Print Tickets</th>
+              <th className="p-3">Actions</th>
+            </tr>
           </thead>
           <tbody>
-            {(stations ?? []).map((s) => (
-              <tr key={s.id} className="border-t">
-                <td className="p-3 font-semibold text-slate-700">{s.name}</td>
-                <td className="p-3">{s.kind}</td>
+            {(stations ?? []).map((st) => (
+              <tr key={st.id} className="border-t hover:bg-slate-50/50">
+                <td className="p-3 font-semibold text-slate-700">
+                  {st.name}
+                  {st.nameAr && <span className="ml-2 text-slate-400 font-normal text-xs">({st.nameAr})</span>}
+                </td>
+                <td className="p-3 text-slate-500">{st.kind}</td>
                 <td className="p-3">
-                  <select value={s.printerId ?? ''}
-                    onChange={(e) => void patch(s.id, { printerId: e.target.value || null })}
-                    className="rounded-lg border border-slate-300 bg-white p-1.5">
+                  <select value={st.printerId ?? ''}
+                    onChange={(e) => void patch(st.id, { printerId: e.target.value || null })}
+                    className="rounded-lg border border-slate-300 bg-white p-1.5 text-sm">
                     <option value="">— none —</option>
                     {(printers ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </td>
                 <td className="p-3">
-                  <input type="checkbox" checked={s.useKds} onChange={(e) => void patch(s.id, { useKds: e.target.checked })} />
+                  <input type="checkbox" checked={st.useKds}
+                    onChange={(e) => void patch(st.id, { useKds: e.target.checked })}
+                    className="rounded border-slate-300 text-emerald-600" />
                 </td>
                 <td className="p-3">
-                  <input type="checkbox" checked={s.usePrinter} onChange={(e) => void patch(s.id, { usePrinter: e.target.checked })} />
+                  <input type="checkbox" checked={st.usePrinter}
+                    onChange={(e) => void patch(st.id, { usePrinter: e.target.checked })}
+                    className="rounded border-slate-300 text-emerald-600" />
+                </td>
+                <td className="p-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setFormOpen({ station: st })}
+                      className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50 font-medium"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => void deleteStation(st.id, st.name)}
+                      className="rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs text-red-700 hover:bg-red-100 font-medium"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
+            {!(stations ?? []).length && (
+              <tr><td colSpan={6} className="p-6 text-center text-slate-400 italic">No stations yet. Create a Kitchen and Bar station to route orders.</td></tr>
+            )}
           </tbody>
         </table>
       </div>
+      {formOpen !== null && (
+        <StationFormModal
+          station={formOpen.station}
+          printers={printers ?? []}
+          onClose={() => setFormOpen(null)}
+          onDone={() => { setFormOpen(null); reload(); }}
+        />
+      )}
     </div>
+  );
+}
+
+function StationFormModal({
+  station,
+  printers,
+  onClose,
+  onDone,
+}: {
+  station?: Station;
+  printers: Printer[];
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [name, setName] = useState(station?.name ?? '');
+  const [nameAr, setNameAr] = useState(station?.nameAr ?? '');
+  const [kind, setKind] = useState(station?.kind ?? 'PREP');
+  const [printerId, setPrinterId] = useState(station?.printerId ?? '');
+  const [useKds, setUseKds] = useState(station?.useKds ?? true);
+  const [usePrinter, setUsePrinter] = useState(station?.usePrinter ?? false);
+  const [err, setErr] = useState('');
+
+  async function submit() {
+    if (!name.trim()) { setErr('Name is required'); return; }
+    setErr('');
+    try {
+      const body = { name: name.trim(), nameAr: nameAr.trim() || null, kind, printerId: printerId || null, useKds, usePrinter };
+      if (station) {
+        await api(`/admin/stations/${station.id}`, { method: 'PATCH', body });
+      } else {
+        await api('/admin/stations', { method: 'POST', body });
+      }
+      onDone();
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+  }
+
+  return (
+    <Modal title={station ? `Edit Station: ${station.name}` : 'New Prep Station'} onClose={onClose}>
+      <ErrorBanner message={err} />
+      <div className="space-y-3">
+        <Field label="Name (English)">
+          <TextInput value={name} onChange={setName} placeholder="e.g. Kitchen, Bar" />
+        </Field>
+        <Field label="Name (Arabic — optional)">
+          <TextInput value={nameAr} onChange={setNameAr} placeholder="e.g. المطبخ" />
+        </Field>
+        <Field label="Kind">
+          <select value={kind} onChange={(e) => setKind(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm">
+            <option value="PREP">PREP (Kitchen, Bar)</option>
+            <option value="EXPO">EXPO (Pass-through display)</option>
+          </select>
+        </Field>
+        <Field label="Printer">
+          <select value={printerId} onChange={(e) => setPrinterId(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm">
+            <option value="">— none —</option>
+            {printers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </Field>
+        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer py-1">
+          <input type="checkbox" checked={useKds} onChange={(e) => setUseKds(e.target.checked)}
+            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+          <span>Show on KDS screen</span>
+        </label>
+        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer py-1">
+          <input type="checkbox" checked={usePrinter} onChange={(e) => setUsePrinter(e.target.checked)}
+            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+          <span>Print Tickets automatically</span>
+        </label>
+        <div className="flex gap-2 pt-1">
+          <Btn kind="ghost" onClick={onClose}>Cancel</Btn>
+          <Btn kind="primary" onClick={() => void submit()}>{station ? 'Save' : 'Create'}</Btn>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
