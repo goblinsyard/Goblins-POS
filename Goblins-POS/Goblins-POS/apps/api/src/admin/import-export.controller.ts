@@ -879,4 +879,102 @@ export class ImportExportController {
       throw new BadRequestException(e instanceof Error ? e.message : 'Layout import failed.');
     }
   }
+
+  // ---------- Vendors Export ----------
+
+  @Get('export/vendors')
+  @RequirePermissions('settings.manage')
+  async exportVendors() {
+    const vendors = await this.prisma.supplier.findMany({
+      orderBy: { name: 'asc' },
+    });
+    return vendors;
+  }
+
+  // ---------- Vendors Import ----------
+
+  @Post('import/vendors')
+  @RequirePermissions('settings.manage')
+  async importVendors(@Req() req: AuthedRequest, @Body() body: any[]) {
+    if (!Array.isArray(body)) throw new BadRequestException('Expected an array of vendors.');
+    let importedCount = 0;
+    for (const v of body) {
+      if (!v.name) continue;
+      const existing = await this.prisma.supplier.findFirst({ where: { name: v.name } });
+      if (existing) {
+        await this.prisma.supplier.update({
+          where: { id: existing.id },
+          data: {
+            phone: v.phone ?? existing.phone,
+            email: v.email ?? existing.email,
+            address: v.address ?? existing.address,
+            notes: v.notes ?? existing.notes,
+          },
+        });
+      } else {
+        await this.prisma.supplier.create({
+          data: {
+            name: v.name,
+            phone: v.phone ?? null,
+            email: v.email ?? null,
+            address: v.address ?? null,
+            notes: v.notes ?? null,
+          },
+        });
+      }
+      importedCount++;
+    }
+    await this.audit.log({ userId: req.user.sub, action: 'vendors.import', entity: 'Supplier', entityId: 'bulk', detail: { importedCount } });
+    return { importedCount };
+  }
+
+  // ---------- Sync Vendors from Poster POS ----------
+
+  @Post('import/vendors-from-poster')
+  @RequirePermissions('settings.manage')
+  async syncVendorsFromPoster(@Req() req: AuthedRequest) {
+    const POSTER_ACCOUNT = process.env.POSTER_ACCOUNT ?? 'goblinsyard';
+    const POSTER_TOKEN = process.env.POSTER_TOKEN ?? '';
+
+    let suppliers: any[] = [];
+    try {
+      const url = `https://joinposter.com/api/suppliers.getSuppliers?token=${POSTER_TOKEN}`;
+      const res = await fetch(url);
+      const json = await res.json() as { response?: any[] };
+      suppliers = json.response ?? [];
+    } catch (e) {
+      throw new BadRequestException('Failed to fetch suppliers from Poster POS.');
+    }
+
+    let importedCount = 0;
+    for (const s of suppliers) {
+      const name = s.supplier_name ?? s.name;
+      if (!name) continue;
+      const existing = await this.prisma.supplier.findFirst({ where: { name } });
+      if (existing) {
+        await this.prisma.supplier.update({
+          where: { id: existing.id },
+          data: {
+            phone: s.supplier_phone ?? s.phone ?? existing.phone,
+            email: s.supplier_email ?? s.email ?? existing.email,
+            address: s.supplier_address ?? s.address ?? existing.address,
+          },
+        });
+      } else {
+        await this.prisma.supplier.create({
+          data: {
+            name,
+            phone: s.supplier_phone ?? s.phone ?? null,
+            email: s.supplier_email ?? s.email ?? null,
+            address: s.supplier_address ?? s.address ?? null,
+          },
+        });
+      }
+      importedCount++;
+    }
+
+    await this.audit.log({ userId: req.user.sub, action: 'vendors.sync_poster', entity: 'Supplier', entityId: 'bulk', detail: { importedCount } });
+    return { importedCount };
+  }
+
 }

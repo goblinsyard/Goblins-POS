@@ -846,6 +846,54 @@ function DatabaseManager() {
     }
   }
 
+  async function exportVendors() {
+    setErr(''); setSuccess('');
+    try {
+      const data = await api<any[]>('/admin/export/vendors');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vendors-directory-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      setSuccess('Vendors directory exported successfully.');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Export failed');
+    }
+  }
+
+  async function syncVendorsFromPoster() {
+    setErr(''); setSuccess(''); setBusy(true);
+    try {
+      const res = await api<any>('/admin/import/vendors-from-poster', { method: 'POST', body: {} });
+      setSuccess(`Synced ${res.importedCount ?? 0} vendors from Poster POS.`);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Sync failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleVendorImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setErr(''); setSuccess(''); setBusy(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const payload = JSON.parse(event.target?.result as string);
+        const res = await api<any>('/admin/import/vendors', { method: 'POST', body: payload });
+        setSuccess(`Imported ${res.importedCount ?? 0} vendors successfully.`);
+      } catch (err) {
+        setErr(err instanceof Error ? err.message : 'Import failed');
+      } finally {
+        setBusy(false);
+        e.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  }
+
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>, type: 'menu' | 'customers') {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1071,7 +1119,7 @@ function DatabaseManager() {
       <div className="rounded-xl bg-white p-4 shadow space-y-5">
         <div>
           <h3 className="font-semibold text-slate-800">Import & Export Data</h3>
-          <p className="text-xs text-slate-500 mt-0.5">Import and export your Menu Catalog or Customers Directory in JSON or CSV formats.</p>
+          <p className="text-xs text-slate-500 mt-0.5">Import and export your Menu Catalog, Floor Layout, Customers Directory, or Vendors Directory in JSON or CSV formats.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-6 pt-2 border-t divide-x divide-slate-100">
@@ -1080,7 +1128,6 @@ function DatabaseManager() {
             <h4 className="font-medium text-slate-700 text-sm">Menu Catalog</h4>
             <div className="flex flex-col gap-2">
               <Btn onClick={exportMenu} disabled={busy}>Export Menu (JSON)</Btn>
-              
               <div className="border-t pt-2 mt-1">
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Import Menu Catalog</label>
                 <input
@@ -1095,12 +1142,30 @@ function DatabaseManager() {
             </div>
           </div>
 
-          {/* Customers Directory */}
+          {/* Floor Layout */}
           <div className="space-y-3 pl-6">
+            <h4 className="font-medium text-slate-700 text-sm">Floor Layout</h4>
+            <div className="flex flex-col gap-2">
+              <Btn onClick={exportFloor} disabled={busy}>Export Layout (JSON)</Btn>
+              <div className="border-t pt-2 mt-1">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Import Floor Layout</label>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleFloorImport}
+                  disabled={busy}
+                  className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">Accepts JSON or CSV with columns: `ZoneName, ZoneNameAr, ResourceName, ResourceNameAr, Type, Capacity`</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Customers Directory */}
+          <div className="space-y-3">
             <h4 className="font-medium text-slate-700 text-sm">Customers Directory</h4>
             <div className="flex flex-col gap-2">
               <Btn onClick={exportCustomers} disabled={busy}>Export Customers (JSON)</Btn>
-              
               <div className="border-t pt-2 mt-1">
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Import Customers</label>
                 <input
@@ -1114,26 +1179,25 @@ function DatabaseManager() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="rounded-xl bg-white p-4 shadow space-y-5">
-        <div>
-          <h3 className="font-semibold text-slate-800">Floor Layout & Tables</h3>
-          <p className="text-xs text-slate-500 mt-0.5">Export or import your full floor plan — zones, tables, billiards tables, and rooms — as a JSON file.</p>
-        </div>
-        <div className="flex flex-wrap gap-3 pt-2 border-t">
-          <Btn onClick={exportFloor} disabled={busy}>Export Floor Layout (JSON)</Btn>
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Import Floor Layout</label>
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleFloorImport}
-              disabled={busy}
-              className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
-            />
-            <p className="text-[10px] text-slate-400 mt-1">Warning: importing will ADD zones/resources on top of existing ones.</p>
+          {/* Vendors Directory */}
+          <div className="space-y-3 pl-6">
+            <h4 className="font-medium text-slate-700 text-sm">Vendors Directory</h4>
+            <div className="flex flex-col gap-2">
+              <Btn onClick={exportVendors} disabled={busy}>Export Vendors (JSON)</Btn>
+              <Btn onClick={syncVendorsFromPoster} disabled={busy}>Sync from Poster POS</Btn>
+              <div className="border-t pt-2 mt-1">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Import Vendors</label>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleVendorImport}
+                  disabled={busy}
+                  className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">Accepts JSON with vendor records from export or Poster POS format.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
