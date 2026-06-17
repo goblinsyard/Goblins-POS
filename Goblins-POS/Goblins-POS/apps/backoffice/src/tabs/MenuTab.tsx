@@ -52,7 +52,7 @@ const DEPARTMENTS = ['RESTAURANT', 'BAR', 'BILLIARDS', 'PLAYSTATION'];
 
 export function MenuView() {
   const { data: menu, error, reload } = useLoad(() => api<MenuCat[]>('/menu'));
-  const { data: stations, reload: reloadStations } = useLoad(() => api<{ id: string; name: string; kind: string; isActive: boolean }[]>('/admin/stations'));
+  const { data: stations, reload: reloadStations } = useLoad(() => api<{ id: string; name: string; kind: string; isActive: boolean }[]>('/kds/stations'));
   const [newItemCat, setNewItemCat] = useState<MenuCat | null>(null);
   const [duplicatingItem, setDuplicatingItem] = useState<any | null>(null);
   const [newCatOpen, setNewCatOpen] = useState(false);

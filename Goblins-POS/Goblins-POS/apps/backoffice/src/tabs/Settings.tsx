@@ -463,7 +463,7 @@ function PrinterFormModal({ onClose, onDone, printer }: { onClose: () => void; o
 // ---------- stations ----------
 
 function Stations() {
-  const { data: stations, error, reload } = useLoad(() => api<Station[]>('/admin/stations'));
+  const { data: stations, error, reload } = useLoad(() => api<Station[]>('/kds/stations'));
   const { data: printers } = useLoad(() => api<Printer[]>('/admin/printers'));
   const [err, setErr] = useState('');
   const [formOpen, setFormOpen] = useState<{ station?: Station } | null>(null);
