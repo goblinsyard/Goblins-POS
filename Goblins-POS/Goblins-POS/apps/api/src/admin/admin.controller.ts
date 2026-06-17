@@ -233,14 +233,64 @@ export class AdminController {
     return { success: true };
   }
 
+  @Get('stations')
+  @RequirePermissions('settings.manage')
+  stations() {
+    return this.prisma.station.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  @Post('stations')
+  @RequirePermissions('settings.manage')
+  async createStation(@Req() req: AuthedRequest, @Body() body: { name: string; nameAr?: string; kind?: string; sortOrder?: number }) {
+    if (!body.name) throw new BadRequestException('Name is required');
+    const station = await this.prisma.station.create({
+      data: {
+        name: body.name,
+        nameAr: body.nameAr || null,
+        kind: (body.kind as any) ?? 'PREP',
+        sortOrder: body.sortOrder ?? 0,
+      },
+    });
+    await this.audit.log({ userId: req.user.sub, action: 'station.create', entity: 'Station', entityId: station.id });
+    return station;
+  }
+
+  @Delete('stations/:id')
+  @RequirePermissions('settings.manage')
+  async deleteStation(@Req() req: AuthedRequest, @Param('id') id: string) {
+    // Unlink items before deleting
+    await this.prisma.menuItem.updateMany({ where: { stationId: id }, data: { stationId: null } });
+    await this.prisma.station.delete({ where: { id } });
+    await this.audit.log({ userId: req.user.sub, action: 'station.delete', entity: 'Station', entityId: id });
+    return { success: true };
+  }
+
   @Patch('stations/:id')
   @RequirePermissions('settings.manage')
   async updateStation(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: Record<string, unknown>) {
-    const allowed = ['name', 'nameAr', 'printerId', 'useKds', 'usePrinter', 'isActive'];
+    const allowed = ['name', 'nameAr', 'printerId', 'useKds', 'usePrinter', 'isActive', 'sortOrder'];
     const data = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
     const station = await this.prisma.station.update({ where: { id }, data });
     await this.audit.log({ userId: req.user.sub, action: 'station.update', entity: 'Station', entityId: id, detail: data as never });
     return station;
+  }
+
+  /** Bulk-assign a station to all items matching given departments */
+  @Post('stations/:id/assign-departments')
+  @RequirePermissions('settings.manage')
+  async assignStationToDepartments(
+    @Req() req: AuthedRequest,
+    @Param('id') id: string,
+    @Body() body: { departments: string[] },
+  ) {
+    if (!body.departments?.length) throw new BadRequestException('departments required');
+    const result = await this.prisma.menuItem.updateMany({
+      where: { department: { in: body.departments } },
+      data: { stationId: id },
+    });
+    await this.audit.log({ userId: req.user.sub, action: 'station.bulk_assign', entity: 'Station', entityId: id, detail: { departments: body.departments, count: result.count } as any });
+    this.realtime.emitTo('pos', 'menu.changed', {});
+    return { updated: result.count };
   }
 
   // ---------- recipes & ingredients (costing master data) ----------

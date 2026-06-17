@@ -49,7 +49,7 @@ const DEPARTMENTS = ['RESTAURANT', 'BAR', 'BILLIARDS', 'PLAYSTATION'];
 
 export function MenuView() {
   const { data: menu, error, reload } = useLoad(() => api<MenuCat[]>('/menu'));
-  const { data: stations } = useLoad(() => api<{ id: string; name: string }[]>('/kds/stations'));
+  const { data: stations, reload: reloadStations } = useLoad(() => api<{ id: string; name: string; kind: string; isActive: boolean }[]>('/admin/stations'));
   const [newItemCat, setNewItemCat] = useState<MenuCat | null>(null);
   const [duplicatingItem, setDuplicatingItem] = useState<any | null>(null);
   const [newCatOpen, setNewCatOpen] = useState(false);
@@ -135,6 +135,8 @@ export function MenuView() {
     if (!input) return;
     await run(() => api(`/admin/menu/items/${itemId}`, { method: 'PATCH', body: { name: input } }));
   }
+
+  const [stationPickerItem, setStationPickerItem] = useState<{ id: string; name: string; stationId: string | null } | null>(null);
   async function deleteItem(itemId: string, itemName: string) {
     if (!confirm(`Are you sure you want to delete or deactivate menu item "${itemName}"?`)) return;
     await run(() => api(`/admin/menu/items/${itemId}`, { method: 'DELETE' }));
@@ -414,6 +416,16 @@ export function MenuView() {
                                   Price
                                 </button>
                                 <button
+                                  onClick={() => setStationPickerItem({ id: i.id, name: i.name, stationId: i.stationId ?? null })}
+                                  className={`mr-2 rounded border px-2.5 py-1 text-xs font-medium transition ${
+                                    i.stationId
+                                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                      : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                  }`}
+                                >
+                                  {i.stationId ? `📍 ${(stations ?? []).find((s) => s.id === i.stationId)?.name ?? 'Station'}` : '⚠ Set Station'}
+                                </button>
+                                <button
                                   onClick={() => {
                                     setDuplicatingItem(i);
                                     setNewItemCat(cat);
@@ -498,6 +510,14 @@ export function MenuView() {
       )}
       {editCatOpen && (
         <CategoryFormModal category={editCatOpen} categories={menu ?? []} onClose={() => setEditCatOpen(null)} onDone={() => { setEditCatOpen(null); reload(); }} />
+      )}
+      {stationPickerItem && (
+        <StationPickerModal
+          item={stationPickerItem}
+          stations={stations ?? []}
+          onClose={() => setStationPickerItem(null)}
+          onDone={() => { setStationPickerItem(null); reload(); }}
+        />
       )}
       {newItemCat && (
         <NewItemModal
@@ -1320,6 +1340,75 @@ function NewItemModal({ category, duplicateFrom, stations, defaultTaxRateId, onC
           <span>Add to Favorites (POS Quick Access)</span>
         </label>
         <Btn kind="primary" onClick={() => void submit()}>Create item</Btn>
+      </div>
+    </Modal>
+  );
+}
+
+function StationPickerModal({
+  item,
+  stations,
+  onClose,
+  onDone,
+}: {
+  item: { id: string; name: string; stationId: string | null };
+  stations: { id: string; name: string; kind: string }[];
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [stationId, setStationId] = useState(item.stationId ?? '');
+  const [err, setErr] = useState('');
+
+  async function submit() {
+    try {
+      await api(`/admin/menu/items/${item.id}`, {
+        method: 'PATCH',
+        body: { stationId: stationId || null },
+      });
+      onDone();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to update station');
+    }
+  }
+
+  return (
+    <Modal title={`Set Station — ${item.name}`} onClose={onClose}>
+      <ErrorBanner message={err} />
+      <div className="space-y-4">
+        <p className="text-sm text-slate-500">
+          Choose which kitchen or bar station should receive tickets for this item.
+          Items without a station won't appear on any KDS monitor.
+        </p>
+        <div className="grid grid-cols-1 gap-2">
+          <button
+            onClick={() => setStationId('')}
+            className={`rounded-lg border p-3 text-left text-sm transition ${
+              stationId === ''
+                ? 'border-amber-400 bg-amber-50 text-amber-800'
+                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <span className="font-medium">⚠ No Station</span>
+            <span className="ml-2 text-xs text-slate-400">(item won't show on any monitor)</span>
+          </button>
+          {stations.filter((s) => s.kind !== 'EXPO').map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setStationId(s.id)}
+              className={`rounded-lg border p-3 text-left text-sm font-medium transition ${
+                stationId === s.id
+                  ? 'border-emerald-400 bg-emerald-50 text-emerald-800'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              📍 {s.name}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 pt-2">
+          <Btn kind="ghost" onClick={onClose}>Cancel</Btn>
+          <Btn kind="primary" onClick={() => void submit()}>Save Station</Btn>
+        </div>
       </div>
     </Modal>
   );
