@@ -882,7 +882,7 @@ export class ImportExportController {
 
   // ─── Vendor / Supplier Export ─────────────────────────────────────────────
   @Get('export/vendors')
-  @RequirePermissions('admin')
+  @RequirePermissions('settings.manage')
   async exportVendors() {
     const suppliers = await this.prisma.supplier.findMany({
       orderBy: { name: 'asc' },
@@ -899,7 +899,7 @@ export class ImportExportController {
 
   // ─── Vendor / Supplier Import ─────────────────────────────────────────────
   @Post('import/vendors')
-  @RequirePermissions('admin')
+  @RequirePermissions('settings.manage')
   async importVendors(
     @Req() req: AuthedRequest,
     @Body() body: { name: string; phone?: string; email?: string; taxId?: string; notes?: string; isActive?: boolean }[],
