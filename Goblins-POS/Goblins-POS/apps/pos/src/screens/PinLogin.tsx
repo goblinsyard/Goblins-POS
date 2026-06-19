@@ -27,7 +27,7 @@ export function PinLogin() {
   }
 
   function press(d: string) {
-    if (pin.length >= 6) return;
+    if (pin.length >= 4) return;
     const next = pin + d;
     setPin(next);
     if (next.length >= 4) void submit(next);
@@ -58,7 +58,7 @@ export function PinLogin() {
               ← {selected.name}
             </button>
             <div className={`mb-6 flex justify-center gap-3 ${error ? 'animate-pulse' : ''}`}>
-              {[0, 1, 2, 3, 4, 5].map((i) => (
+              {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
                   className={`h-4 w-4 rounded-full ${i < pin.length ? (error ? 'bg-red-500' : 'bg-goblin-300') : 'bg-goblin-800'}`}
