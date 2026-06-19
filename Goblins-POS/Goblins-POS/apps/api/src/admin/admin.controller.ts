@@ -1016,6 +1016,94 @@ export class AdminController {
 
   // ---------- database manager ----------
 
+  @Post('backup')
+  @RequirePermissions('admin')
+  async createBackup(@Req() req: AuthedRequest) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `goblins-backup-${stamp}.json`;
+    const backupsDir = path.join(process.cwd(), 'backups');
+    if (!fs.existsSync(backupsDir)) fs.mkdirSync(backupsDir, { recursive: true });
+
+    // Dump every table into one JSON file
+    const [
+      categories, menuItems, modifierGroups, modifiers,
+      zones, resources, ratePlans, rateRules,
+      customers, customerGroups,
+      suppliers,
+      staff, shifts, timeClock,
+      sessions, orders, orderItems, orderItemModifiers, payments,
+      expenses, expenseCategories,
+      accounts, journalEntries, cashMovements,
+      taxRates, printers, stations, settings,
+      reservations, auditLogs,
+      recipes, recipeLines, ingredients, stockMovements,
+      purchaseOrders, purchaseOrderLines,
+    ] = await Promise.all([
+      this.prisma.category.findMany(),
+      this.prisma.menuItem.findMany(),
+      this.prisma.modifierGroup.findMany(),
+      this.prisma.modifier.findMany(),
+      this.prisma.floorZone.findMany(),
+      this.prisma.resource.findMany(),
+      this.prisma.ratePlan.findMany(),
+      this.prisma.rateRule.findMany(),
+      this.prisma.customer.findMany(),
+      this.prisma.customerGroup.findMany(),
+      this.prisma.supplier.findMany(),
+      this.prisma.user.findMany(),
+      this.prisma.shift.findMany(),
+      this.prisma.timeClockEntry.findMany(),
+      this.prisma.session.findMany(),
+      this.prisma.order.findMany(),
+      this.prisma.orderItem.findMany(),
+      this.prisma.orderItemModifier.findMany(),
+      this.prisma.payment.findMany(),
+      this.prisma.expense.findMany(),
+      this.prisma.expenseCategory.findMany(),
+      this.prisma.account.findMany(),
+      this.prisma.journalEntry.findMany(),
+      this.prisma.cashMovement.findMany(),
+      this.prisma.taxRate.findMany(),
+      this.prisma.printer.findMany(),
+      this.prisma.station.findMany(),
+      this.prisma.setting.findMany(),
+      this.prisma.reservation.findMany(),
+      this.prisma.auditLog.findMany(),
+      this.prisma.recipe.findMany(),
+      this.prisma.recipeLine.findMany(),
+      this.prisma.ingredient.findMany(),
+      this.prisma.stockMovement.findMany(),
+      this.prisma.purchaseOrder.findMany(),
+      this.prisma.purchaseOrderLine.findMany(),
+    ]);
+
+    const backup = {
+      meta: { version: 2, createdAt: new Date().toISOString(), filename },
+      menu: { categories, menuItems, modifierGroups, modifiers },
+      floor: { zones, resources, ratePlans, rateRules },
+      crm: { customers, customerGroups },
+      suppliers,
+      hr: { staff, shifts, timeClock },
+      transactions: { sessions, orders, orderItems, orderItemModifiers, payments },
+      expenses: { expenses, expenseCategories },
+      accounting: { accounts, journalEntries, cashMovements },
+      inventory: { recipes, recipeLines, ingredients, stockMovements, purchaseOrders, purchaseOrderLines },
+      config: { taxRates, printers, stations, settings },
+      reservations,
+      auditLogs,
+    };
+
+    const filePath = path.join(backupsDir, filename);
+    fs.writeFileSync(filePath, JSON.stringify(backup, null, 2));
+
+    await this.audit.log({
+      userId: req.user.sub, action: 'backup.create', entity: 'System',
+      entityId: filename, detail: { filename },
+    });
+
+    return { filename };
+  }
+
   @Post('db/backup')
   @RequirePermissions('settings.manage')
   async backupDatabase(@Req() req: AuthedRequest) {
