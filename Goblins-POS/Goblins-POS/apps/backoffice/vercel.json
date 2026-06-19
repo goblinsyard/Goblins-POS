@@ -1,7 +1,17 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://api-production-af82.up.railway.app/api/:path*" },
-    { "source": "/ws/:path*", "destination": "https://api-production-af82.up.railway.app/ws/:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+    {
+      "source": "/api/:path*",
+      "destination": "https://api-production-af82.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/ws/:path*",
+      "destination": "https://api-production-af82.up.railway.app/ws/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "buildId": "2"
 }
