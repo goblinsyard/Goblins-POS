@@ -7,8 +7,14 @@ Set-Location $root
 Write-Host '=== Goblins Yard POS ===' -ForegroundColor Green
 
 # 1. make sure the Docker engine is running
-docker info *> $null
-if ($LASTEXITCODE -ne 0) {
+try {
+    $ErrorActionPreference = 'SilentlyContinue'
+    docker info *> $null
+    $dockerRunning = ($LASTEXITCODE -eq 0)
+} finally {
+    $ErrorActionPreference = 'Stop'
+}
+if (-not $dockerRunning) {
     Write-Host 'Starting Docker Desktop...' -ForegroundColor Yellow
     # Try using the official CLI command to start Docker Desktop (which waits synchronously)
     & docker desktop start
