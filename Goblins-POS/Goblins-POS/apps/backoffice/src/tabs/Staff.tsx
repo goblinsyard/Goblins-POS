@@ -137,9 +137,9 @@ export function StaffView() {
 
         {section !== 'directory' && (
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Salary Month:</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-goblin-400">Salary Month:</span>
             <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white p-1 text-sm text-slate-700 focus:outline-none" />
+              className="rounded-lg border border-goblin-700 bg-goblin-900 p-1 text-sm text-goblin-100 focus:outline-none" />
           </div>
         )}
       </div>
@@ -152,7 +152,7 @@ export function StaffView() {
             <Btn onClick={() => setMatrixOpen(true)}>Role permissions</Btn>
           </div>
           <div>
-            <h2 className="mb-2 font-semibold text-slate-700">Staff Directory</h2>
+            <h2 className="mb-2 font-semibold text-goblin-100">Staff Directory</h2>
             <Table headers={['Name', 'Role', 'Email', 'Salary Setup', 'Since', 'Actions']}
               rows={staff.map((s) => [
                 s.name,
@@ -176,7 +176,7 @@ export function StaffView() {
             <Btn kind="primary" onClick={() => { setEditingAttendance(null); setAttendanceOpen(true); }}>+ Add manual log</Btn>
           </div>
           <div>
-            <h2 className="mb-2 font-semibold text-slate-700">Time Clock Logs</h2>
+            <h2 className="mb-2 font-semibold text-goblin-100">Time Clock Logs</h2>
             {attendance ? (
               <Table headers={['Staff', 'Clock In', 'Clock Out', 'Hours', 'Notes', 'Actions']}
                 rows={attendance.map((a) => {
@@ -186,7 +186,7 @@ export function StaffView() {
                   return [
                     a.user.name,
                     cin.toLocaleString('en-EG'),
-                    cout ? cout.toLocaleString('en-EG') : <span className="text-emerald-600 font-semibold">Clocked In</span>,
+                    cout ? cout.toLocaleString('en-EG') : <span className="text-goblin-500 font-semibold">Clocked In</span>,
                     cout ? hrs.toFixed(2) : '—',
                     a.note ?? '—',
                     <div key={a.id} className="flex gap-2">
@@ -204,7 +204,7 @@ export function StaffView() {
       {section === 'payroll' && (
         <div className="space-y-6">
           <div>
-            <h2 className="mb-2 font-semibold text-slate-700">Payroll Calculation ({month})</h2>
+            <h2 className="mb-2 font-semibold text-goblin-100">Payroll Calculation ({month})</h2>
             {payroll ? (
               <Table headers={['Staff', 'Role', 'Salary Config', 'Hours', 'Gross Wages', 'Advances (Solfa)', 'Bonuses', 'Deductions', 'Paid', 'Net Due', 'Actions']}
                 rows={payroll.map((p) => [
@@ -214,10 +214,10 @@ export function StaffView() {
                   p.hoursWorked.toFixed(2),
                   `${(p.grossCents / 100).toFixed(2)} EGP`,
                   p.advancesCents > 0 ? <span className="text-red-600">-${(p.advancesCents / 100).toFixed(2)}</span> : '—',
-                  p.bonusesCents > 0 ? <span className="text-emerald-600">+${(p.bonusesCents / 100).toFixed(2)}</span> : '—',
+                  p.bonusesCents > 0 ? <span className="text-goblin-500">+${(p.bonusesCents / 100).toFixed(2)}</span> : '—',
                   p.deductionsCents > 0 ? <span className="text-red-700">-${(p.deductionsCents / 100).toFixed(2)}</span> : '—',
                   p.paymentsCents > 0 ? `${(p.paymentsCents / 100).toFixed(2)}` : '—',
-                  <span key={p.id} className={`font-bold ${p.netDueCents > 0 ? 'text-emerald-800' : p.netDueCents < 0 ? 'text-red-700' : 'text-slate-500'}`}>
+                  <span key={p.id} className={`font-bold ${p.netDueCents > 0 ? 'text-goblin-500' : p.netDueCents < 0 ? 'text-red-700' : 'text-goblin-300'}`}>
                     {(p.netDueCents / 100).toFixed(2)} EGP
                   </span>,
                   <div key={p.id} className="flex flex-wrap gap-1">
@@ -236,7 +236,7 @@ export function StaffView() {
       {section === 'transactions' && (
         <div className="space-y-6">
           <div>
-            <h2 className="mb-2 font-semibold text-slate-700">Wages & Solfah Ledger ({month})</h2>
+            <h2 className="mb-2 font-semibold text-goblin-100">Wages & Solfah Ledger ({month})</h2>
             {transactions ? (
               <Table headers={['Date', 'Staff', 'Type', 'Amount', 'Notes', 'Bookkeeping', 'Actions']}
                 rows={transactions.map((t) => [
@@ -244,12 +244,12 @@ export function StaffView() {
                   t.user.name,
                   <span key={t.id} className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
                     t.type === 'ADVANCE' ? 'bg-amber-100 text-amber-800' :
-                    t.type === 'BONUS' ? 'bg-emerald-100 text-emerald-800' :
+                    t.type === 'BONUS' ? 'bg-goblin-700 text-goblin-500' :
                     t.type === 'DEDUCTION' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
                   }`}>{t.type}</span>,
                   `${(t.amountCents / 100).toFixed(2)} EGP`,
                   t.notes ?? '—',
-                  t.journalEntry ? <span className="font-mono text-xs text-slate-500">Journaled</span> : <span className="text-slate-400 italic text-xs">Memo only</span>,
+                  t.journalEntry ? <span className="font-mono text-xs text-goblin-300">Journaled</span> : <span className="text-goblin-400 italic text-xs">Memo only</span>,
                   <Btn key={t.id} kind="danger" onClick={() => void voidTransaction(t.id)}>Void</Btn>
                 ])} />
             ) : <Spinner />}
@@ -364,7 +364,7 @@ function StaffFormModal({ roles, onClose, onDone, staff }: { roles: Role[]; onCl
         </Field>
 
         <div className="border-t pt-3 space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">Salary Configuration</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-goblin-300">Salary Configuration</h3>
           <Field label="Wage Structure">
             <Select value={salaryType} onChange={(val: any) => setSalaryType(val)} options={[
               { value: 'MONTHLY', label: 'Monthly Fixed Salary' },
@@ -384,8 +384,8 @@ function StaffFormModal({ roles, onClose, onDone, staff }: { roles: Role[]; onCl
 
           <div className="flex items-center gap-2 py-2">
             <input type="checkbox" id="deservesBonus" checked={deservesBonus} onChange={(e) => setDeservesBonus(e.target.checked)}
-              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-            <label htmlFor="deservesBonus" className="text-sm font-medium text-slate-700">Eligible for Sales Bonus</label>
+              className="rounded border-goblin-700 text-indigo-600 focus:ring-indigo-500" />
+            <label htmlFor="deservesBonus" className="text-sm font-medium text-goblin-100">Eligible for Sales Bonus</label>
           </div>
         </div>
 
@@ -438,7 +438,7 @@ function PermissionMatrixModal({ roles, onClose, onSaved }: { roles: Role[]; onC
       <ErrorBanner message={err} />
       <div className="overflow-auto">
         <table className="w-full text-xs">
-          <thead className="sticky top-0 bg-white text-left text-slate-500">
+          <thead className="sticky top-0 bg-goblin-900 text-left text-goblin-300">
             <tr>
               <th className="p-2">Permission</th>
               {roles.map((r) => <th key={r.id} className="p-2 text-center">{r.name}</th>)}
@@ -447,8 +447,8 @@ function PermissionMatrixModal({ roles, onClose, onSaved }: { roles: Role[]; onC
           <tbody>
             {[...groups.entries()].map(([group, perms]) => (
               <React.Fragment key={group}>
-                <tr className="bg-slate-50">
-                  <td colSpan={roles.length + 1} className="p-2 font-semibold uppercase tracking-wide text-slate-400">{group}</td>
+                <tr className="bg-goblin-800">
+                  <td colSpan={roles.length + 1} className="p-2 font-semibold uppercase tracking-wide text-goblin-400">{group}</td>
                 </tr>
                 {perms.map((p) => (
                   <tr key={p} className="border-t">
@@ -471,7 +471,7 @@ function PermissionMatrixModal({ roles, onClose, onSaved }: { roles: Role[]; onC
         <Btn kind="primary" onClick={() => void save()} disabled={saving || !dirty.size}>
           {saving ? 'Saving…' : `Save ${dirty.size ? `(${dirty.size} role${dirty.size > 1 ? 's' : ''})` : ''}`}
         </Btn>
-        <p className="text-xs text-slate-400">Owner permissions are locked to prevent locking yourself out.</p>
+        <p className="text-xs text-goblin-400">Owner permissions are locked to prevent locking yourself out.</p>
       </div>
     </Modal>
   );
@@ -510,7 +510,7 @@ function AttendanceFormModal({ log, staffList, onClose, onDone }: { log?: Attend
       <div className="space-y-3">
         <Field label="Staff Member">
           {log ? (
-            <div className="p-2 bg-slate-100 rounded-lg text-sm text-slate-700 font-semibold">{log.user.name}</div>
+            <div className="p-2 bg-goblin-800 rounded-lg text-sm text-goblin-100 font-semibold">{log.user.name}</div>
           ) : (
             <Select value={staffId} onChange={setStaffId} allowEmpty="— select staff —"
               options={staffList.map((s) => ({ value: s.id, label: s.name }))} />
@@ -519,12 +519,12 @@ function AttendanceFormModal({ log, staffList, onClose, onDone }: { log?: Attend
 
         <Field label="Clock In Time">
           <input type="datetime-local" value={clockIn} onChange={(e) => setClockIn(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+            className="w-full rounded-lg border border-goblin-700 p-2 text-sm" />
         </Field>
 
         <Field label="Clock Out Time (Optional)">
           <input type="datetime-local" value={clockOut} onChange={(e) => setClockOut(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+            className="w-full rounded-lg border border-goblin-700 p-2 text-sm" />
         </Field>
 
         <Field label="Note / Reason"><TextInput value={note} onChange={setNote} placeholder="e.g. forgot card, manual correction" /></Field>
@@ -598,7 +598,7 @@ function RecordTxModal({ staff, type, onClose, onDone }: { staff: any; type: 'AD
       <ErrorBanner message={err} />
       <div className="space-y-3">
         <Field label="Staff Member">
-          <div className="p-2 bg-slate-100 rounded-lg text-sm text-slate-700 font-semibold">{staff.name}</div>
+          <div className="p-2 bg-goblin-800 rounded-lg text-sm text-goblin-100 font-semibold">{staff.name}</div>
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
@@ -746,8 +746,8 @@ function TipsDistributionView({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <div className="lg:col-span-1 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h3 className="font-semibold text-slate-800">Distribute Tips</h3>
+      <div className="lg:col-span-1 space-y-4 rounded-xl border border-goblin-700 bg-goblin-900 p-5 shadow-sm">
+        <h3 className="font-semibold text-goblin-50">Distribute Tips</h3>
         <ErrorBanner message={err} />
         
         <div className="rounded-lg bg-indigo-50 p-4 text-indigo-900">
@@ -774,10 +774,10 @@ function TipsDistributionView({ onDone }: { onDone: () => void }) {
         </div>
       </div>
 
-      <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+      <div className="lg:col-span-2 rounded-xl border border-goblin-700 bg-goblin-900 p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-slate-800 font-medium">Eligible Employees Preview</h3>
-          <div className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold">
+          <h3 className="font-semibold text-goblin-50 font-medium">Eligible Employees Preview</h3>
+          <div className="text-xs bg-goblin-800 text-goblin-200 px-2.5 py-1 rounded-full font-semibold">
             Total Weight: {totalPoints} Point{totalPoints !== 1 ? 's' : ''}
           </div>
         </div>
@@ -787,13 +787,13 @@ function TipsDistributionView({ onDone }: { onDone: () => void }) {
             headers={['Employee', 'Tips Weight', 'Payout Share', 'Percentage']} 
             rows={liveShares.map((s) => [
               s.name,
-              <span key={s.userId} className="font-semibold text-slate-700">{s.tipsPoints} Pt{s.tipsPoints !== 1 ? 's' : ''}</span>,
-              <span key={s.userId} className="font-bold text-emerald-800">{(s.liveShareCents / 100).toFixed(2)} EGP</span>,
-              <span key={s.userId} className="text-slate-500 font-mono text-xs">{totalPoints > 0 ? `${((s.tipsPoints / totalPoints) * 100).toFixed(1)}%` : '0.0%'}</span>
+              <span key={s.userId} className="font-semibold text-goblin-100">{s.tipsPoints} Pt{s.tipsPoints !== 1 ? 's' : ''}</span>,
+              <span key={s.userId} className="font-bold text-goblin-500">{(s.liveShareCents / 100).toFixed(2)} EGP</span>,
+              <span key={s.userId} className="text-goblin-300 font-mono text-xs">{totalPoints > 0 ? `${((s.tipsPoints / totalPoints) * 100).toFixed(1)}%` : '0.0%'}</span>
             ])} 
           />
         ) : (
-          <div className="text-center text-slate-400 py-8 text-sm">
+          <div className="text-center text-goblin-400 py-8 text-sm">
             No employees have been assigned tips points weight. Configure them in the Directory tab.
           </div>
         )}
@@ -903,18 +903,18 @@ function SalesBonusView({ onDone }: { onDone: () => void }) {
   }
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <div className="lg:col-span-1 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h3 className="font-semibold text-slate-800">Bonus Distribution Setup</h3>
+      <div className="lg:col-span-1 space-y-4 rounded-xl border border-goblin-700 bg-goblin-900 p-5 shadow-sm">
+        <h3 className="font-semibold text-goblin-50">Bonus Distribution Setup</h3>
         <ErrorBanner message={err} />
 
         <div className="grid grid-cols-2 gap-2">
           <Field label="Start Date">
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-              className="rounded-lg border border-slate-300 p-2 text-sm w-full text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+              className="rounded-lg border border-goblin-700 p-2 text-sm w-full text-goblin-100 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
           </Field>
           <Field label="End Date">
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-              className="rounded-lg border border-slate-300 p-2 text-sm w-full text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+              className="rounded-lg border border-goblin-700 p-2 text-sm w-full text-goblin-100 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
           </Field>
         </div>
 
@@ -941,46 +941,46 @@ function SalesBonusView({ onDone }: { onDone: () => void }) {
 
       <div className="lg:col-span-2 space-y-4">
         {loading ? (
-          <div className="flex h-64 items-center justify-center rounded-xl border border-slate-200 bg-white">
+          <div className="flex h-64 items-center justify-center rounded-xl border border-goblin-700 bg-goblin-900">
             <Spinner />
           </div>
         ) : preview ? (
           <div className="space-y-6">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Net Sales in Period</div>
-                <div className="mt-1 text-xl font-bold text-slate-800">{(preview.totalNetSalesCents / 100).toFixed(2)} EGP</div>
+              <div className="rounded-xl border border-goblin-700 bg-goblin-900 p-4 shadow-sm">
+                <div className="text-xs font-semibold uppercase tracking-wider text-goblin-400">Net Sales in Period</div>
+                <div className="mt-1 text-xl font-bold text-goblin-50">{(preview.totalNetSalesCents / 100).toFixed(2)} EGP</div>
               </div>
               <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-4 shadow-sm">
                 <div className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Calculated Bonus Pool</div>
                 <div className="mt-1 text-xl font-bold text-indigo-900">{(preview.bonusPoolCents / 100).toFixed(2)} EGP</div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm col-span-2 sm:col-span-1">
-                <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Deserving Staff</div>
-                <div className="mt-1 text-xl font-bold text-slate-800">{preview.eligibleStaff.length} Employees</div>
+              <div className="rounded-xl border border-goblin-700 bg-goblin-900 p-4 shadow-sm col-span-2 sm:col-span-1">
+                <div className="text-xs font-semibold uppercase tracking-wider text-goblin-400">Deserving Staff</div>
+                <div className="mt-1 text-xl font-bold text-goblin-50">{preview.eligibleStaff.length} Employees</div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-              <h3 className="font-semibold text-slate-800">Equal Distribution Preview</h3>
+            <div className="rounded-xl border border-goblin-700 bg-goblin-900 p-5 shadow-sm space-y-4">
+              <h3 className="font-semibold text-goblin-50">Equal Distribution Preview</h3>
               {preview.eligibleStaff.length > 0 ? (
                 <Table 
                   headers={['Employee', 'Wages setup', 'Equal Bonus Share']} 
                   rows={preview.eligibleStaff.map((s) => [
                     s.name,
-                    <span key={s.userId} className="text-slate-500 text-xs">Eligible for Bonus</span>,
-                    <span key={s.userId} className="font-bold text-emerald-800">{(s.shareCents / 100).toFixed(2)} EGP</span>
+                    <span key={s.userId} className="text-goblin-300 text-xs">Eligible for Bonus</span>,
+                    <span key={s.userId} className="font-bold text-goblin-500">{(s.shareCents / 100).toFixed(2)} EGP</span>
                   ])} 
                 />
               ) : (
-                <div className="text-center text-slate-400 py-8 text-sm">
+                <div className="text-center text-goblin-400 py-8 text-sm">
                   No staff members are currently marked as eligible for the sales bonus. Mark them in the Staff Directory.
                 </div>
               )}
             </div>
           </div>
         ) : (
-          <div className="flex h-64 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 text-sm">
+          <div className="flex h-64 items-center justify-center rounded-xl border border-goblin-700 bg-goblin-900 text-goblin-400 text-sm">
             Enter parameters to calculate bonus preview.
           </div>
         )}

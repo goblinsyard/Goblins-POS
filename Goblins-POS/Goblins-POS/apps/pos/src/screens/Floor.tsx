@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import {
+  Banknote, CalendarDays, ClipboardList, Crown, Map, Palette, Pause, Play, Plus, Timer, User,
+} from 'lucide-react';
 import { priceSession, type RatePlanSpec } from '@goblins/shared';
 import { api } from '../lib/api';
 import { fmtMoney, t } from '../lib/i18n';
@@ -145,11 +148,11 @@ export function Floor() {
               </button>
               <button
                 onClick={() => void api<OpenOrderSummary[]>('/orders/open').then(setOpenList)}
-                className="rounded-xl bg-goblin-800 px-4 py-2">
-                📋 {t(lang, 'openOrders')}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-800 px-4 py-2">
+                <ClipboardList className="h-4 w-4" /> {t(lang, 'openOrders')}
               </button>
-              <button onClick={() => setDrawerOpen(true)} className="rounded-xl bg-goblin-800 px-4 py-2">
-                💵 {t(lang, 'cashDrawer')}
+              <button onClick={() => setDrawerOpen(true)} className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-800 px-4 py-2">
+                <Banknote className="h-4 w-4" /> {t(lang, 'cashDrawer')}
               </button>
               {can(user, 'shift.x_report') && (
                 <button onClick={() => setShiftDialog('x')} className="rounded-xl bg-goblin-800 px-4 py-2">
@@ -170,14 +173,14 @@ export function Floor() {
             )
           )}
           <button onClick={() => setClockOpen(true)} className="rounded-xl bg-goblin-900 px-3 py-2" title={t(lang, 'clockIn')}>
-            ⏱
+            <Timer className="h-5 w-5" />
           </button>
           <button
             onClick={() => setDisplaySettingsOpen(true)}
             className="rounded-xl bg-goblin-900 px-3 py-2 hover:bg-goblin-800 transition-colors"
             title={lang === 'ar' ? 'إعدادات العرض' : 'Display Settings'}
           >
-            🎨
+            <Palette className="h-5 w-5" />
           </button>
           <span className="mx-2 text-goblin-400">{user?.name}</span>
           <button onClick={logout} className="rounded-xl bg-goblin-900 px-3 py-2 text-goblin-300">
@@ -194,7 +197,7 @@ export function Floor() {
               activeView === 'map' ? 'border-goblin-400 bg-goblin-950/20 text-white font-bold' : 'border-transparent text-goblin-400 hover:text-white'
             }`}
           >
-            🗺 {lang === 'ar' ? 'خريطة الصالات' : 'Floor Map'}
+            <span className="inline-flex items-center justify-center gap-1.5"><Map className="h-4 w-4" /> {lang === 'ar' ? 'خريطة الصالات' : 'Floor Map'}</span>
           </button>
           <button
             onClick={() => {
@@ -205,7 +208,7 @@ export function Floor() {
               activeView === 'tabs' ? 'border-goblin-400 bg-goblin-950/20 text-white font-bold' : 'border-transparent text-goblin-400 hover:text-white'
             }`}
           >
-            👤 {lang === 'ar' ? 'الحسابات المفتوحة' : 'Open Tabs'}
+            <span className="inline-flex items-center justify-center gap-1.5"><User className="h-4 w-4" /> {lang === 'ar' ? 'الحسابات المفتوحة' : 'Open Tabs'}</span>
           </button>
           <button
             onClick={() => setActiveView('reservations')}
@@ -213,7 +216,7 @@ export function Floor() {
               activeView === 'reservations' ? 'border-goblin-400 bg-goblin-950/20 text-white font-bold' : 'border-transparent text-goblin-400 hover:text-white'
             }`}
           >
-            📅 {t(lang, 'reservations')}
+            <span className="inline-flex items-center justify-center gap-1.5"><CalendarDays className="h-4 w-4" /> {t(lang, 'reservations')}</span>
           </button>
         </div>
       )}
@@ -233,9 +236,9 @@ export function Floor() {
               </h2>
               <button
                 onClick={() => setNewTabOpen(true)}
-                className="rounded-xl bg-goblin-600 px-5 py-2.5 font-bold hover:bg-goblin-500 transition-all shadow-md"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-600 px-5 py-2.5 font-bold hover:bg-goblin-500 transition-all shadow-md"
               >
-                + {lang === 'ar' ? 'فتح حساب جديد' : 'Open New Tab'}
+                <Plus className="h-4 w-4" /> {lang === 'ar' ? 'فتح حساب جديد' : 'Open New Tab'}
               </button>
             </div>
             
@@ -247,8 +250,8 @@ export function Floor() {
                   className="flex flex-col rounded-2xl bg-goblin-900 p-4 border border-goblin-800 text-start hover:border-goblin-600 hover:bg-goblin-850 active:scale-95 transition-all shadow"
                 >
                   <span className="text-xs text-goblin-400 font-mono">#{o.number}</span>
-                  <span className="text-base font-bold mt-1 text-white truncate w-full">
-                    👤 {o.customer?.name || 'Walk-in'}
+                  <span className="inline-flex items-center gap-1.5 text-base font-bold mt-1 text-white truncate w-full">
+                    <User className="h-4 w-4 shrink-0" /> {o.customer?.name || 'Walk-in'}
                   </span>
                   <span className="text-sm font-semibold mt-2 text-goblin-300">
                     {fmtMoney(o.totalCents, lang)}
@@ -276,7 +279,7 @@ export function Floor() {
                     : 'bg-goblin-900 border-goblin-800 text-goblin-300 hover:text-white'
                 }`}
               >
-                📅 {lang === 'ar' ? 'عرض الحجوزات القادمة' : 'Show Next Bookings'}
+                <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> {lang === 'ar' ? 'عرض الحجوزات القادمة' : 'Show Next Bookings'}</span>
               </button>
             </div>
 
@@ -302,7 +305,7 @@ export function Floor() {
                         >
                           {isVip && (
                             <span className="absolute -top-2.5 -right-1.5 z-10 flex items-center gap-0.5 bg-gradient-to-r from-amber-500 via-yellow-450 to-yellow-300 text-black text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-md border border-yellow-250 select-none">
-                              👑 {lang === 'ar' ? 'في إي بي' : 'VIP'}
+                              <Crown className="h-2.5 w-2.5" /> {lang === 'ar' ? 'في إي بي' : 'VIP'}
                             </span>
                           )}
                           <span>{lang === 'ar' && (res as { nameAr?: string }).nameAr ? (res as { nameAr?: string }).nameAr : res.name}</span>
@@ -315,14 +318,14 @@ export function Floor() {
                             </span>
                           )}
                           {session && cost != null && (
-                            <span className="text-xs font-bold text-yellow-300">
-                              {session.status === 'PAUSED' ? '⏸ ' : '▶ '}
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-yellow-300">
+                              {session.status === 'PAUSED' ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
                               {fmtMoney(cost, lang)}
                             </span>
                           )}
                           {showBookings && nextRes && (
-                            <span className="mt-1 rounded bg-black/40 px-1 py-0.5 text-[10px] font-bold text-amber-200 border border-amber-400/20 max-w-full truncate">
-                              📅 {formatTimeCairo(nextRes.startAt)} · {nextRes.customer?.name || nextRes.guestName}
+                            <span className="mt-1 inline-flex items-center gap-1 rounded bg-black/40 px-1 py-0.5 text-[10px] font-bold text-amber-200 border border-amber-400/20 max-w-full truncate">
+                              <CalendarDays className="h-2.5 w-2.5 shrink-0" /> {formatTimeCairo(nextRes.startAt)} · {nextRes.customer?.name || nextRes.guestName}
                             </span>
                           )}
                         </button>
@@ -390,8 +393,8 @@ export function Floor() {
                   setChoosing(null);
                   openOrder(order.id);
                 }}
-                className="w-full rounded-xl bg-goblin-600 p-4 font-semibold">
-                + {t(lang, 'newOrder')}
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-goblin-600 p-4 font-semibold">
+                <Plus className="h-4 w-4" /> {t(lang, 'newOrder')}
               </button>
             </div>
           </div>
@@ -550,8 +553,8 @@ function NewTabDialog({ onClose, onCreated }: NewTabDialogProps) {
               ))}
               {q.trim() && results.length === 0 && <p className="p-2 text-sm text-goblin-400">No customers found</p>}
             </div>
-            <button onClick={() => setCreating(true)} className="w-full rounded-xl bg-goblin-800 py-3">
-              + {lang === 'ar' ? 'زبون جديد' : 'New Customer'}
+            <button onClick={() => setCreating(true)} className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-goblin-800 py-3">
+              <Plus className="h-4 w-4" /> {lang === 'ar' ? 'زبون جديد' : 'New Customer'}
             </button>
             <button onClick={onClose} className="w-full rounded-xl bg-goblin-800 py-3 text-sm">
               {lang === 'ar' ? 'إلغاء' : 'Cancel'}

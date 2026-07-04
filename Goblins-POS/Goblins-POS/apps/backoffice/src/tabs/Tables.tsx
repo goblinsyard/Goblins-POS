@@ -38,7 +38,7 @@ export function TablesView() {
       <div className="space-y-6">
         <div className="flex items-center gap-2">
           <Pills value={view} onChange={setView} options={VIEWS} />
-          <p className="text-sm text-slate-400">Drag tables to rearrange — positions save when you drop.</p>
+          <p className="text-sm text-goblin-400">Drag tables to rearrange — positions save when you drop.</p>
         </div>
         {zones.map((zone) => (
           <ZoneCanvas key={zone.id} zone={zone} onEdit={setEditing} />
@@ -63,16 +63,16 @@ export function TablesView() {
         <div key={zone.id}>
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h2 className="font-semibold text-slate-700">{zone.name}{zone.nameAr ? ` · ${zone.nameAr}` : ''}</h2>
-              <button onClick={() => setEditingZone(zone)} className="text-xs text-slate-400 hover:text-slate-600 underline font-medium">
+              <h2 className="font-semibold text-goblin-100">{zone.name}{zone.nameAr ? ` · ${zone.nameAr}` : ''}</h2>
+              <button onClick={() => setEditingZone(zone)} className="text-xs text-goblin-400 hover:text-goblin-200 underline font-medium">
                 Edit zone
               </button>
             </div>
             <Btn onClick={() => setCreatingIn(zone)}>+ Add table</Btn>
           </div>
-          <div className="overflow-hidden rounded-xl bg-white shadow">
+          <div className="overflow-hidden rounded-xl bg-goblin-900 shadow">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-left text-slate-500">
+              <thead className="bg-goblin-800 text-left text-goblin-300">
                 <tr>
                   <th className="p-3">Name</th><th className="p-3">Type</th><th className="p-3">Capacity</th>
                   <th className="p-3">Rate plan</th><th className="p-3">Position / size</th><th className="p-3">Status</th><th className="p-3" />
@@ -81,11 +81,11 @@ export function TablesView() {
               <tbody>
                 {zone.resources.map((r) => (
                   <tr key={r.id} className={`border-t ${r.isActive ? '' : 'opacity-40'}`}>
-                    <td className="p-3 font-semibold text-slate-700">{r.name}{r.nameAr ? ` · ${r.nameAr}` : ''}</td>
+                    <td className="p-3 font-semibold text-goblin-100">{r.name}{r.nameAr ? ` · ${r.nameAr}` : ''}</td>
                     <td className="p-3">{TYPES.find((t) => t.value === r.type)?.label ?? r.type}</td>
                     <td className="p-3">{r.capacity}</td>
                     <td className="p-3">{r.ratePlan?.name ?? '—'}</td>
-                    <td className="p-3 font-mono text-xs text-slate-500">
+                    <td className="p-3 font-mono text-xs text-goblin-300">
                       ({r.posX}, {r.posY}) {r.width}×{r.height} {r.shape}
                     </td>
                     <td className="p-3 text-xs">{r.isActive ? r.status : 'INACTIVE'}</td>
@@ -99,7 +99,7 @@ export function TablesView() {
                 ))}
               </tbody>
             </table>
-            {!zone.resources.length && <p className="p-4 text-sm text-slate-400">No tables in this zone</p>}
+            {!zone.resources.length && <p className="p-4 text-sm text-goblin-400">No tables in this zone</p>}
           </div>
         </div>
       ))}
@@ -243,9 +243,9 @@ function ZoneCanvas({ zone, onEdit }: { zone: AdminZone; onEdit: (r: AdminResour
   const height = Math.max(240, ...zone.resources.map((r) => (geom[r.id]?.y ?? r.posY) + (geom[r.id]?.h ?? r.height))) + 30;
   return (
     <div>
-      <h2 className="mb-2 font-semibold text-slate-700">{zone.name}</h2>
+      <h2 className="mb-2 font-semibold text-goblin-100">{zone.name}</h2>
       <ErrorBanner message={err} />
-      <div className="relative w-full overflow-auto rounded-xl bg-emerald-950/90 shadow" style={{ height }}>
+      <div className="relative w-full overflow-auto rounded-xl bg-goblin-900/90 shadow" style={{ height }}>
         {zone.resources.map((r) => {
           const g = geom[r.id] ?? { x: r.posX, y: r.posY, w: r.width, h: r.height };
           return (
@@ -253,13 +253,13 @@ function ZoneCanvas({ zone, onEdit }: { zone: AdminZone; onEdit: (r: AdminResour
               onPointerDown={(e) => downMove(e, r)} onPointerMove={move} onPointerUp={() => void up()}
               onDoubleClick={() => onEdit(r)}
               title={`${r.name} — drag to move, drag corner to resize, double-click to edit`}
-              className={`absolute flex cursor-grab select-none items-center justify-center border-2 text-xs font-semibold text-white active:cursor-grabbing ${savedFlash === r.id ? 'border-yellow-300' : 'border-emerald-400'} ${r.shape === 'circle' ? 'rounded-full' : 'rounded-lg'} ${r.isActive ? 'bg-emerald-700' : 'bg-slate-600 opacity-60'}`}
+              className={`absolute flex cursor-grab select-none items-center justify-center border-2 text-xs font-semibold text-white active:cursor-grabbing ${savedFlash === r.id ? 'border-yellow-300' : 'border-goblin-600'} ${r.shape === 'circle' ? 'rounded-full' : 'rounded-lg'} ${r.isActive ? 'bg-goblin-600' : 'bg-goblin-800 opacity-60'}`}
               style={{ left: g.x, top: g.y, width: g.w, height: g.h, touchAction: 'none' }}>
               {r.name}
               
               <div
                 onPointerDown={(e) => downResize(e, r)}
-                className="resize-handle absolute right-0 bottom-0 w-4 h-4 cursor-se-resize bg-white/20 hover:bg-white/50 rounded-tl-md flex items-center justify-center text-[9px] text-white/70 select-none"
+                className="resize-handle absolute right-0 bottom-0 w-4 h-4 cursor-se-resize bg-goblin-900/20 hover:bg-goblin-900/50 rounded-tl-md flex items-center justify-center text-[9px] text-white/70 select-none"
                 style={{ touchAction: 'none' }}
               >
                 ⇲
@@ -267,7 +267,7 @@ function ZoneCanvas({ zone, onEdit }: { zone: AdminZone; onEdit: (r: AdminResour
             </div>
           );
         })}
-        {!zone.resources.length && <p className="p-4 text-sm text-emerald-200/60">No tables in this zone</p>}
+        {!zone.resources.length && <p className="p-4 text-sm text-goblin-400/60">No tables in this zone</p>}
       </div>
     </div>
   );
@@ -429,7 +429,7 @@ function ResourceModal({ resource, duplicateFrom, zone, zones, ratePlans, onClos
           <Field label="Height"><TextInput value={height} onChange={setHeight} type="number" /></Field>
         </div>
         {resource && (
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2 text-sm text-goblin-200">
             <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
             Active (visible on the POS floor)
           </label>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Check, Timer } from 'lucide-react';
 import { api } from '../../lib/api';
 import { t, type TKey } from '../../lib/i18n';
 import { usePos } from '../../lib/store';
@@ -43,7 +44,7 @@ export function CashDrawerDialog({ shiftId, onClose }: { shiftId: string; onClos
         <h2 className="mb-3 text-lg font-bold">{t(lang, 'cashDrawer')}</h2>
         {done ? (
           <>
-            <p className="rounded-lg bg-goblin-700 p-3 text-center font-semibold">✓</p>
+            <p className="flex items-center justify-center rounded-lg bg-goblin-700 p-3 font-semibold"><Check className="h-5 w-5" /></p>
             <button onClick={onClose} className="mt-4 w-full rounded-xl bg-goblin-600 py-3 font-semibold text-white">{t(lang, 'close')}</button>
           </>
         ) : (
@@ -97,7 +98,7 @@ export function TimeClockDialog({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl bg-goblin-900 border border-goblin-800 p-5 text-goblin-50" onClick={(e) => e.stopPropagation()}>
-        <h2 className="mb-3 text-lg font-bold">⏱</h2>
+        <h2 className="mb-3 flex items-center text-lg font-bold"><Timer className="h-5 w-5" /></h2>
         {error && <p className="mb-2 rounded bg-red-900/60 p-2 text-sm text-red-200">{error}</p>}
         {msg && <p className="mb-2 rounded bg-goblin-700 p-2 text-sm">{msg}</p>}
         <div className="flex gap-2">

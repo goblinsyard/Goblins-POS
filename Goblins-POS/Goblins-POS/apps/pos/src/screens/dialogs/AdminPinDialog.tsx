@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Check, Delete } from 'lucide-react';
 import { t } from '../../lib/i18n';
 import { usePos } from '../../lib/store';
 
@@ -59,9 +60,9 @@ export function AdminPinDialog({
                 else if (k === '✓') void submit(pin);
                 else press(k);
               }}
-              className="rounded-2xl bg-goblin-800 py-4 text-xl font-bold hover:bg-goblin-750 active:bg-goblin-600 transition-all shadow-sm"
+              className="flex items-center justify-center rounded-2xl bg-goblin-800 py-4 text-xl font-bold hover:bg-goblin-750 active:bg-goblin-600 transition-all shadow-sm"
             >
-              {k}
+              {k === '⌫' ? <Delete className="h-6 w-6" /> : k === '✓' ? <Check className="h-6 w-6" /> : k}
             </button>
           ))}
         </div>

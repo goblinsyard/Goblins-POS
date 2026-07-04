@@ -115,7 +115,7 @@ function StockActionModal({ kind, level, locations, onClose, onDone }: {
   return (
     <Modal title={`${titles[kind]} — ${level.ingredient.name}`} onClose={onClose}>
       <ErrorBanner message={err} />
-      <p className="mb-3 text-sm text-slate-500">
+      <p className="mb-3 text-sm text-goblin-300">
         At {level.location.name}: <b>{qty(level.quantity)} {level.ingredient.uom.id}</b>
       </p>
       <div className="space-y-3">
@@ -145,14 +145,14 @@ function Alerts() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="mb-2 font-semibold text-slate-700">Low stock (at/below reorder point)</h2>
+        <h2 className="mb-2 font-semibold text-goblin-100">Low stock (at/below reorder point)</h2>
         <Table headers={['Ingredient', 'On hand', 'Reorder point', 'Suggested order']}
           rows={(low ?? []).map((l) => [
             l.name, `${qty(l.totalQty)} ${l.uom}`, qty(l.reorderPoint), qty(l.reorderQty),
           ])} />
       </div>
       <div>
-        <h2 className="mb-2 font-semibold text-slate-700">Expiring within 7 days</h2>
+        <h2 className="mb-2 font-semibold text-goblin-100">Expiring within 7 days</h2>
         <Table headers={['Ingredient', 'Lot', 'Remaining', 'Expires']}
           rows={(expiring ?? []).map((b) => [
             b.ingredient.name, b.lotCode ?? '—', `${qty(b.remainingQty)} ${b.ingredient.uom.id}`,
@@ -219,13 +219,13 @@ function Counts() {
     return (
       <div className="max-w-md space-y-3">
         <ErrorBanner message={err} />
-        {result && <p className="rounded-lg bg-emerald-100 p-2 text-sm text-emerald-700">{result}</p>}
+        {result && <p className="rounded-lg bg-goblin-700 p-2 text-sm text-goblin-500">{result}</p>}
         <Field label="Location">
           <Select value={locationId} onChange={setLocationId} allowEmpty="— pick —"
             options={(locations ?? []).map((l) => ({ value: l.id, label: l.name }))} />
         </Field>
         <Btn kind="primary" onClick={() => void start()}>Start full count</Btn>
-        <p className="text-xs text-slate-400">Starting a count snapshots system quantities; enter what you actually counted, then post. Variances are adjusted automatically and audited.</p>
+        <p className="text-xs text-goblin-400">Starting a count snapshots system quantities; enter what you actually counted, then post. Variances are adjusted automatically and audited.</p>
       </div>
     );
   }
@@ -233,9 +233,9 @@ function Counts() {
   return (
     <div>
       <ErrorBanner message={err} />
-      <div className="overflow-hidden rounded-xl bg-white shadow">
+      <div className="overflow-hidden rounded-xl bg-goblin-900 shadow">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-500">
+          <thead className="bg-goblin-800 text-left text-goblin-300">
             <tr><th className="p-3">Ingredient</th><th className="p-3">System</th><th className="p-3">Counted</th><th className="p-3">Variance</th></tr>
           </thead>
           <tbody>
@@ -249,9 +249,9 @@ function Counts() {
                   <td className="p-3">
                     <input type="number" value={entries[l.ingredientId] ?? ''} min={0}
                       onChange={(e) => setEntries((cur) => ({ ...cur, [l.ingredientId]: e.target.value }))}
-                      className="w-28 rounded-lg border border-slate-300 p-1.5" />
+                      className="w-28 rounded-lg border border-goblin-700 p-1.5" />
                   </td>
-                  <td className={`p-3 ${variance === 0 ? 'text-slate-400' : variance < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                  <td className={`p-3 ${variance === 0 ? 'text-goblin-400' : variance < 0 ? 'text-red-600' : 'text-goblin-500'}`}>
                     {variance > 0 ? '+' : ''}{qty(variance)}
                   </td>
                 </tr>
@@ -294,11 +294,11 @@ function InventoryReports() {
       <div className="mb-3 flex items-center gap-2">
         <Pills value={kind} onChange={setKind} options={REPORT_KINDS} />
         <button onClick={() => void downloadCsv(`/reports/inventory/${kind}.csv?from=${encodeURIComponent(from)}`, `inventory-${kind}.csv`)}
-          className="ml-auto rounded-lg bg-slate-700 px-3 py-1.5 text-sm text-white">
+          className="ml-auto rounded-lg bg-goblin-900 px-3 py-1.5 text-sm text-white">
           Export CSV
         </button>
       </div>
-      <p className="mb-2 text-xs text-slate-400">Last 7 days</p>
+      <p className="mb-2 text-xs text-goblin-400">Last 7 days</p>
       {!data ? <Spinner /> : (
         <Table headers={headers.length ? headers : ['—']}
           rows={rows.map((r) => headers.map((h) => cell(r[h])))} />

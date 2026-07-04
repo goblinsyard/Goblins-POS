@@ -81,20 +81,20 @@ function GeneralSettings() {
   return (
     <div className="max-w-2xl">
       <ErrorBanner message={err} />
-      {saved && <p className="mb-3 rounded-lg bg-emerald-100 p-2 text-sm text-emerald-700">Settings saved.</p>}
-      <div className="overflow-hidden rounded-xl bg-white shadow">
+      {saved && <p className="mb-3 rounded-lg bg-goblin-700 p-2 text-sm text-goblin-500">Settings saved.</p>}
+      <div className="overflow-hidden rounded-xl bg-goblin-900 shadow">
         <table className="w-full text-sm">
           <tbody>
             {keys.map((k) => {
               const original = settings[k];
               return (
                 <tr key={k} className="border-t first:border-0">
-                  <td className="p-3 font-mono text-xs text-slate-500">{k}</td>
+                  <td className="p-3 font-mono text-xs text-goblin-300">{k}</td>
                   <td className="p-3">
                     {typeof original === 'boolean' ? (
                       <select value={draft[k] ?? 'false'}
                         onChange={(e) => setDraft((c) => ({ ...c, [k]: e.target.value }))}
-                        className="rounded-lg border border-slate-300 bg-white p-1.5">
+                        className="rounded-lg border border-goblin-700 bg-goblin-900 p-1.5">
                         <option value="true">true</option>
                         <option value="false">false</option>
                       </select>
@@ -102,7 +102,7 @@ function GeneralSettings() {
                       <input value={draft[k] ?? ''} dir="auto"
                         type={typeof original === 'number' ? 'number' : 'text'}
                         onChange={(e) => setDraft((c) => ({ ...c, [k]: e.target.value }))}
-                        className="w-full rounded-lg border border-slate-300 p-1.5" />
+                        className="w-full rounded-lg border border-goblin-700 p-1.5" />
                     )}
                   </td>
                 </tr>
@@ -161,13 +161,13 @@ function ReceiptSettings() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-700">Receipt Design & Layout</h2>
+        <h2 className="text-lg font-bold text-goblin-100">Receipt Design & Layout</h2>
         <ErrorBanner message={err} />
-        {saved && <p className="rounded-lg bg-emerald-100 p-2 text-sm text-emerald-700">Receipt settings saved.</p>}
+        {saved && <p className="rounded-lg bg-goblin-700 p-2 text-sm text-goblin-500">Receipt settings saved.</p>}
         
         <LogoSection current={(settings['receipt.logo'] as string) || ''} onSaved={reload} />
 
-        <div className="rounded-xl bg-white p-4 shadow space-y-3">
+        <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-3">
           <Field label="Header Title (EN)"><TextInput value={draft['receipt.header'] ?? ''} onChange={(v) => setDraft(c => ({ ...c, 'receipt.header': v }))} /></Field>
           <Field label="Header Title (Arabic)"><TextInput value={draft['receipt.headerAr'] ?? ''} onChange={(v) => setDraft(c => ({ ...c, 'receipt.headerAr': v }))} /></Field>
           <Field label="Footer Note (EN)"><TextInput value={draft['receipt.footer'] ?? ''} onChange={(v) => setDraft(c => ({ ...c, 'receipt.footer': v }))} /></Field>
@@ -184,15 +184,15 @@ function ReceiptSettings() {
           </div>
 
           <div className="space-y-2 pt-2">
-            <label className="flex items-center gap-2 text-sm text-slate-600">
+            <label className="flex items-center gap-2 text-sm text-goblin-200">
               <input type="checkbox" checked={draft['receipt.showTaxSummary'] ?? false} onChange={(e) => setDraft(c => ({ ...c, 'receipt.showTaxSummary': e.target.checked }))} />
               Show detailed Tax (VAT & Service Charge) breakdown
             </label>
-            <label className="flex items-center gap-2 text-sm text-slate-600">
+            <label className="flex items-center gap-2 text-sm text-goblin-200">
               <input type="checkbox" checked={draft['receipt.showLoyalty'] ?? false} onChange={(e) => setDraft(c => ({ ...c, 'receipt.showLoyalty': e.target.checked }))} />
               Show Customer Loyalty tiers and point balances
             </label>
-            <label className="flex items-center gap-2 text-sm text-slate-600">
+            <label className="flex items-center gap-2 text-sm text-goblin-200">
               <input type="checkbox" checked={draft['receipt.showQrCode'] ?? false} onChange={(e) => setDraft(c => ({ ...c, 'receipt.showQrCode': e.target.checked }))} />
               Show QR Code at the bottom of the receipt
             </label>
@@ -206,10 +206,10 @@ function ReceiptSettings() {
 
       {/* Live Preview Column */}
       <div className="flex flex-col items-center">
-        <h3 className="mb-2 font-semibold text-slate-500 uppercase text-xs tracking-wider">Live Mock Preview</h3>
-        <div className="w-[300px] border border-dashed border-slate-300 rounded-2xl bg-[#fafafa] p-4 text-black shadow-inner font-mono text-xs leading-snug">
+        <h3 className="mb-2 font-semibold text-goblin-300 uppercase text-xs tracking-wider">Live Mock Preview</h3>
+        <div className="w-[300px] border border-dashed border-goblin-700 rounded-2xl bg-[#fafafa] p-4 text-black shadow-inner font-mono text-xs leading-snug">
           {settings['receipt.logo'] && (
-            <img src={settings['receipt.logo'] as string} alt="Receipt Logo" className="mx-auto mb-3 max-h-12 border rounded bg-white p-0.5" />
+            <img src={settings['receipt.logo'] as string} alt="Receipt Logo" className="mx-auto mb-3 max-h-12 border rounded bg-goblin-900 p-0.5" />
           )}
           
           <div className="text-center">
@@ -221,11 +221,11 @@ function ReceiptSettings() {
                 {draft['receipt.headerAr']}
               </div>
             )}
-            <div className="text-slate-400">{String(settings['business.address'] || '123 Nile Street, Zamalek, Cairo')}</div>
-            <div className="text-slate-400">Tax ID: {String(settings['business.taxId'] || '123-456-789')}</div>
+            <div className="text-goblin-400">{String(settings['business.address'] || '123 Nile Street, Zamalek, Cairo')}</div>
+            <div className="text-goblin-400">Tax ID: {String(settings['business.taxId'] || '123-456-789')}</div>
           </div>
           
-          <div className="my-2 border-t border-dashed border-slate-300"></div>
+          <div className="my-2 border-t border-dashed border-goblin-700"></div>
           
           <div className="flex justify-between">
             <span>Order #1234</span>
@@ -236,7 +236,7 @@ function ReceiptSettings() {
             <span>Server: Hassan</span>
           </div>
           
-          <div className="my-2 border-t border-dashed border-slate-300"></div>
+          <div className="my-2 border-t border-dashed border-goblin-700"></div>
           
           <div className="flex justify-between">
             <span>1 x Virgin Mojito</span>
@@ -247,7 +247,7 @@ function ReceiptSettings() {
             <span>160.00 EGP</span>
           </div>
           
-          <div className="my-2 border-t border-dashed border-slate-300"></div>
+          <div className="my-2 border-t border-dashed border-goblin-700"></div>
           
           <div className="flex justify-between font-bold">
             <span>Subtotal</span>
@@ -266,15 +266,15 @@ function ReceiptSettings() {
             </>
           )}
           
-          <div className="my-1 border-t border-slate-300"></div>
+          <div className="my-1 border-t border-goblin-700"></div>
           <div className="flex justify-between font-bold">
             <span>TOTAL</span>
             <span>{draft['receipt.showTaxSummary'] ? '312.82 EGP' : '245.00 EGP'}</span>
           </div>
-          <div className="my-1 border-t border-slate-300"></div>
+          <div className="my-1 border-t border-goblin-700"></div>
           
           {draft['receipt.showLoyalty'] && (
-            <div className="text-center text-slate-500 my-2 pt-1 border-t border-dashed border-slate-200">
+            <div className="text-center text-goblin-300 my-2 pt-1 border-t border-dashed border-goblin-700">
               <div>Loyalty Tier: Goblin King</div>
               <div>Points Balance: 125 pts</div>
             </div>
@@ -292,9 +292,9 @@ function ReceiptSettings() {
           </div>
 
           {draft['receipt.showQrCode'] && (
-            <div className="mt-3 border-t border-dashed border-slate-200 pt-3 flex flex-col items-center">
-              <div className="w-16 h-16 bg-slate-200 flex items-center justify-center text-[10px] text-slate-500">QR Code</div>
-              <div className="text-[9px] text-slate-400 mt-1 max-w-[150px] truncate">{draft['receipt.qrCodeText']}</div>
+            <div className="mt-3 border-t border-dashed border-goblin-700 pt-3 flex flex-col items-center">
+              <div className="w-16 h-16 bg-goblin-700 flex items-center justify-center text-[10px] text-goblin-300">QR Code</div>
+              <div className="text-[9px] text-goblin-400 mt-1 max-w-[150px] truncate">{draft['receipt.qrCodeText']}</div>
             </div>
           )}
         </div>
@@ -333,23 +333,23 @@ function LogoSection({ current, onSaved }: { current: string; onSaved: () => voi
   }
 
   return (
-    <div className="mt-6 rounded-xl bg-white p-4 shadow">
-      <h2 className="mb-2 font-semibold text-slate-700">Receipt logo</h2>
+    <div className="mt-6 rounded-xl bg-goblin-900 p-4 shadow">
+      <h2 className="mb-2 font-semibold text-goblin-100">Receipt logo</h2>
       <ErrorBanner message={err} />
       {current ? (
         <div className="mb-3 flex items-center gap-4">
-          <img src={current} alt="Receipt logo" className="max-h-24 rounded border border-slate-200 bg-white p-1" />
+          <img src={current} alt="Receipt logo" className="max-h-24 rounded border border-goblin-700 bg-goblin-900 p-1" />
           <Btn kind="danger" onClick={() => void remove()} disabled={busy}>Remove</Btn>
         </div>
       ) : (
-        <p className="mb-3 text-sm text-slate-400">No logo yet.</p>
+        <p className="mb-3 text-sm text-goblin-400">No logo yet.</p>
       )}
-      <label className="inline-block cursor-pointer rounded-lg bg-emerald-700 px-3 py-1.5 text-sm text-white hover:bg-emerald-800">
+      <label className="inline-block cursor-pointer rounded-lg bg-goblin-600 px-3 py-1.5 text-sm text-white hover:bg-goblin-700">
         {busy ? 'Uploading…' : 'Upload logo'}
         <input type="file" accept="image/png,image/jpeg,image/svg+xml" className="hidden"
           onChange={(e) => pick(e.target.files?.[0])} />
       </label>
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="mt-2 text-xs text-goblin-400">
         Shown at the top of receipts on screen and in browser printing. Thermal ESC/POS printers print text only for now — logo raster printing is a future print-service upgrade.
       </p>
     </div>
@@ -387,7 +387,7 @@ function Printers() {
     <div>
       <div className="mb-3 flex items-center gap-3">
         <Btn kind="primary" onClick={() => { setEditingPrinter(null); setCreateOpen(true); }}>+ New printer</Btn>
-        {msg && <span className="text-sm text-slate-500">{msg}</span>}
+        {msg && <span className="text-sm text-goblin-300">{msg}</span>}
       </div>
       <Table headers={['Name', 'Connection', 'Address', 'Paper', 'Used by', 'Actions']}
         rows={(printers ?? []).map((p) => [
@@ -486,15 +486,15 @@ function Stations() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-800">Prep Stations</h2>
-          <p className="text-sm text-slate-500">Manage kitchen and bar prep stations where order items are routed.</p>
+          <h2 className="text-lg font-semibold text-goblin-50">Prep Stations</h2>
+          <p className="text-sm text-goblin-300">Manage kitchen and bar prep stations where order items are routed.</p>
         </div>
         <Btn kind="primary" onClick={() => setFormOpen({})}>+ New Prep Station</Btn>
       </div>
       <ErrorBanner message={err} />
-      <div className="overflow-hidden rounded-xl bg-white shadow border border-slate-100">
+      <div className="overflow-hidden rounded-xl bg-goblin-900 shadow border border-goblin-800">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-500 text-xs uppercase tracking-wide">
+          <thead className="bg-goblin-800 text-left text-goblin-300 text-xs uppercase tracking-wide">
             <tr>
               <th className="p-3">Station</th>
               <th className="p-3">Kind</th>
@@ -506,16 +506,16 @@ function Stations() {
           </thead>
           <tbody>
             {(stations ?? []).map((st) => (
-              <tr key={st.id} className="border-t hover:bg-slate-50/50">
-                <td className="p-3 font-semibold text-slate-700">
+              <tr key={st.id} className="border-t hover:bg-goblin-800/50">
+                <td className="p-3 font-semibold text-goblin-100">
                   {st.name}
-                  {st.nameAr && <span className="ml-2 text-slate-400 font-normal text-xs">({st.nameAr})</span>}
+                  {st.nameAr && <span className="ml-2 text-goblin-400 font-normal text-xs">({st.nameAr})</span>}
                 </td>
-                <td className="p-3 text-slate-500">{st.kind}</td>
+                <td className="p-3 text-goblin-300">{st.kind}</td>
                 <td className="p-3">
                   <select value={st.printerId ?? ''}
                     onChange={(e) => void patch(st.id, { printerId: e.target.value || null })}
-                    className="rounded-lg border border-slate-300 bg-white p-1.5 text-sm">
+                    className="rounded-lg border border-goblin-700 bg-goblin-900 p-1.5 text-sm">
                     <option value="">— none —</option>
                     {(printers ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
@@ -523,18 +523,18 @@ function Stations() {
                 <td className="p-3">
                   <input type="checkbox" checked={st.useKds}
                     onChange={(e) => void patch(st.id, { useKds: e.target.checked })}
-                    className="rounded border-slate-300 text-emerald-600" />
+                    className="rounded border-goblin-700 text-goblin-500" />
                 </td>
                 <td className="p-3">
                   <input type="checkbox" checked={st.usePrinter}
                     onChange={(e) => void patch(st.id, { usePrinter: e.target.checked })}
-                    className="rounded border-slate-300 text-emerald-600" />
+                    className="rounded border-goblin-700 text-goblin-500" />
                 </td>
                 <td className="p-3">
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setFormOpen({ station: st })}
-                      className="rounded border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50 font-medium"
+                      className="rounded border border-goblin-700 bg-goblin-900 px-2.5 py-1 text-xs text-goblin-200 hover:bg-goblin-800 font-medium"
                     >
                       Edit
                     </button>
@@ -549,7 +549,7 @@ function Stations() {
               </tr>
             ))}
             {!(stations ?? []).length && (
-              <tr><td colSpan={6} className="p-6 text-center text-slate-400 italic">No stations yet. Create a Kitchen and Bar station to route orders.</td></tr>
+              <tr><td colSpan={6} className="p-6 text-center text-goblin-400 italic">No stations yet. Create a Kitchen and Bar station to route orders.</td></tr>
             )}
           </tbody>
         </table>
@@ -611,26 +611,26 @@ function StationFormModal({
         </Field>
         <Field label="Kind">
           <select value={kind} onChange={(e) => setKind(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm">
+            className="w-full rounded-lg border border-goblin-700 bg-goblin-900 p-2.5 text-sm">
             <option value="PREP">PREP (Kitchen, Bar)</option>
             <option value="EXPO">EXPO (Pass-through display)</option>
           </select>
         </Field>
         <Field label="Printer">
           <select value={printerId} onChange={(e) => setPrinterId(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm">
+            className="w-full rounded-lg border border-goblin-700 bg-goblin-900 p-2.5 text-sm">
             <option value="">— none —</option>
             {printers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </Field>
-        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer py-1">
+        <label className="flex items-center gap-2 text-sm text-goblin-100 cursor-pointer py-1">
           <input type="checkbox" checked={useKds} onChange={(e) => setUseKds(e.target.checked)}
-            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+            className="rounded border-goblin-700 text-goblin-500 focus:ring-goblin-500" />
           <span>Show on KDS screen</span>
         </label>
-        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer py-1">
+        <label className="flex items-center gap-2 text-sm text-goblin-100 cursor-pointer py-1">
           <input type="checkbox" checked={usePrinter} onChange={(e) => setUsePrinter(e.target.checked)}
-            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+            className="rounded border-goblin-700 text-goblin-500 focus:ring-goblin-500" />
           <span>Print Tickets automatically</span>
         </label>
         <div className="flex gap-2 pt-1">
@@ -1048,14 +1048,14 @@ function DatabaseManager() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h2 className="text-lg font-bold text-slate-700">Database & Data Manager</h2>
+      <h2 className="text-lg font-bold text-goblin-100">Database & Data Manager</h2>
       <ErrorBanner message={err} />
-      {success && <p className="mb-3 rounded-lg bg-emerald-100 p-2 text-sm text-emerald-700">{success}</p>}
+      {success && <p className="mb-3 rounded-lg bg-goblin-700 p-2 text-sm text-goblin-500">{success}</p>}
 
-      <div className="rounded-xl bg-white p-4 shadow space-y-4">
+      <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-4">
         <div>
-          <h3 className="font-semibold text-slate-800">Backup & Reset Tools</h3>
-          <p className="text-xs text-slate-500 mt-0.5">Manage backups and perform system wipes or resets to configure a new restaurant.</p>
+          <h3 className="font-semibold text-goblin-50">Backup & Reset Tools</h3>
+          <p className="text-xs text-goblin-300 mt-0.5">Manage backups and perform system wipes or resets to configure a new restaurant.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Btn kind="primary" onClick={triggerBackup} disabled={busy}>
@@ -1070,13 +1070,13 @@ function DatabaseManager() {
         </div>
       </div>
 
-      <div className="rounded-xl bg-white p-4 shadow space-y-4">
+      <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-4">
         <div>
-          <h3 className="font-semibold text-slate-800">Auto-Backup Scheduler</h3>
-          <p className="text-xs text-slate-500 mt-0.5">Configure automatic background database backups to cycle at custom intervals and rotate old files.</p>
+          <h3 className="font-semibold text-goblin-50">Auto-Backup Scheduler</h3>
+          <p className="text-xs text-goblin-300 mt-0.5">Configure automatic background database backups to cycle at custom intervals and rotate old files.</p>
         </div>
         <div className="space-y-3">
-          <label className="flex items-center gap-2 text-sm text-slate-700 font-semibold cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-goblin-100 font-semibold cursor-pointer">
             <input
               type="checkbox"
               checked={autoBackupEnabled}
@@ -1087,7 +1087,7 @@ function DatabaseManager() {
           </label>
 
           {autoBackupEnabled && (
-            <div className="grid grid-cols-2 gap-4 pl-6 border-l-2 border-slate-100">
+            <div className="grid grid-cols-2 gap-4 pl-6 border-l-2 border-goblin-800">
               <Field label="Interval (Hours)">
                 <TextInput
                   type="number"
@@ -1115,8 +1115,8 @@ function DatabaseManager() {
         </div>
       </div>
 
-      <div className="rounded-xl bg-white p-4 shadow space-y-3">
-        <h3 className="font-semibold text-slate-800">Available Backups</h3>
+      <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-3">
+        <h3 className="font-semibold text-goblin-50">Available Backups</h3>
         <Table
           headers={['Filename', 'Action']}
           rows={backups.map((b) => [
@@ -1126,89 +1126,89 @@ function DatabaseManager() {
             </Btn>,
           ])}
         />
-        {backups.length === 0 && <p className="text-sm text-slate-400">No backups found.</p>}
+        {backups.length === 0 && <p className="text-sm text-goblin-400">No backups found.</p>}
       </div>
 
-      <div className="rounded-xl bg-white p-4 shadow space-y-5">
+      <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-5">
         <div>
-          <h3 className="font-semibold text-slate-800">Import & Export Data</h3>
-          <p className="text-xs text-slate-500 mt-0.5">Import and export your Menu Catalog, Floor Layout, Customers Directory, or Vendors Directory in JSON or CSV formats.</p>
+          <h3 className="font-semibold text-goblin-50">Import & Export Data</h3>
+          <p className="text-xs text-goblin-300 mt-0.5">Import and export your Menu Catalog, Floor Layout, Customers Directory, or Vendors Directory in JSON or CSV formats.</p>
         </div>
 
-        <div className="grid grid-cols-4 gap-6 pt-2 border-t divide-x divide-slate-100">
+        <div className="grid grid-cols-4 gap-6 pt-2 border-t divide-x divide-goblin-800">
           {/* Menu Catalog */}
           <div className="space-y-3">
-            <h4 className="font-medium text-slate-700 text-sm">Menu Catalog</h4>
+            <h4 className="font-medium text-goblin-100 text-sm">Menu Catalog</h4>
             <div className="flex flex-col gap-2">
               <Btn onClick={exportMenu} disabled={busy}>Export Menu (JSON)</Btn>
               <div className="border-t pt-2 mt-1">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Import Menu Catalog</label>
+                <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">Import Menu Catalog</label>
                 <input
                   type="file"
                   accept=".json,.csv"
                   onChange={(e) => void handleImport(e, 'menu')}
                   disabled={busy}
-                  className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                  className="w-full text-xs text-goblin-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-goblin-800 file:text-goblin-100 hover:file:bg-goblin-700 cursor-pointer"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">Accepts JSON (nested structure) or CSV with columns: `Category, Item, Description, SKU, PriceEGP, ModifierGroup, Modifier, PriceDeltaEGP`</p>
+                <p className="text-[10px] text-goblin-400 mt-1">Accepts JSON (nested structure) or CSV with columns: `Category, Item, Description, SKU, PriceEGP, ModifierGroup, Modifier, PriceDeltaEGP`</p>
               </div>
             </div>
           </div>
 
           {/* Floor Layout */}
           <div className="space-y-3 pl-6">
-            <h4 className="font-medium text-slate-700 text-sm">Floor Layout</h4>
+            <h4 className="font-medium text-goblin-100 text-sm">Floor Layout</h4>
             <div className="flex flex-col gap-2">
               <Btn onClick={exportFloor} disabled={busy}>Export Layout (JSON)</Btn>
               <div className="border-t pt-2 mt-1">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Import Floor Layout</label>
+                <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">Import Floor Layout</label>
                 <input
                   type="file"
                   accept=".json"
                   onChange={handleFloorImport}
                   disabled={busy}
-                  className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                  className="w-full text-xs text-goblin-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-goblin-800 file:text-goblin-100 hover:file:bg-goblin-700 cursor-pointer"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">Accepts JSON or CSV with columns: `ZoneName, ZoneNameAr, ResourceName, ResourceNameAr, Type, Capacity`</p>
+                <p className="text-[10px] text-goblin-400 mt-1">Accepts JSON or CSV with columns: `ZoneName, ZoneNameAr, ResourceName, ResourceNameAr, Type, Capacity`</p>
               </div>
             </div>
           </div>
 
           {/* Customers Directory */}
           <div className="space-y-3">
-            <h4 className="font-medium text-slate-700 text-sm">Customers Directory</h4>
+            <h4 className="font-medium text-goblin-100 text-sm">Customers Directory</h4>
             <div className="flex flex-col gap-2">
               <Btn onClick={exportCustomers} disabled={busy}>Export Customers (JSON)</Btn>
               <div className="border-t pt-2 mt-1">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Import Customers</label>
+                <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">Import Customers</label>
                 <input
                   type="file"
                   accept=".json,.csv"
                   onChange={(e) => void handleImport(e, 'customers')}
                   disabled={busy}
-                  className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                  className="w-full text-xs text-goblin-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-goblin-800 file:text-goblin-100 hover:file:bg-goblin-700 cursor-pointer"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">Accepts JSON or CSV with columns: `Name, Phone, Email, Birthday, Tags, Notes` (Tags split by comma)</p>
+                <p className="text-[10px] text-goblin-400 mt-1">Accepts JSON or CSV with columns: `Name, Phone, Email, Birthday, Tags, Notes` (Tags split by comma)</p>
               </div>
             </div>
           </div>
 
           {/* Vendors Directory */}
           <div className="space-y-3 pl-6">
-            <h4 className="font-medium text-slate-700 text-sm">Vendors Directory</h4>
+            <h4 className="font-medium text-goblin-100 text-sm">Vendors Directory</h4>
             <div className="flex flex-col gap-2">
               <Btn onClick={exportVendors} disabled={busy}>Export Vendors (JSON)</Btn>
               <Btn onClick={syncVendorsFromPoster} disabled={busy}>Sync from Poster POS</Btn>
               <div className="border-t pt-2 mt-1">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Import Vendors</label>
+                <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">Import Vendors</label>
                 <input
                   type="file"
                   accept=".json"
                   onChange={handleVendorImport}
                   disabled={busy}
-                  className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                  className="w-full text-xs text-goblin-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-goblin-800 file:text-goblin-100 hover:file:bg-goblin-700 cursor-pointer"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">Accepts JSON with vendor records from export or Poster POS format.</p>
+                <p className="text-[10px] text-goblin-400 mt-1">Accepts JSON with vendor records from export or Poster POS format.</p>
               </div>
             </div>
           </div>
@@ -1263,8 +1263,8 @@ function PaymentMethods() {
       <ErrorBanner message={err} />
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-slate-700">Payment Methods</h2>
-          <p className="text-xs text-slate-400 font-normal">Manage payment options accepted at the POS.</p>
+          <h2 className="text-lg font-bold text-goblin-100">Payment Methods</h2>
+          <p className="text-xs text-goblin-400 font-normal">Manage payment options accepted at the POS.</p>
         </div>
         <Btn kind="primary" onClick={() => { setEditingMethod(null); setCreateOpen(true); }}>+ New Payment Method</Btn>
       </div>
@@ -1275,7 +1275,7 @@ function PaymentMethods() {
           m.kind,
           m.account ? `${m.account.name} (${m.account.code})` : '—',
           m.opensDrawer ? 'Yes' : 'No',
-          m.isActive ? <span className="text-emerald-700 font-semibold">Active</span> : <span className="text-slate-400">Inactive</span>,
+          m.isActive ? <span className="text-goblin-500 font-semibold">Active</span> : <span className="text-goblin-400">Inactive</span>,
           String(m.sortOrder),
           <div key={m.id} className="flex gap-2">
             <Btn onClick={() => { setEditingMethod(m); setCreateOpen(true); }}>Edit</Btn>
@@ -1355,12 +1355,12 @@ function PaymentMethodFormModal({ onClose, onDone, method }: { onClose: () => vo
             ]}
           />
         </Field>
-        <div className="flex flex-col gap-2 rounded-lg border border-slate-100 p-3 bg-slate-50">
-          <label className="flex items-center gap-2 text-sm text-slate-700 font-semibold cursor-pointer">
+        <div className="flex flex-col gap-2 rounded-lg border border-goblin-800 p-3 bg-goblin-800">
+          <label className="flex items-center gap-2 text-sm text-goblin-100 font-semibold cursor-pointer">
             <input type="checkbox" checked={opensDrawer} onChange={(e) => setOpensDrawer(e.target.checked)} />
             <span>Opens Cash Drawer</span>
           </label>
-          <label className="flex items-center gap-2 text-sm text-slate-700 font-semibold cursor-pointer mt-1">
+          <label className="flex items-center gap-2 text-sm text-goblin-100 font-semibold cursor-pointer mt-1">
             <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
             <span>Active (Available in POS)</span>
           </label>

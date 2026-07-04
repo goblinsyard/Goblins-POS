@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ArrowLeft, Check, Delete, Moon, Sun } from 'lucide-react';
 import { api } from '../lib/api';
 import { t } from '../lib/i18n';
 import { usePos } from '../lib/store';
@@ -54,8 +55,8 @@ export function PinLogin() {
           </div>
         ) : (
           <div>
-            <button className="mb-4 text-goblin-300" onClick={() => { setSelected(null); setPin(''); }}>
-              ← {selected.name}
+            <button className="mb-4 inline-flex items-center gap-1.5 text-goblin-300" onClick={() => { setSelected(null); setPin(''); }}>
+              <ArrowLeft className="h-4 w-4" /> {selected.name}
             </button>
             <div className={`mb-6 flex justify-center gap-3 ${error ? 'animate-pulse' : ''}`}>
               {[0, 1, 2, 3].map((i) => (
@@ -75,9 +76,9 @@ export function PinLogin() {
                     else if (k === '✓') void submit(pin);
                     else press(k);
                   }}
-                  className="rounded-2xl bg-goblin-800 p-6 text-2xl font-bold active:bg-goblin-600"
+                  className="flex items-center justify-center rounded-2xl bg-goblin-800 p-6 text-2xl font-bold active:bg-goblin-600"
                 >
-                  {k}
+                  {k === '⌫' ? <Delete className="h-7 w-7" /> : k === '✓' ? <Check className="h-7 w-7" /> : k}
                 </button>
               ))}
             </div>
@@ -118,9 +119,9 @@ export function PinLogin() {
             {/* Light/Dark Toggle */}
             <button
               onClick={() => setThemeMode(themeMode === 'light' ? 'dark' : 'light')}
-              className="rounded-xl bg-goblin-900 px-4 py-2 text-sm text-goblin-300 hover:text-goblin-100 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-900 px-4 py-2 text-sm text-goblin-300 hover:text-goblin-100 transition-colors"
             >
-              {themeMode === 'light' ? '🌙 Dark' : '☀️ Light'}
+              {themeMode === 'light' ? <><Moon className="h-4 w-4" /> Dark</> : <><Sun className="h-4 w-4" /> Light</>}
             </button>
           </div>
         </div>

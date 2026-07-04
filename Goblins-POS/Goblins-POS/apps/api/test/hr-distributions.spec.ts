@@ -150,9 +150,9 @@ describe('Staff Tips & Sales Bonus Distribution API Tests', () => {
 
   it('should preview and distribute sales bonus based on sales percentage with immediate payout', async () => {
     // 1. Create a shift if not open, and generate some paid sales
-    let shift = await api<any>('/shifts/current');
+    const shift = await api<any>('/shifts/current');
     if (!shift) {
-      shift = await api<any>('/shifts/open', { method: 'POST', body: { floatCents: 10000 } });
+      await api<any>('/shifts/open', { method: 'POST', body: { floatCents: 10000 } });
     }
 
     const order = await api<any>('/orders', {

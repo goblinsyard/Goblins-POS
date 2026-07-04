@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 function cleanPhone(phoneRaw: any): string {
   if (!phoneRaw) return '';
-  let p = String(phoneRaw).replace(/\s+/g, ''); // Remove all spaces
+  const p = String(phoneRaw).replace(/\s+/g, ''); // Remove all spaces
   if (p.startsWith('+')) {
     return p;
   }

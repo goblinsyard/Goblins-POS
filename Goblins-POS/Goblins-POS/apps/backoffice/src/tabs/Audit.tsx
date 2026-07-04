@@ -102,14 +102,14 @@ export function AuditView() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+      <div className="bg-goblin-800 border border-goblin-700 rounded-xl p-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Search</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">Search</label>
             <TextInput value={search} onChange={setSearch} placeholder="Search user, action, entity or detail..." />
           </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Module Group</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">Module Group</label>
             <Select value={moduleGroup} onChange={setModuleGroup} options={[
               { value: 'ALL', label: 'All Modules' },
               { value: 'HR', label: 'HR & Payroll' },
@@ -121,22 +121,22 @@ export function AuditView() {
             ]} />
           </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Performed By</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">Performed By</label>
             <Select value={userFilter} onChange={setUserFilter} allowEmpty="All Users" options={userOptions} />
           </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Entity Type</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">Entity Type</label>
             <Select value={entityFilter} onChange={setEntityFilter} allowEmpty="All Entities" options={entityOptions} />
           </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Table/Room</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">Table/Room</label>
             <Select value={tableFilter} onChange={setTableFilter} allowEmpty="All Tables" options={tableOptions} />
           </div>
         </div>
         
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-goblin-700">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Timeframe:</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-goblin-400">Timeframe:</span>
             <div className="w-48">
               <Select value={timePeriod} onChange={setTimePeriod} options={[
                 { value: 'ALL', label: 'All Loaded Logs (500)' },
@@ -149,7 +149,7 @@ export function AuditView() {
           </div>
           
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-500">Showing <b>{filteredLogs.length}</b> of <b>{logsList.length}</b> entries</span>
+            <span className="text-xs text-goblin-300">Showing <b>{filteredLogs.length}</b> of <b>{logsList.length}</b> entries</span>
             {(search || moduleGroup !== 'ALL' || userFilter || entityFilter || tableFilter || timePeriod !== 'ALL') && (
               <Btn onClick={clearFilters}>Clear Filters</Btn>
             )}
@@ -315,7 +315,7 @@ function formatDetailBase(action: string, detail: any): string {
         return cleanKeys.length > 0 ? cleanKeys.join(', ') : JSON.stringify(detail);
       }
     }
-  } catch (err) {
+  } catch {
     return JSON.stringify(detail);
   }
 }

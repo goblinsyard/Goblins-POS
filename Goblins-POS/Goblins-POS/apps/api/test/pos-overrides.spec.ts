@@ -3,8 +3,8 @@ import { beforeAll, describe, expect, it } from 'vitest';
 const BASE = process.env.API_URL ?? 'http://localhost:3000';
 let managerToken = '';
 let cashierToken = '';
-let managerPin = '1111'; // from seed
-let cashierPin = '2222'; // from seed
+const managerPin = '1111'; // from seed
+const cashierPin = '2222'; // from seed
 
 async function api<T>(path: string, options: { method?: string; body?: unknown; token?: string } = {}): Promise<T> {
   const currentToken = options.token ?? managerToken;
@@ -120,7 +120,7 @@ describe('POS Service/VAT Overrides, Item Notes, and Qty Updates E2E', () => {
 
     // Verify item is now SENT
     let order = await api<Order>(`/orders/${orderId}`);
-    let item = order.items.find((i) => i.id === orderItemId)!;
+    const item = order.items.find((i) => i.id === orderItemId)!;
     expect(item.status).toBe('SENT');
 
     // Increase quantity from 3 to 5 (added 2)

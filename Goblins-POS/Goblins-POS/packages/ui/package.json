@@ -1,0 +1,11 @@
+{
+  "name": "@goblins/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared design tokens (theme CSS + Tailwind preset) for the Goblins POS/back-office/KDS apps. Consumed via relative import / Vite alias — NOT as a package.json workspace dependency (keeps Vercel builds simple, same pattern as @goblins/shared).",
+  "exports": {
+    "./theme.css": "./theme.css",
+    "./tailwind-preset": "./tailwind-preset.js"
+  }
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Square, SquareCheck } from 'lucide-react';
 import { api } from '../../lib/api';
 import { fmtMoney, t } from '../../lib/i18n';
 import { usePos } from '../../lib/store';
@@ -50,8 +51,8 @@ export function SplitDialog({ order, onSplit, onClose }: {
           {splittable.map((line) => (
             <button key={line.id} onClick={() => toggle(line.id)}
               className={`flex w-full justify-between rounded-xl p-3 text-start ${selected.has(line.id) ? 'bg-goblin-600' : 'bg-goblin-950'}`}>
-              <span>
-                {selected.has(line.id) ? '☑ ' : '☐ '}
+              <span className="inline-flex items-center gap-1.5">
+                {selected.has(line.id) ? <SquareCheck className="h-4 w-4 shrink-0" /> : <Square className="h-4 w-4 shrink-0" />}
                 {Number(line.quantity) !== 1 && <b>{Number(line.quantity)}× </b>}
                 {line.description}
               </span>

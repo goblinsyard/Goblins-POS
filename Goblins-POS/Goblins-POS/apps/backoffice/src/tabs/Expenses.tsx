@@ -67,7 +67,7 @@ function ExpenseList() {
           <Select value={categoryId} onChange={setCategoryId} allowEmpty="All categories"
             options={(categories ?? []).map((c) => ({ value: c.id, label: c.name }))} />
         </div>
-        <span className="text-sm text-slate-500">Last 30 days · total <b>{egp(total)}</b></span>
+        <span className="text-sm text-goblin-300">Last 30 days · total <b>{egp(total)}</b></span>
         <span className="ml-auto"><Btn kind="primary" onClick={() => setCreateOpen(true)}>+ New expense</Btn></span>
       </div>
       <Table headers={['Date', 'Category', 'Description', 'Allocation', 'Amount', 'Method / Source', 'By', 'Actions']}
@@ -160,7 +160,7 @@ function ExpenseFormModal({ categories, expense, onClose, onDone }: {
           <Select value={accountId} onChange={setAccountId} allowEmpty="— pick account (e.g. Safe, Fawry, Bank) —"
             options={assetAccounts} />
         </Field>
-        <label className="flex items-center gap-2 text-sm text-slate-600">
+        <label className="flex items-center gap-2 text-sm text-goblin-200">
           <input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} />
           Recurring monthly (auto-created on the 1st)
         </label>
@@ -179,7 +179,7 @@ function VatReport() {
   const totalVat = rows.reduce((a, r) => a + r.vatCents, 0);
   return (
     <div>
-      <p className="mb-2 text-sm text-slate-500">
+      <p className="mb-2 text-sm text-goblin-300">
         This month · net <b>{egp(totalNet)}</b> · output VAT <b>{egp(totalVat)}</b>
       </p>
       <Table headers={['Day', 'Orders', 'Net (subtotal+service)', 'VAT collected']}
@@ -209,7 +209,7 @@ function ExpenseCategories() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-slate-700">Expense Categories</h2>
+        <h2 className="text-lg font-bold text-goblin-100">Expense Categories</h2>
         <Btn kind="primary" onClick={() => { setEditingCategory(null); setCreateOpen(true); }}>+ New category</Btn>
       </div>
       <Table
@@ -217,7 +217,7 @@ function ExpenseCategories() {
         rows={(categories ?? []).map((c) => [
           c.name,
           c.nameAr ?? '—',
-          c.account ? `${c.account.code} — ${c.account.name}` : <span className="text-slate-400">Not linked (no ledger tracking)</span>,
+          c.account ? `${c.account.code} — ${c.account.name}` : <span className="text-goblin-400">Not linked (no ledger tracking)</span>,
           <div key={c.id} className="flex gap-2">
             <Btn onClick={() => { setEditingCategory(c); setCreateOpen(true); }}>Edit</Btn>
             <Btn kind="danger" onClick={() => void handleDelete(c.id)}>Delete</Btn>

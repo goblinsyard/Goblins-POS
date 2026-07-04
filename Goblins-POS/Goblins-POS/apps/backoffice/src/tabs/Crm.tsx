@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, cairoTime, downloadCsv, egp, pct } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Table, TextInput, useLoad } from '../lib/ui';
+import { Cake } from 'lucide-react';
 
 interface CustomerGroup {
   id: string; name: string; nameAr?: string | null; discountBps: number; isActive: boolean;
@@ -80,7 +81,7 @@ export function CrmView() {
     <div className="space-y-6">
       <ErrorBanner message={err} />
       <div>
-        <h2 className="mb-2 font-semibold text-slate-700">Find customer</h2>
+        <h2 className="mb-2 font-semibold text-goblin-100">Find customer</h2>
         <div className="flex gap-2">
           <div className="w-64">
             <TextInput value={phone} onChange={setPhone} placeholder="Search by name or phone…" />
@@ -95,7 +96,7 @@ export function CrmView() {
                 c.group ? `${c.group.name} (−${pct(c.group.discountBps)})` : '—',
                 c.tier?.name ?? '—', String(c.pointsBalance), egp(c.walletBalanceCents), String(c.visitCount), egp(c.lifetimeCents),
                 c.isActive ? (
-                  <span key="status" className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                  <span key="status" className="rounded bg-goblin-700 px-2 py-0.5 text-xs font-semibold text-goblin-500">
                     Active
                   </span>
                 ) : (
@@ -111,7 +112,7 @@ export function CrmView() {
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-semibold text-slate-700">Customer groups (auto discount)</h2>
+          <h2 className="font-semibold text-goblin-100">Customer groups (auto discount)</h2>
           <Btn kind="primary" onClick={() => setGroupModal('new')}>+ New group</Btn>
         </div>
         <Table headers={['Group', 'Discount', 'Members', 'Status', '']}
@@ -128,16 +129,16 @@ export function CrmView() {
               </Btn>
             </span>,
           ])} />
-        <p className="mt-1 text-xs text-slate-400">The discount applies automatically on any order the customer is attached to at the POS.</p>
+        <p className="mt-1 text-xs text-goblin-400">The discount applies automatically on any order the customer is attached to at the POS.</p>
       </div>
 
       <div>
-        <h2 className="mb-2 font-semibold text-slate-700">Segments & campaigns</h2>
+        <h2 className="mb-2 font-semibold text-goblin-100">Segments & campaigns</h2>
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Pills value={segment} onChange={setSegment} options={SEGMENTS as unknown as { value: typeof segment; label: string }[]} />
           <button
             onClick={() => void downloadCsv(`/crm/segments/${segment}/export?template=${encodeURIComponent(template)}`, `segment-${segment}.csv`)}
-            className="ml-auto rounded-lg bg-slate-700 px-3 py-1.5 text-sm text-white">
+            className="ml-auto rounded-lg bg-goblin-900 px-3 py-1.5 text-sm text-white">
             Export CSV
           </button>
         </div>
@@ -145,8 +146,8 @@ export function CrmView() {
           <TextInput value={template} onChange={setTemplate} />
         </Field>
 
-        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h3 className="mb-3 font-medium text-slate-800 font-semibold flex items-center gap-2">
+        <div className="mt-4 rounded-xl border border-goblin-700 bg-goblin-800 p-4">
+          <h3 className="mb-3 font-medium text-goblin-50 font-semibold flex items-center gap-2">
             <span>🚀</span> Send Marketing Campaign
           </h3>
           <div className="grid gap-4 md:grid-cols-3">
@@ -164,8 +165,8 @@ export function CrmView() {
             </Field>
             <div className="md:col-span-2 flex items-end justify-between gap-4">
               <div className="flex-1">
-                <p className="text-xs text-slate-500 mb-1">
-                  Replaces <code className="bg-slate-200 px-1 rounded font-mono">{`{name}`}</code> and <code className="bg-slate-200 px-1 rounded font-mono">{`{points}`}</code> dynamically.
+                <p className="text-xs text-goblin-300 mb-1">
+                  Replaces <code className="bg-goblin-700 px-1 rounded font-mono">{`{name}`}</code> and <code className="bg-goblin-700 px-1 rounded font-mono">{`{points}`}</code> dynamically.
                 </p>
               </div>
               <Btn kind="primary" onClick={() => void sendCampaign()} disabled={sending || !segmentRows?.length}>
@@ -175,15 +176,15 @@ export function CrmView() {
           </div>
           
           {campaignResult && (
-            <div className="mt-4 rounded-lg bg-white p-3 text-sm border border-slate-200">
-              <div className="font-semibold text-slate-800 mb-1">Campaign Report:</div>
-              <div className="flex gap-4 text-slate-600">
-                <div>Total Selected: <span className="font-bold text-slate-900">{campaignResult.total}</span></div>
-                <div className="text-emerald-600">Success: <span className="font-bold">{campaignResult.successCount}</span></div>
+            <div className="mt-4 rounded-lg bg-goblin-900 p-3 text-sm border border-goblin-700">
+              <div className="font-semibold text-goblin-50 mb-1">Campaign Report:</div>
+              <div className="flex gap-4 text-goblin-200">
+                <div>Total Selected: <span className="font-bold text-goblin-50">{campaignResult.total}</span></div>
+                <div className="text-goblin-500">Success: <span className="font-bold">{campaignResult.successCount}</span></div>
                 <div className="text-red-600">Failed: <span className="font-bold">{campaignResult.failCount}</span></div>
               </div>
               {campaignResult.results && campaignResult.results.some((r: any) => !r.success) && (
-                <div className="mt-2 text-xs text-red-500 max-h-24 overflow-y-auto border-t border-slate-100 pt-2">
+                <div className="mt-2 text-xs text-red-500 max-h-24 overflow-y-auto border-t border-goblin-800 pt-2">
                   {campaignResult.results.filter((r: any) => !r.success).map((r: any, i: number) => (
                     <div key={i}>Customer: {r.customerId} — {r.error}</div>
                   ))}
@@ -261,19 +262,19 @@ function CustomerModal({ id, groups, onClose }: { id: string; groups: CustomerGr
   const { data: c, error, reload } = useLoad(() => api<CustomerDetail>(`/crm/customers/${id}`), [id]);
   const [editOpen, setEditOpen] = useState(false);
   if (error) return <Modal title="Customer" onClose={onClose}><ErrorBanner message={error} /></Modal>;
-  if (!c) return <Modal title="Customer" onClose={onClose}><p className="text-slate-400">Loading…</p></Modal>;
+  if (!c) return <Modal title="Customer" onClose={onClose}><p className="text-goblin-400">Loading…</p></Modal>;
   return (
     <Modal title={c.name} onClose={onClose} wide>
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-        <span className="rounded-lg bg-slate-100 px-3 py-1.5">{c.phone}</span>
-        {c.group && <span className="rounded-lg bg-emerald-100 px-3 py-1.5 text-emerald-800">{c.group.name} −{pct(c.group.discountBps)}</span>}
+        <span className="rounded-lg bg-goblin-800 px-3 py-1.5">{c.phone}</span>
+        {c.group && <span className="rounded-lg bg-goblin-700 px-3 py-1.5 text-goblin-500">{c.group.name} −{pct(c.group.discountBps)}</span>}
         {c.tier && <span className="rounded-lg bg-amber-100 px-3 py-1.5 text-amber-800">{c.tier.name}</span>}
-        <span className="rounded-lg bg-emerald-100 px-3 py-1.5 text-emerald-800">{c.pointsBalance} pts</span>
+        <span className="rounded-lg bg-goblin-700 px-3 py-1.5 text-goblin-500">{c.pointsBalance} pts</span>
         <span className="rounded-lg bg-indigo-100 px-3 py-1.5 text-indigo-800">Wallet: {egp(c.walletBalanceCents)}</span>
-        <span className="rounded-lg bg-slate-100 px-3 py-1.5">{c.visitCount} visits</span>
-        <span className="rounded-lg bg-slate-100 px-3 py-1.5">lifetime {egp(c.lifetimeCents)}</span>
-        {c.birthday && <span className="rounded-lg bg-slate-100 px-3 py-1.5">🎂 {new Date(c.birthday).toLocaleDateString('en-EG', { month: 'short', day: 'numeric' })}</span>}
-        <span className={`rounded-lg px-3 py-1.5 font-semibold ${c.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+        <span className="rounded-lg bg-goblin-800 px-3 py-1.5">{c.visitCount} visits</span>
+        <span className="rounded-lg bg-goblin-800 px-3 py-1.5">lifetime {egp(c.lifetimeCents)}</span>
+        {c.birthday && <span className="inline-flex items-center gap-1 rounded-lg bg-goblin-800 px-3 py-1.5"><Cake className="h-4 w-4" /> {new Date(c.birthday).toLocaleDateString('en-EG', { month: 'short', day: 'numeric' })}</span>}
+        <span className={`rounded-lg px-3 py-1.5 font-semibold ${c.isActive ? 'bg-goblin-700 text-goblin-500' : 'bg-red-100 text-red-800'}`}>
           {c.isActive ? 'Active' : 'Disabled'}
         </span>
         <span className="ml-auto flex gap-2">
@@ -283,40 +284,40 @@ function CustomerModal({ id, groups, onClose }: { id: string; groups: CustomerGr
           <Btn onClick={() => setEditOpen(true)}>Edit</Btn>
         </span>
       </div>
-      {c.tags.length > 0 && <p className="mb-3 text-xs text-slate-500">Tags: {c.tags.join(', ')}</p>}
-      {c.notes && <p className="mb-3 rounded-lg bg-slate-50 p-2 text-sm text-slate-600">{c.notes}</p>}
+      {c.tags.length > 0 && <p className="mb-3 text-xs text-goblin-300">Tags: {c.tags.join(', ')}</p>}
+      {c.notes && <p className="mb-3 rounded-lg bg-goblin-800 p-2 text-sm text-goblin-200">{c.notes}</p>}
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <h3 className="mb-1 text-sm font-semibold text-slate-600">Favorites</h3>
-          <ul className="text-sm text-slate-600">
+          <h3 className="mb-1 text-sm font-semibold text-goblin-200">Favorites</h3>
+          <ul className="text-sm text-goblin-200">
             {c.favorites.map((f) => <li key={f.name}>{f.name} ×{f.count}</li>)}
-            {!c.favorites.length && <li className="text-slate-400">No history yet</li>}
+            {!c.favorites.length && <li className="text-goblin-400">No history yet</li>}
           </ul>
-          <h3 className="mb-1 mt-4 text-sm font-semibold text-slate-600">Recent visits</h3>
-          <ul className="text-sm text-slate-600">
+          <h3 className="mb-1 mt-4 text-sm font-semibold text-goblin-200">Recent visits</h3>
+          <ul className="text-sm text-goblin-200">
             {c.orders.map((o) => (
               <li key={o.id}>#{o.number} — {egp(o.totalCents)}{o.closedAt ? ` — ${cairoTime(o.closedAt)}` : ''}</li>
             ))}
-            {!c.orders.length && <li className="text-slate-400">None</li>}
+            {!c.orders.length && <li className="text-goblin-400">None</li>}
           </ul>
         </div>
         <div>
-          <h3 className="mb-1 text-sm font-semibold text-slate-600">Points history</h3>
-          <ul className="text-sm text-slate-600">
+          <h3 className="mb-1 text-sm font-semibold text-goblin-200">Points history</h3>
+          <ul className="text-sm text-goblin-200">
             {c.pointsTransactions.map((t) => (
               <li key={t.id}>
-                <span className={t.points < 0 ? 'text-red-600' : 'text-emerald-700'}>{t.points > 0 ? '+' : ''}{t.points}</span>
+                <span className={t.points < 0 ? 'text-red-600' : 'text-goblin-500'}>{t.points > 0 ? '+' : ''}{t.points}</span>
                 {' '}{t.kind.toLowerCase()} — {cairoTime(t.createdAt)}
               </li>
             ))}
-            {!c.pointsTransactions.length && <li className="text-slate-400">None</li>}
+            {!c.pointsTransactions.length && <li className="text-goblin-400">None</li>}
           </ul>
-          <h3 className="mb-1 mt-4 text-sm font-semibold text-slate-600">Reservations</h3>
-          <ul className="text-sm text-slate-600">
+          <h3 className="mb-1 mt-4 text-sm font-semibold text-goblin-200">Reservations</h3>
+          <ul className="text-sm text-goblin-200">
             {c.reservations.map((r) => (
               <li key={r.id}>{r.resource.name} — {cairoTime(r.startAt)} — {r.status}</li>
             ))}
-            {!c.reservations.length && <li className="text-slate-400">None</li>}
+            {!c.reservations.length && <li className="text-goblin-400">None</li>}
           </ul>
         </div>
       </div>

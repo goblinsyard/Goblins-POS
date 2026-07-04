@@ -33,9 +33,9 @@ async function main() {
     const name = rawName || `Client #${client.client_id}`;
 
     // Clean phone number
-    let rawPhone = (client.phone || client.phone_number || '').trim();
+    const rawPhone = (client.phone || client.phone_number || '').trim();
     // Normalize: remove spaces, dashes, parentheses
-    const phone = rawPhone.replace(/[\s\-\(\)]/g, '');
+    const phone = rawPhone.replace(/[\s\-()]/g, '');
 
     // Skip if phone is empty, "0", or invalid length (e.g. less than 5 characters)
     if (!phone || phone === '0' || phone.length < 5) {

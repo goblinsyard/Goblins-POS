@@ -14,6 +14,8 @@ import { renderTicket, renderReceiptEscpos, type TicketJob } from './escpos';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 const MODE = process.env.PRINT_MODE ?? 'preview';
+// Shared secret authorizing this headless daemon on the realtime "print" room.
+const WS_SERVICE_TOKEN = process.env.WS_SERVICE_TOKEN ?? '';
 const PREVIEW_DIR = process.env.PREVIEW_DIR ?? join(process.cwd(), 'preview');
 
 interface ReceiptJob {
@@ -79,7 +81,11 @@ async function handleReceipt(job: ReceiptJob) {
 
 function main() {
   console.log(`Print service starting — mode=${MODE}, api=${API_URL}`);
-  const socket = io(API_URL, { path: '/ws', query: { rooms: 'print' } });
+  const socket = io(API_URL, {
+    path: '/ws',
+    query: { rooms: 'print' },
+    auth: { token: WS_SERVICE_TOKEN },
+  });
   socket.on('connect', () => console.log('Connected to API realtime'));
   socket.on('disconnect', () => console.log('Disconnected — retrying…'));
   socket.on('ticket.print', (job: TicketJob & { printerAddress?: string }) => void handleTicket(job));

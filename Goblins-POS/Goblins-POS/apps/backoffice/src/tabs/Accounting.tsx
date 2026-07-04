@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { api, egp, parseEgp } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Table, TextInput, useLoad, Spinner } from '../lib/ui';
+import { X, Check, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface Account {
   id: string;
@@ -89,14 +90,14 @@ function ChartOfAccounts() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-lg font-bold text-slate-700">Chart of Accounts</h2>
-          <p className="text-xs text-slate-400">Hierarchical list of Asset, Liability, Equity, Revenue, and Expense accounts.</p>
+          <h2 className="text-lg font-bold text-goblin-100">Chart of Accounts</h2>
+          <p className="text-xs text-goblin-400">Hierarchical list of Asset, Liability, Equity, Revenue, and Expense accounts.</p>
         </div>
         <Btn kind="primary" onClick={() => { setEditingAccount(null); setCreateOpen(true); }}>+ New Account</Btn>
       </div>
 
-      <div className="rounded-xl bg-white p-4 shadow overflow-hidden">
-        <div className="grid grid-cols-[120px_1fr_150px_180px_100px] border-b pb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+      <div className="rounded-xl bg-goblin-900 p-4 shadow overflow-hidden">
+        <div className="grid grid-cols-[120px_1fr_150px_180px_100px] border-b pb-2 text-xs font-bold uppercase tracking-wider text-goblin-400">
           <span>Code</span>
           <span>Account Name</span>
           <span>Type</span>
@@ -107,7 +108,7 @@ function ChartOfAccounts() {
           {(accounts ?? []).map((acc) => (
             <AccountRow key={acc.id} account={acc} depth={0} onEdit={(a) => { setEditingAccount(a); setCreateOpen(true); }} />
           ))}
-          {!accounts?.length && <p className="p-4 text-slate-400">No accounts found.</p>}
+          {!accounts?.length && <p className="p-4 text-goblin-400">No accounts found.</p>}
         </div>
       </div>
 
@@ -129,26 +130,26 @@ function AccountRow({ account, depth, onEdit }: { account: Account; depth: numbe
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-[120px_1fr_150px_180px_100px] py-2.5 items-center hover:bg-slate-50">
-        <span className="font-mono font-semibold text-slate-500">{account.code}</span>
-        <span className="flex items-center gap-1 font-semibold text-slate-800" style={{ paddingLeft: `${depth * 20}px` }}>
+      <div className="grid grid-cols-[120px_1fr_150px_180px_100px] py-2.5 items-center hover:bg-goblin-800">
+        <span className="font-mono font-semibold text-goblin-300">{account.code}</span>
+        <span className="flex items-center gap-1 font-semibold text-goblin-50" style={{ paddingLeft: `${depth * 20}px` }}>
           {hasChildren && (
-            <button onClick={() => setExpanded(!expanded)} className="text-slate-400 hover:text-slate-600 focus:outline-none w-4 text-left">
-              {expanded ? '▼' : '►'}
+            <button onClick={() => setExpanded(!expanded)} className="text-goblin-400 hover:text-goblin-200 focus:outline-none w-4 text-left">
+              {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </button>
           )}
           {!hasChildren && <span className="w-4 inline-block" />}
           <span>{account.name}</span>
-          {account.nameAr && <span className="text-xs text-slate-400 font-normal">({account.nameAr})</span>}
+          {account.nameAr && <span className="text-xs text-goblin-400 font-normal">({account.nameAr})</span>}
         </span>
-        <span className="text-xs font-semibold uppercase text-slate-400">{account.type}</span>
-        <span className="text-right font-mono font-semibold text-slate-700">{fmtBalance(account.balanceCents, account.type)}</span>
+        <span className="text-xs font-semibold uppercase text-goblin-400">{account.type}</span>
+        <span className="text-right font-mono font-semibold text-goblin-100">{fmtBalance(account.balanceCents, account.type)}</span>
         <span className="text-right">
           <Btn kind="ghost" onClick={() => onEdit(account)}>Edit</Btn>
         </span>
       </div>
       {hasChildren && expanded && (
-        <div className="w-full divide-y divide-slate-100">
+        <div className="w-full divide-y divide-goblin-800">
           {account.subAccounts.map((sub) => (
             <AccountRow key={sub.id} account={sub} depth={depth + 1} onEdit={onEdit} />
           ))}
@@ -267,8 +268,8 @@ function AccountFormModal({ account, rawAccounts, onClose, onDone }: {
             <Field label="Initial Balance (EGP)">
               <TextInput value={initialBalance} onChange={setInitialBalance} type="number" />
             </Field>
-            <label className="flex items-center gap-2 text-sm text-slate-700 py-1 cursor-pointer font-semibold">
-              <input type="checkbox" checked={isPaymentSource} onChange={(e) => setIsPaymentSource(e.target.checked)} className="rounded text-emerald-700" />
+            <label className="flex items-center gap-2 text-sm text-goblin-100 py-1 cursor-pointer font-semibold">
+              <input type="checkbox" checked={isPaymentSource} onChange={(e) => setIsPaymentSource(e.target.checked)} className="rounded text-goblin-500" />
               <span>Is Payment Source (can be selected as payment account in Expenses/Purchasing)</span>
             </label>
           </>
@@ -314,8 +315,8 @@ function JournalEntriesList() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-lg font-bold text-slate-700">Journal Entries</h2>
-          <p className="text-xs text-slate-400">Browse financial transactions or post a new double-entry manual journal voucher.</p>
+          <h2 className="text-lg font-bold text-goblin-100">Journal Entries</h2>
+          <p className="text-xs text-goblin-400">Browse financial transactions or post a new double-entry manual journal voucher.</p>
         </div>
         <Btn kind="primary" onClick={() => { setEditingEntry(null); setCreateOpen(true); }}>+ New Entry</Btn>
       </div>
@@ -324,14 +325,14 @@ function JournalEntriesList() {
         {(entries ?? []).map((entry) => {
           const sumDebit = entry.lines.reduce((a, l) => a + l.debitCents, 0);
           return (
-            <div key={entry.id} className="rounded-xl bg-white p-4 shadow space-y-3">
+            <div key={entry.id} className="rounded-xl bg-goblin-900 p-4 shadow space-y-3">
               <div className="flex justify-between items-center border-b pb-2 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-700">{new Date(entry.date).toLocaleDateString('en-EG')}</span>
-                  {entry.reference && <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-mono">Ref: {entry.reference}</span>}
+                  <span className="font-bold text-goblin-100">{new Date(entry.date).toLocaleDateString('en-EG')}</span>
+                  {entry.reference && <span className="bg-goblin-800 px-1.5 py-0.5 rounded text-goblin-300 font-mono">Ref: {entry.reference}</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-slate-400">Debit Sum: {egp(sumDebit)}</span>
+                  <span className="font-mono text-goblin-400">Debit Sum: {egp(sumDebit)}</span>
                   {isManualEntry(entry) && (
                     <div className="flex gap-1 ml-2">
                       <Btn onClick={() => { setEditingEntry(entry); setCreateOpen(true); }}>Edit</Btn>
@@ -340,21 +341,21 @@ function JournalEntriesList() {
                   )}
                 </div>
               </div>
-              <p className="text-sm font-semibold text-slate-800">{entry.description}</p>
-              <table className="w-full text-xs text-slate-600 border-collapse">
+              <p className="text-sm font-semibold text-goblin-50">{entry.description}</p>
+              <table className="w-full text-xs text-goblin-200 border-collapse">
                 <thead>
-                  <tr className="text-left font-bold text-slate-400">
+                  <tr className="text-left font-bold text-goblin-400">
                     <th className="py-1">Account</th>
                     <th className="py-1 text-right w-32">Debit (Dr)</th>
                     <th className="py-1 text-right w-32">Credit (Cr)</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-goblin-800">
                   {entry.lines.map((line) => (
-                    <tr key={line.id} className="hover:bg-slate-50">
+                    <tr key={line.id} className="hover:bg-goblin-800">
                       <td className="py-1 font-mono">{line.account.code} — {line.account.name}</td>
-                      <td className="py-1 text-right font-mono text-emerald-700">{line.debitCents > 0 ? egp(line.debitCents) : ''}</td>
-                      <td className="py-1 text-right font-mono text-slate-700">{line.creditCents > 0 ? egp(line.creditCents) : ''}</td>
+                      <td className="py-1 text-right font-mono text-goblin-500">{line.debitCents > 0 ? egp(line.debitCents) : ''}</td>
+                      <td className="py-1 text-right font-mono text-goblin-100">{line.creditCents > 0 ? egp(line.creditCents) : ''}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -362,7 +363,7 @@ function JournalEntriesList() {
             </div>
           );
         })}
-        {!entries?.length && <p className="text-sm text-slate-400">No journal entries found.</p>}
+        {!entries?.length && <p className="text-sm text-goblin-400">No journal entries found.</p>}
       </div>
 
       {createOpen && (
@@ -452,7 +453,7 @@ function JournalEntryFormModal({ flatAccounts, onClose, onDone, entry }: {
         </div>
 
         <div className="space-y-2 border-t pt-3">
-          <div className="grid grid-cols-[1fr_130px_130px_32px] gap-2 text-xs font-bold text-slate-400">
+          <div className="grid grid-cols-[1fr_130px_130px_32px] gap-2 text-xs font-bold text-goblin-400">
             <span>Ledger Account</span>
             <span className="text-right">Debit (Dr)</span>
             <span className="text-right">Credit (Cr)</span>
@@ -481,9 +482,9 @@ function JournalEntryFormModal({ flatAccounts, onClose, onDone, entry }: {
               />
               <button
                 onClick={() => setLines((cur) => cur.filter((_, j) => j !== i))}
-                className="rounded-lg bg-slate-100 py-2 text-slate-400 hover:bg-red-50 hover:text-red-600 focus:outline-none"
+                className="rounded-lg bg-goblin-800 py-2 text-goblin-400 hover:bg-red-50 hover:text-red-600 focus:outline-none"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
           ))}
@@ -495,12 +496,12 @@ function JournalEntryFormModal({ flatAccounts, onClose, onDone, entry }: {
 
         <div className="flex justify-between items-center border-t pt-3 text-sm font-semibold">
           <div className="flex gap-4">
-            <span className="text-emerald-700">Total Debit: {egp(totalDebit)}</span>
-            <span className="text-slate-700">Total Credit: {egp(totalCredit)}</span>
+            <span className="text-goblin-500">Total Debit: {egp(totalDebit)}</span>
+            <span className="text-goblin-100">Total Credit: {egp(totalCredit)}</span>
           </div>
           {totalDebit > 0 && (
-            <span className={isBalanced ? 'text-emerald-600' : 'text-red-600'}>
-              {isBalanced ? '✓ Balanced' : `✗ Difference: ${egp(Math.abs(totalDebit - totalCredit))}`}
+            <span className={isBalanced ? 'text-goblin-500' : 'text-red-600'}>
+              {isBalanced ? <span className="inline-flex items-center gap-1"><Check className="h-4 w-4" /> Balanced</span> : `✗ Difference: ${egp(Math.abs(totalDebit - totalCredit))}`}
             </span>
           )}
         </div>
@@ -527,8 +528,8 @@ function AccountLedger() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-bold text-slate-700">Account Ledger</h2>
-        <p className="text-xs text-slate-400">View statement of accounts and transaction ledgers for any account.</p>
+        <h2 className="text-lg font-bold text-goblin-100">Account Ledger</h2>
+        <p className="text-xs text-goblin-400">View statement of accounts and transaction ledgers for any account.</p>
       </div>
 
       <div className="w-96">
@@ -538,10 +539,10 @@ function AccountLedger() {
       </div>
 
       {ledger && (
-        <div className="rounded-xl bg-white p-4 shadow space-y-4">
+        <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-4">
           <div className="flex justify-between border-b pb-2">
-            <h3 className="font-bold text-slate-800">{ledger.account.code} — {ledger.account.name}</h3>
-            <span className="text-xs font-semibold text-slate-400 uppercase">Type: {ledger.account.type}</span>
+            <h3 className="font-bold text-goblin-50">{ledger.account.code} — {ledger.account.name}</h3>
+            <span className="text-xs font-semibold text-goblin-400 uppercase">Type: {ledger.account.type}</span>
           </div>
 
           <Table
@@ -550,12 +551,12 @@ function AccountLedger() {
               new Date(l.date).toLocaleDateString('en-EG'),
               l.description,
               l.reference ?? '—',
-              l.debitCents > 0 ? <span className="text-emerald-700 font-mono">{egp(l.debitCents)}</span> : '—',
-              l.creditCents > 0 ? <span className="text-slate-700 font-mono">{egp(l.creditCents)}</span> : '—',
-              <span key="bal" className="font-semibold font-mono text-slate-700">{fmtBalance(l.runningBalanceCents, ledger.account.type)}</span>,
+              l.debitCents > 0 ? <span className="text-goblin-500 font-mono">{egp(l.debitCents)}</span> : '—',
+              l.creditCents > 0 ? <span className="text-goblin-100 font-mono">{egp(l.creditCents)}</span> : '—',
+              <span key="bal" className="font-semibold font-mono text-goblin-100">{fmtBalance(l.runningBalanceCents, ledger.account.type)}</span>,
             ])}
           />
-          {ledger.lines.length === 0 && <p className="text-sm text-slate-400 text-center py-4">No ledger postings for this account yet.</p>}
+          {ledger.lines.length === 0 && <p className="text-sm text-goblin-400 text-center py-4">No ledger postings for this account yet.</p>}
         </div>
       )}
     </div>
@@ -570,8 +571,8 @@ function FinancialReports() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-bold text-slate-700">Financial Statements & Reports</h2>
-        <p className="text-xs text-slate-400">Generate standard business balance sheets, trial balances, and income statements.</p>
+        <h2 className="text-lg font-bold text-goblin-100">Financial Statements & Reports</h2>
+        <p className="text-xs text-goblin-400">Generate standard business balance sheets, trial balances, and income statements.</p>
       </div>
       <div className="flex gap-2">
         <Pills value={reportTab} onChange={setReportTab} options={REPORT_TABS} />
@@ -590,8 +591,8 @@ function TrialBalanceReport() {
   const totalCredit = (data ?? []).reduce((sum, a) => sum + a.creditCents, 0);
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow space-y-4">
-      <h3 className="font-bold text-slate-800 border-b pb-2">Trial Balance Statement</h3>
+    <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-4">
+      <h3 className="font-bold text-goblin-50 border-b pb-2">Trial Balance Statement</h3>
       <Table
         headers={['Account Code', 'Account Name', 'Type', 'Debit (Dr)', 'Credit (Cr)']}
         rows={(data ?? []).map((a) => [
@@ -602,9 +603,9 @@ function TrialBalanceReport() {
           a.creditCents > 0 ? egp(a.creditCents) : '—',
         ])}
       />
-      <div className="flex justify-end gap-12 border-t pt-3 font-bold text-slate-800 text-sm">
-        <span>Total Debit: <span className="text-emerald-700">{egp(totalDebit)}</span></span>
-        <span>Total Credit: <span className="text-slate-700">{egp(totalCredit)}</span></span>
+      <div className="flex justify-end gap-12 border-t pt-3 font-bold text-goblin-50 text-sm">
+        <span>Total Debit: <span className="text-goblin-500">{egp(totalDebit)}</span></span>
+        <span>Total Credit: <span className="text-goblin-100">{egp(totalCredit)}</span></span>
       </div>
     </div>
   );
@@ -618,8 +619,8 @@ function BalanceSheetReport() {
   function renderReportRow(acc: any, depth = 0): React.ReactNode[] {
     const rowsList: any[] = [];
     rowsList.push([
-      <span key="name" className="font-semibold text-slate-700" style={{ paddingLeft: `${depth * 20}px` }}>{acc.code} — {acc.name}</span>,
-      <span key="bal" className="font-mono text-slate-700 font-semibold">{fmtBalance(acc.balanceCents, acc.type)}</span>,
+      <span key="name" className="font-semibold text-goblin-100" style={{ paddingLeft: `${depth * 20}px` }}>{acc.code} — {acc.name}</span>,
+      <span key="bal" className="font-mono text-goblin-100 font-semibold">{fmtBalance(acc.balanceCents, acc.type)}</span>,
     ]);
     for (const sub of acc.subAccounts) {
       rowsList.push(...renderReportRow(sub, depth + 1));
@@ -636,40 +637,40 @@ function BalanceSheetReport() {
   const totalEquity = data.equity.reduce((sum: number, r: any) => sum + r.balanceCents, 0);
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow space-y-6">
-      <h3 className="font-bold text-slate-800 border-b pb-2">Balance Sheet (Statement of Financial Position)</h3>
+    <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-6">
+      <h3 className="font-bold text-goblin-50 border-b pb-2">Balance Sheet (Statement of Financial Position)</h3>
 
       <div className="space-y-4">
         <div>
-          <h4 className="font-bold text-sm text-emerald-800 mb-2 border-b border-emerald-100 pb-1">Assets</h4>
+          <h4 className="font-bold text-sm text-goblin-500 mb-2 border-b border-goblin-600 pb-1">Assets</h4>
           <Table headers={['Account', 'Balance']} rows={assetRows} />
-          <div className="text-right font-bold text-slate-800 text-sm mt-2">
+          <div className="text-right font-bold text-goblin-50 text-sm mt-2">
             Total Assets: <span className="font-mono">{fmtBalance(totalAssets, 'ASSET')}</span>
           </div>
         </div>
 
         <div>
-          <h4 className="font-bold text-sm text-slate-800 mb-2 border-b border-slate-100 pb-1 font-mono">Liabilities</h4>
+          <h4 className="font-bold text-sm text-goblin-50 mb-2 border-b border-goblin-800 pb-1 font-mono">Liabilities</h4>
           <Table headers={['Account', 'Balance']} rows={liabilityRows} />
-          <div className="text-right font-bold text-slate-800 text-sm mt-2">
+          <div className="text-right font-bold text-goblin-50 text-sm mt-2">
             Total Liabilities: <span className="font-mono">{fmtBalance(totalLiabilities, 'LIABILITY')}</span>
           </div>
         </div>
 
         <div>
-          <h4 className="font-bold text-sm text-slate-800 mb-2 border-b border-slate-100 pb-1 font-mono">Equity</h4>
+          <h4 className="font-bold text-sm text-goblin-50 mb-2 border-b border-goblin-800 pb-1 font-mono">Equity</h4>
           <Table headers={['Account', 'Balance']} rows={equityRows} />
-          <div className="text-right font-bold text-slate-800 text-sm mt-2">
+          <div className="text-right font-bold text-goblin-50 text-sm mt-2">
             Total Equity: <span className="font-mono">{fmtBalance(totalEquity, 'EQUITY')}</span>
           </div>
         </div>
       </div>
 
       <div className="border-t pt-4 flex justify-between items-center text-sm font-bold border-double border-t-4">
-        <span className="text-emerald-700">Total Assets: {fmtBalance(totalAssets, 'ASSET')}</span>
-        <span className="text-slate-800">Liabilities + Equity: {fmtBalance(totalLiabilities + totalEquity, 'LIABILITY')}</span>
-        <span className={Math.abs(totalAssets - (totalLiabilities + totalEquity)) === 0 ? 'text-emerald-600' : 'text-red-600'}>
-          {Math.abs(totalAssets - (totalLiabilities + totalEquity)) === 0 ? '✓ Equation Balances' : `✗ Discrepancy: ${egp(Math.abs(totalAssets - (totalLiabilities + totalEquity)))}`}
+        <span className="text-goblin-500">Total Assets: {fmtBalance(totalAssets, 'ASSET')}</span>
+        <span className="text-goblin-50">Liabilities + Equity: {fmtBalance(totalLiabilities + totalEquity, 'LIABILITY')}</span>
+        <span className={Math.abs(totalAssets - (totalLiabilities + totalEquity)) === 0 ? 'text-goblin-500' : 'text-red-600'}>
+          {Math.abs(totalAssets - (totalLiabilities + totalEquity)) === 0 ? <span className="inline-flex items-center gap-1"><Check className="h-4 w-4" /> Equation Balances</span> : `✗ Discrepancy: ${egp(Math.abs(totalAssets - (totalLiabilities + totalEquity)))}`}
         </span>
       </div>
     </div>
@@ -689,8 +690,8 @@ function PnlReport() {
   function renderReportRow(acc: any, depth = 0): React.ReactNode[] {
     const rowsList: any[] = [];
     rowsList.push([
-      <span key="name" className="font-semibold text-slate-700" style={{ paddingLeft: `${depth * 20}px` }}>{acc.code} — {acc.name}</span>,
-      <span key="bal" className="font-mono font-semibold text-slate-700">{egp(acc.balanceCents)}</span>,
+      <span key="name" className="font-semibold text-goblin-100" style={{ paddingLeft: `${depth * 20}px` }}>{acc.code} — {acc.name}</span>,
+      <span key="bal" className="font-mono font-semibold text-goblin-100">{egp(acc.balanceCents)}</span>,
     ]);
     for (const sub of acc.subAccounts) {
       rowsList.push(...renderReportRow(sub, depth + 1));
@@ -702,9 +703,9 @@ function PnlReport() {
   const expenseRows = data.expenses.flatMap((r: any) => renderReportRow(r));
 
   return (
-    <div className="rounded-xl bg-white p-4 shadow space-y-6">
+    <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-6">
       <div className="flex justify-between items-center border-b pb-2">
-        <h3 className="font-bold text-slate-800">Profit & Loss Statement (Income Statement)</h3>
+        <h3 className="font-bold text-goblin-50">Profit & Loss Statement (Income Statement)</h3>
         <div className="flex items-center gap-2 text-xs">
           <span>From</span>
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded border p-1" />
@@ -715,9 +716,9 @@ function PnlReport() {
 
       <div className="space-y-4">
         <div>
-          <h4 className="font-bold text-sm text-emerald-800 mb-2 border-b border-emerald-100 pb-1">Operating Revenues</h4>
+          <h4 className="font-bold text-sm text-goblin-500 mb-2 border-b border-goblin-600 pb-1">Operating Revenues</h4>
           <Table headers={['Account', 'Amount']} rows={revenueRows} />
-          <div className="text-right font-bold text-slate-800 text-sm mt-2">
+          <div className="text-right font-bold text-goblin-50 text-sm mt-2">
             Total Revenue: {egp(data.totalRevenue)}
           </div>
         </div>
@@ -725,7 +726,7 @@ function PnlReport() {
         <div>
           <h4 className="font-bold text-sm text-red-800 mb-2 border-b border-red-100 pb-1">Operating Expenses</h4>
           <Table headers={['Account', 'Amount']} rows={expenseRows} />
-          <div className="text-right font-bold text-slate-800 text-sm mt-2">
+          <div className="text-right font-bold text-goblin-50 text-sm mt-2">
             Total Expenses: {egp(data.totalExpense)}
           </div>
         </div>
@@ -733,7 +734,7 @@ function PnlReport() {
 
       <div className="border-t pt-4 flex justify-between items-center text-sm font-bold border-double border-t-4">
         <span>Operating Profit / Loss</span>
-        <span className={data.netProfit >= 0 ? 'text-emerald-700 font-mono text-base' : 'text-red-700 font-mono text-base'}>
+        <span className={data.netProfit >= 0 ? 'text-goblin-500 font-mono text-base' : 'text-red-700 font-mono text-base'}>
           {data.netProfit >= 0 ? 'Net Income: ' : 'Net Loss: '} {egp(data.netProfit)}
         </span>
       </div>
@@ -783,8 +784,8 @@ function CashTransfers() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-lg font-bold text-slate-700">Cash Transfers</h2>
-          <p className="text-xs text-slate-400 font-normal">Record and review movements of cash between bank accounts, drawers, and safes.</p>
+          <h2 className="text-lg font-bold text-goblin-100">Cash Transfers</h2>
+          <p className="text-xs text-goblin-400 font-normal">Record and review movements of cash between bank accounts, drawers, and safes.</p>
         </div>
         <Btn kind="primary" onClick={() => setCreateOpen(true)}>+ New Cash Transfer</Btn>
       </div>
@@ -796,26 +797,26 @@ function CashTransfers() {
           const amount = debitLine ? debitLine.debitCents : (creditLine ? creditLine.creditCents : 0);
 
           return (
-            <div key={t.id} className="rounded-xl bg-white p-4 shadow space-y-3">
+            <div key={t.id} className="rounded-xl bg-goblin-900 p-4 shadow space-y-3">
               <div className="flex justify-between items-center border-b pb-2 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-700">{new Date(t.date).toLocaleDateString('en-EG')}</span>
-                  {t.reference && <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-mono">Ref: {t.reference}</span>}
+                  <span className="font-bold text-goblin-100">{new Date(t.date).toLocaleDateString('en-EG')}</span>
+                  {t.reference && <span className="bg-goblin-800 px-1.5 py-0.5 rounded text-goblin-300 font-mono">Ref: {t.reference}</span>}
                 </div>
-                <span className="font-mono text-emerald-700 font-bold text-sm">{egp(amount)}</span>
+                <span className="font-mono text-goblin-500 font-bold text-sm">{egp(amount)}</span>
               </div>
-              <p className="text-sm font-semibold text-slate-800">{t.description}</p>
+              <p className="text-sm font-semibold text-goblin-50">{t.description}</p>
               
-              <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 rounded-lg p-3">
+              <div className="grid grid-cols-2 gap-4 text-xs bg-goblin-800 rounded-lg p-3">
                 <div>
-                  <span className="block text-slate-400 font-semibold uppercase tracking-wider mb-1">Source (Credit)</span>
-                  <span className="font-mono text-slate-700">
+                  <span className="block text-goblin-400 font-semibold uppercase tracking-wider mb-1">Source (Credit)</span>
+                  <span className="font-mono text-goblin-100">
                     {creditLine ? `${creditLine.account.code} — ${creditLine.account.name}` : '—'}
                   </span>
                 </div>
                 <div>
-                  <span className="block text-emerald-600 font-semibold uppercase tracking-wider mb-1">Target (Debit)</span>
-                  <span className="font-mono text-emerald-800 font-semibold">
+                  <span className="block text-goblin-500 font-semibold uppercase tracking-wider mb-1">Target (Debit)</span>
+                  <span className="font-mono text-goblin-500 font-semibold">
                     {debitLine ? `${debitLine.account.code} — ${debitLine.account.name}` : '—'}
                   </span>
                 </div>
@@ -823,7 +824,7 @@ function CashTransfers() {
             </div>
           );
         })}
-        {!transfers?.length && <p className="text-sm text-slate-400">No cash transfers found.</p>}
+        {!transfers?.length && <p className="text-sm text-goblin-400">No cash transfers found.</p>}
       </div>
 
       {createOpen && (
@@ -996,7 +997,7 @@ function CloseShiftWizard() {
     if (typeof zReportObj === 'string') {
       try {
         zReportObj = JSON.parse(zReportObj);
-      } catch (e) {
+      } catch {
         zReportObj = null;
       }
     }
@@ -1064,9 +1065,9 @@ function CloseShiftWizard() {
 
   if (!lastClosedShift) {
     return (
-      <div className="rounded-xl bg-white p-6 shadow text-center">
-        <p className="text-slate-500 font-medium font-sans">No closed shifts found in the system.</p>
-        <p className="text-xs text-slate-400 mt-1 font-sans">Please close a shift in the POS first before using the Close Shift Wizard.</p>
+      <div className="rounded-xl bg-goblin-900 p-6 shadow text-center">
+        <p className="text-goblin-300 font-medium font-sans">No closed shifts found in the system.</p>
+        <p className="text-xs text-goblin-400 mt-1 font-sans">Please close a shift in the POS first before using the Close Shift Wizard.</p>
       </div>
     );
   }
@@ -1102,38 +1103,38 @@ function CloseShiftWizard() {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <div>
-        <h2 className="text-lg font-bold text-slate-700 font-sans">Accountant's Shift Close Wizard</h2>
-        <p className="text-xs text-slate-400 font-sans mb-3">Step-by-step process to reconcile and move cash from POS registers to the Main Safe and Tips Drawer.</p>
+        <h2 className="text-lg font-bold text-goblin-100 font-sans">Accountant's Shift Close Wizard</h2>
+        <p className="text-xs text-goblin-400 font-sans mb-3">Step-by-step process to reconcile and move cash from POS registers to the Main Safe and Tips Drawer.</p>
         
-        <div className="bg-white rounded-xl p-5 shadow border border-slate-100 font-sans space-y-4">
+        <div className="bg-goblin-900 rounded-xl p-5 shadow border border-goblin-800 font-sans space-y-4">
           <div className="flex justify-between items-center border-b pb-3">
             <div>
-              <h3 className="font-bold text-slate-800 text-sm">Last Closed Shift Summary</h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <h3 className="font-bold text-goblin-50 text-sm">Last Closed Shift Summary</h3>
+              <p className="text-[11px] text-goblin-400 mt-0.5">
                 Closed At: {new Date(lastClosedShift.closedAt).toLocaleString('en-EG')} | Operator: {lastClosedShift.openedBy?.name ?? '—'}
               </p>
             </div>
-            <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-700 text-[10px] font-semibold">
+            <span className="font-mono bg-goblin-800 px-2 py-0.5 rounded text-goblin-100 text-[10px] font-semibold">
               ID: {lastClosedShift.id.slice(-6)}
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-              <p className="text-slate-400 font-medium">Opening Float</p>
-              <p className="font-bold font-mono text-slate-700 mt-1">{egp(lastClosedShift.floatCents)}</p>
+            <div className="bg-goblin-800 p-2.5 rounded-lg border border-goblin-800">
+              <p className="text-goblin-400 font-medium">Opening Float</p>
+              <p className="font-bold font-mono text-goblin-100 mt-1">{egp(lastClosedShift.floatCents)}</p>
             </div>
-            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-              <p className="text-slate-400 font-medium">Expected Drawer Cash</p>
-              <p className="font-bold font-mono text-slate-700 mt-1">{egp(lastClosedShift.expectedCents ?? 0)}</p>
+            <div className="bg-goblin-800 p-2.5 rounded-lg border border-goblin-800">
+              <p className="text-goblin-400 font-medium">Expected Drawer Cash</p>
+              <p className="font-bold font-mono text-goblin-100 mt-1">{egp(lastClosedShift.expectedCents ?? 0)}</p>
             </div>
-            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-              <p className="text-slate-400 font-medium">Actual Counted Cash</p>
-              <p className="font-bold font-mono text-slate-700 mt-1">{egp(lastClosedShift.countedCents ?? 0)}</p>
+            <div className="bg-goblin-800 p-2.5 rounded-lg border border-goblin-800">
+              <p className="text-goblin-400 font-medium">Actual Counted Cash</p>
+              <p className="font-bold font-mono text-goblin-100 mt-1">{egp(lastClosedShift.countedCents ?? 0)}</p>
             </div>
-            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-              <p className="text-slate-400 font-medium">Difference (Variance)</p>
-              <p className={`font-bold font-mono mt-1 ${(lastClosedShift.varianceCents ?? 0) < 0 ? 'text-red-600' : (lastClosedShift.varianceCents ?? 0) > 0 ? 'text-emerald-700' : 'text-slate-700'}`}>
+            <div className="bg-goblin-800 p-2.5 rounded-lg border border-goblin-800">
+              <p className="text-goblin-400 font-medium">Difference (Variance)</p>
+              <p className={`font-bold font-mono mt-1 ${(lastClosedShift.varianceCents ?? 0) < 0 ? 'text-red-600' : (lastClosedShift.varianceCents ?? 0) > 0 ? 'text-goblin-500' : 'text-goblin-100'}`}>
                 {(lastClosedShift.varianceCents ?? 0) > 0 ? '+' : ''}{egp(lastClosedShift.varianceCents ?? 0)}
               </p>
             </div>
@@ -1191,25 +1192,25 @@ function CloseShiftWizard() {
 
       <div className="space-y-4 font-sans">
         {/* STEP 1: TIPS TRANSFER */}
-        <div className={`rounded-xl bg-white p-5 shadow border-l-4 transition-all ${
-          step1StatusState === 'success' ? 'border-l-emerald-500' : step1StatusState === 'skipped' ? 'border-l-slate-300 opacity-60' : 'border-l-amber-500'
+        <div className={`rounded-xl bg-goblin-900 p-5 shadow border-l-4 transition-all ${
+          step1StatusState === 'success' ? 'border-l-goblin-500' : step1StatusState === 'skipped' ? 'border-l-goblin-700 opacity-60' : 'border-l-amber-500'
         }`}>
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">1</span>
+              <h3 className="font-bold text-goblin-50 flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-goblin-800 text-xs font-bold text-goblin-200">1</span>
                 <span>Move Tips to Tips Drawer</span>
-                {step1StatusState === 'success' && <span className="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">Completed</span>}
-                {step1StatusState === 'skipped' && <span className="text-xs text-slate-400 font-semibold bg-slate-100 px-2 py-0.5 rounded">Skipped</span>}
+                {step1StatusState === 'success' && <span className="text-xs text-goblin-500 font-semibold bg-goblin-800 px-2 py-0.5 rounded">Completed</span>}
+                {step1StatusState === 'skipped' && <span className="text-xs text-goblin-400 font-semibold bg-goblin-800 px-2 py-0.5 rounded">Skipped</span>}
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-goblin-400 mt-1">
                 Transfers the cash tips collected in this shift from the Cash Drawer to the Tips Drawer.
               </p>
             </div>
             {cashDrawerAcc && tipsDrawerAcc && (
               <div className="text-right text-xs">
-                <div className="text-slate-400">Drawer Balance: <span className="font-mono text-slate-700 font-semibold">{egp(cashDrawerAcc.balanceCents)}</span></div>
-                <div className="text-slate-400">Tips Drawer Balance: <span className="font-mono text-slate-700 font-semibold">{egp(tipsDrawerAcc.balanceCents)}</span></div>
+                <div className="text-goblin-400">Drawer Balance: <span className="font-mono text-goblin-100 font-semibold">{egp(cashDrawerAcc.balanceCents)}</span></div>
+                <div className="text-goblin-400">Tips Drawer Balance: <span className="font-mono text-goblin-100 font-semibold">{egp(tipsDrawerAcc.balanceCents)}</span></div>
               </div>
             )}
           </div>
@@ -1253,29 +1254,29 @@ function CloseShiftWizard() {
             </div>
           </div>
           {tipsCents === 0 && step1StatusState === 'skipped' && !step1Posted && (
-            <p className="text-[11px] text-slate-400 mt-2">ℹ️ No cash tips were recorded for this shift.</p>
+            <p className="text-[11px] text-goblin-400 mt-2">ℹ️ No cash tips were recorded for this shift.</p>
           )}
         </div>
 
         {/* STEP 2: REMAINING CASH TO SAFE */}
-        <div className={`rounded-xl bg-white p-5 shadow border-l-4 transition-all ${
-          step2StatusState === 'success' ? 'border-l-emerald-500' : 'border-l-amber-500'
+        <div className={`rounded-xl bg-goblin-900 p-5 shadow border-l-4 transition-all ${
+          step2StatusState === 'success' ? 'border-l-goblin-500' : 'border-l-amber-500'
         }`}>
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">2</span>
+              <h3 className="font-bold text-goblin-50 flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-goblin-800 text-xs font-bold text-goblin-200">2</span>
                 <span>Transfer Remaining Cash to Main Safe</span>
-                {step2StatusState === 'success' && <span className="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">Completed</span>}
+                {step2StatusState === 'success' && <span className="text-xs text-goblin-500 font-semibold bg-goblin-800 px-2 py-0.5 rounded">Completed</span>}
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-goblin-400 mt-1">
                 Transfers the remaining cash sales from the Cash Drawer to the Main Safe.
               </p>
             </div>
             {cashDrawerAcc && mainSafeAcc && (
               <div className="text-right text-xs">
-                <div className="text-slate-400">Drawer Balance: <span className="font-mono text-slate-700 font-semibold">{egp(cashDrawerAcc.balanceCents)}</span></div>
-                <div className="text-slate-400">Safe Balance: <span className="font-mono text-slate-700 font-semibold">{egp(mainSafeAcc.balanceCents)}</span></div>
+                <div className="text-goblin-400">Drawer Balance: <span className="font-mono text-goblin-100 font-semibold">{egp(cashDrawerAcc.balanceCents)}</span></div>
+                <div className="text-goblin-400">Safe Balance: <span className="font-mono text-goblin-100 font-semibold">{egp(mainSafeAcc.balanceCents)}</span></div>
               </div>
             )}
           </div>
@@ -1312,25 +1313,25 @@ function CloseShiftWizard() {
         </div>
 
         {/* STEP 3: CUSTODY TO SAFE */}
-        <div className={`rounded-xl bg-white p-5 shadow border-l-4 transition-all ${
-          step3StatusState === 'success' ? 'border-l-emerald-500' : step3StatusState === 'skipped' ? 'border-l-slate-300 opacity-60' : 'border-l-amber-500'
+        <div className={`rounded-xl bg-goblin-900 p-5 shadow border-l-4 transition-all ${
+          step3StatusState === 'success' ? 'border-l-goblin-500' : step3StatusState === 'skipped' ? 'border-l-goblin-700 opacity-60' : 'border-l-amber-500'
         }`}>
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">3</span>
+              <h3 className="font-bold text-goblin-50 flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-goblin-800 text-xs font-bold text-goblin-200">3</span>
                 <span>Transfer Custody to Safe</span>
-                {step3StatusState === 'success' && <span className="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">Completed</span>}
-                {step3StatusState === 'skipped' && <span className="text-xs text-slate-400 font-semibold bg-slate-100 px-2 py-0.5 rounded">Skipped</span>}
+                {step3StatusState === 'success' && <span className="text-xs text-goblin-500 font-semibold bg-goblin-800 px-2 py-0.5 rounded">Completed</span>}
+                {step3StatusState === 'skipped' && <span className="text-xs text-goblin-400 font-semibold bg-goblin-800 px-2 py-0.5 rounded">Skipped</span>}
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-goblin-400 mt-1">
                 Returns/deposits any remaining custody account balance back to the Main Safe.
               </p>
             </div>
             {custodyAcc && mainSafeAcc && (
               <div className="text-right text-xs">
-                <div className="text-slate-400">Custody Balance: <span className="font-mono text-slate-700 font-semibold">{egp(custodyAcc.balanceCents)}</span></div>
-                <div className="text-slate-400">Safe Balance: <span className="font-mono text-slate-700 font-semibold">{egp(mainSafeAcc.balanceCents)}</span></div>
+                <div className="text-goblin-400">Custody Balance: <span className="font-mono text-goblin-100 font-semibold">{egp(custodyAcc.balanceCents)}</span></div>
+                <div className="text-goblin-400">Safe Balance: <span className="font-mono text-goblin-100 font-semibold">{egp(mainSafeAcc.balanceCents)}</span></div>
               </div>
             )}
           </div>
@@ -1374,25 +1375,25 @@ function CloseShiftWizard() {
             </div>
           </div>
           {custodyAcc && custodyAcc.balanceCents === 0 && step3StatusState === 'skipped' && (
-            <p className="text-[11px] text-slate-400 mt-2">ℹ️ Custody account balance is zero.</p>
+            <p className="text-[11px] text-goblin-400 mt-2">ℹ️ Custody account balance is zero.</p>
           )}
         </div>
 
         {/* STEP 4: SAFE BALANCE SNAPSHOT */}
-        <div className="rounded-xl bg-slate-900 text-white p-6 shadow flex justify-between items-center">
+        <div className="rounded-xl bg-goblin-950 text-white p-6 shadow flex justify-between items-center">
           <div>
             <h3 className="font-bold text-base flex items-center gap-2">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-slate-300">4</span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-goblin-900 text-xs font-bold text-goblin-400">4</span>
               <span>Total Safe Actual Balance</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-goblin-400 mt-1">
               The verified cash balance currently remaining in the Main Safe after completing all shift close transfers.
             </p>
           </div>
           {mainSafeAcc && (
             <div className="text-right">
-              <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Verified Safe Balance</div>
-              <div className="text-3xl font-extrabold text-emerald-400 font-mono mt-1">
+              <div className="text-xs text-goblin-400 uppercase tracking-wider font-semibold">Verified Safe Balance</div>
+              <div className="text-3xl font-extrabold text-goblin-400 font-mono mt-1">
                 {egp(mainSafeAcc.balanceCents)}
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ArrowLeftRight, ClockPlus, Pause, Play, Square, Tag } from 'lucide-react';
 import { api } from '../lib/api';
 import { fmtMoney, t } from '../lib/i18n';
 import { can, usePos } from '../lib/store';
@@ -66,7 +67,7 @@ export function SessionPanel({ order, onChanged }: { order: Order; onChanged: ()
       {ratePlan && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-goblin-800/40 bg-goblin-950/30 px-4 py-2 text-xs text-goblin-300 font-medium select-none">
           <span className="flex items-center gap-1 font-bold text-yellow-500">
-            🏷️ {ratePlan.name}
+            <Tag className="h-3.5 w-3.5" /> {ratePlan.name}
           </span>
           <span className="text-goblin-700 font-normal">|</span>
           <span>
@@ -101,17 +102,17 @@ export function SessionPanel({ order, onChanged }: { order: Order; onChanged: ()
               <button
                 disabled={busy}
                 onClick={() => act(() => api('/sessions/start', { method: 'POST', body: { orderId: order.id, isMultiplayer: false } }))}
-                className="rounded-xl bg-goblin-500 px-5 py-2 font-bold hover:bg-goblin-400 active:scale-95 transition-all shadow"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-500 px-5 py-2 font-bold hover:bg-goblin-400 active:scale-95 transition-all shadow"
               >
-                ▶ {t(lang, 'startSession')}{isMulti ? ` (${t(lang, 'single')})` : ''}
+                <Play className="h-4 w-4" /> {t(lang, 'startSession')}{isMulti ? ` (${t(lang, 'single')})` : ''}
               </button>
               {isMulti && (
                 <button
                   disabled={busy}
                   onClick={() => act(() => api('/sessions/start', { method: 'POST', body: { orderId: order.id, isMultiplayer: true } }))}
-                  className="rounded-xl bg-goblin-600 px-5 py-2 font-bold hover:bg-goblin-500 active:scale-95 transition-all shadow"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-600 px-5 py-2 font-bold hover:bg-goblin-500 active:scale-95 transition-all shadow"
                 >
-                  ▶ {t(lang, 'multiplayer')}
+                  <Play className="h-4 w-4" /> {t(lang, 'multiplayer')}
                 </button>
               )}
               {session?.status === 'STOPPED' && (
@@ -123,8 +124,8 @@ export function SessionPanel({ order, onChanged }: { order: Order; onChanged: ()
           )
         ) : (
           <>
-            <span className={`text-lg font-bold ${session.status === 'PAUSED' ? 'text-amber-300' : 'text-goblin-300'}`}>
-              {session.status === 'PAUSED' ? '⏸' : '▶'} {session.liveMinutes} {t(lang, 'minutes')}
+            <span className={`inline-flex items-center gap-1.5 text-lg font-bold ${session.status === 'PAUSED' ? 'text-amber-300' : 'text-goblin-300'}`}>
+              {session.status === 'PAUSED' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} {session.liveMinutes} {t(lang, 'minutes')}
             </span>
             <span className="text-xl font-bold text-yellow-300">{fmtMoney(session.liveCostCents, lang)}</span>
             {session.isMultiplayer && <span className="rounded bg-goblin-700 px-2 py-1 text-xs">{t(lang, 'multiplayer')}</span>}
@@ -142,8 +143,8 @@ export function SessionPanel({ order, onChanged }: { order: Order; onChanged: ()
             {isMulti && session.status === 'RUNNING' && (
               <button disabled={busy}
                 onClick={() => act(() => api(`/sessions/${session.id}/set-mode`, { method: 'POST', body: { isMultiplayer: !session.isMultiplayer } }))}
-                className="rounded-xl bg-goblin-800 px-4 py-2 text-sm hover:bg-goblin-700 transition-all">
-                → {session.isMultiplayer ? t(lang, 'single') : t(lang, 'multiplayer')}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-800 px-4 py-2 text-sm hover:bg-goblin-700 transition-all">
+                <ArrowLeftRight className="h-4 w-4" /> {session.isMultiplayer ? t(lang, 'single') : t(lang, 'multiplayer')}
               </button>
             )}
             {(session.prepaidBlocks?.length ?? 0) > 0 && (
@@ -153,19 +154,19 @@ export function SessionPanel({ order, onChanged }: { order: Order; onChanged: ()
             )}
             {can(user, 'payment.take') && (
               <button disabled={busy} onClick={() => setPrepaidOpen(true)}
-                className="rounded-xl bg-goblin-800 px-4 py-2 text-sm hover:bg-goblin-700 transition-all">
-                ⏱+ {t(lang, 'addMinutes')}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-800 px-4 py-2 text-sm hover:bg-goblin-700 transition-all">
+                <ClockPlus className="h-4 w-4" /> {t(lang, 'addMinutes')}
               </button>
             )}
             {can(user, 'session.transfer') && (
               <button disabled={busy} onClick={() => setMoving(true)}
-                className="rounded-xl bg-goblin-800 px-4 py-2 text-sm hover:bg-goblin-700 transition-all">
-                ⇄ {t(lang, 'moveSession')}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-800 px-4 py-2 text-sm hover:bg-goblin-700 transition-all">
+                <ArrowLeftRight className="h-4 w-4" /> {t(lang, 'moveSession')}
               </button>
             )}
             <button disabled={busy} onClick={() => act(() => api(`/sessions/${session.id}/stop`, { method: 'POST' }))}
-              className="ms-auto rounded-xl bg-red-700 px-5 py-2 font-bold hover:bg-red-600 active:scale-95 transition-all shadow">
-              ■ {t(lang, 'stopSession')}
+              className="ms-auto inline-flex items-center gap-1.5 rounded-xl bg-red-700 px-5 py-2 font-bold hover:bg-red-600 active:scale-95 transition-all shadow">
+              <Square className="h-4 w-4 fill-current" /> {t(lang, 'stopSession')}
             </button>
           </>
         )}

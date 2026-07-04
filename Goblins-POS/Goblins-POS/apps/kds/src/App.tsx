@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { AlertTriangle, Check, Delete, Printer, Undo2 } from 'lucide-react';
 
 // ---------- types ----------
 interface Station { id: string; name: string; kind: 'PREP' | 'EXPO' }
@@ -136,7 +137,7 @@ function useAutoReloadOnNewVersion() {
 }
 
 const AGE_COLORS = (min: number) =>
-  min >= 15 ? 'border-red-500 bg-red-950' : min >= 8 ? 'border-amber-500 bg-amber-950' : 'border-emerald-600 bg-zinc-900';
+  min >= 15 ? 'border-red-500 bg-red-950' : min >= 8 ? 'border-amber-500 bg-amber-950' : 'border-goblin-600 bg-goblin-900';
 
 // ---------- login ----------
 function Login({ onDone }: { onDone: (u: SessionUser) => void }) {
@@ -164,15 +165,15 @@ function Login({ onDone }: { onDone: (u: SessionUser) => void }) {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center bg-zinc-950 text-white">
+    <div className="flex h-screen items-center justify-center bg-goblin-950 text-white">
       <div className="w-full max-w-sm p-6">
-        <h1 className="mb-6 text-center text-2xl font-bold text-emerald-400">Goblins KDS</h1>
+        <h1 className="mb-6 text-center text-2xl font-bold text-goblin-400">Goblins KDS</h1>
         {!selected ? (
           <div className="grid grid-cols-2 gap-2">
             {users.map((u) => (
-              <button key={u.id} onClick={() => setSelected(u.id)} className="rounded-xl bg-zinc-800 p-4 font-semibold">
+              <button key={u.id} onClick={() => setSelected(u.id)} className="rounded-xl bg-goblin-800 p-4 font-semibold">
                 {u.name}
-                <span className="block text-xs text-zinc-400">{u.role.name}</span>
+                <span className="block text-xs text-goblin-400">{u.role.name}</span>
               </button>
             ))}
           </div>
@@ -190,8 +191,8 @@ function Login({ onDone }: { onDone: (u: SessionUser) => void }) {
                     if (next.length >= 4) void submit(next);
                   }
                 }}
-                className="rounded-xl bg-zinc-800 p-5 text-xl font-bold active:bg-zinc-600">
-                {k}
+                className="rounded-xl bg-goblin-800 p-5 text-xl font-bold active:bg-goblin-700">
+                {k === '⌫' ? <Delete className="mx-auto h-6 w-6" /> : k === '✓' ? <Check className="mx-auto h-6 w-6" /> : k}
               </button>
             ))}
           </div>
@@ -232,7 +233,13 @@ export function App() {
     if (!station) return;
     void load();
     const room = station.kind === 'EXPO' ? 'expo' : `kds:${station.id}`;
-    const s = io({ path: '/ws', query: { rooms: room } });
+    // Send the current access token on connect AND on every reconnect (auth as
+    // a callback re-reads the latest token, which the refresh flow keeps fresh).
+    const s = io({
+      path: '/ws',
+      query: { rooms: room },
+      auth: (cb) => cb({ token: token ?? '' }),
+    });
     s.on('connect', () => void load()); // re-sync after any reconnect
     s.on('ticket.new', () => { beep(); void load(); });
     s.on('ticket.updated', () => void load());
@@ -263,10 +270,10 @@ export function App() {
 
   if (!station) {
     return (
-      <div className="flex min-h-screen flex-wrap items-center justify-center gap-4 bg-zinc-950 p-6 text-white">
+      <div className="flex min-h-screen flex-wrap items-center justify-center gap-4 bg-goblin-950 p-6 text-white">
         {stations.map((s) => (
           <button key={s.id} onClick={() => setStation(s)}
-            className="rounded-2xl bg-zinc-800 px-10 py-8 text-2xl font-bold active:bg-emerald-700">
+            className="rounded-2xl bg-goblin-800 px-10 py-8 text-2xl font-bold active:bg-goblin-600">
             {s.name}
           </button>
         ))}
@@ -275,9 +282,9 @@ export function App() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-zinc-950 text-white">
-      <header className="flex items-center justify-between border-b border-zinc-800 px-4 py-2">
-        <h1 className="text-xl font-bold text-emerald-400">{station.name}</h1>
+    <div className="flex h-screen flex-col bg-goblin-950 text-white">
+      <header className="flex items-center justify-between border-b border-goblin-800 px-4 py-2">
+        <h1 className="text-xl font-bold text-goblin-400">{station.name}</h1>
         <div className="flex gap-2">
           {station.kind === 'PREP' && (
             <button
@@ -285,33 +292,35 @@ export function App() {
                 if (allDay) setAllDay(null);
                 else setAllDay(await api(`/kds/stations/${station.id}/all-day`));
               }}
-              className={`rounded-lg px-4 py-2 ${allDay ? 'bg-emerald-700' : 'bg-zinc-800'}`}
+              className={`rounded-lg px-4 py-2 ${allDay ? 'bg-goblin-600' : 'bg-goblin-800'}`}
             >
               {t.allDay}
             </button>
           )}
-          <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="rounded-lg bg-zinc-800 px-4 py-2">
+          <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="rounded-lg bg-goblin-800 px-4 py-2">
             {lang === 'en' ? 'ع' : 'EN'}
           </button>
-          <button onClick={() => setStation(null)} className="rounded-lg bg-zinc-800 px-4 py-2">
+          <button onClick={() => setStation(null)} className="rounded-lg bg-goblin-800 px-4 py-2">
             {t.stations}
           </button>
         </div>
       </header>
 
       {connErr && (
-        <div className="bg-red-900/70 px-4 py-1 text-center text-sm text-red-200">⚠ {connErr}</div>
+        <div className="flex items-center justify-center gap-2 bg-red-900/70 px-4 py-1 text-center text-sm text-red-200">
+          <AlertTriangle className="h-4 w-4" /> {connErr}
+        </div>
       )}
 
       {allDay ? (
         <div className="grid flex-1 auto-rows-min grid-cols-2 gap-3 overflow-auto p-4 md:grid-cols-3">
           {allDay.map((row) => (
-            <div key={row.description} className="flex items-center justify-between rounded-xl bg-zinc-900 p-4 text-2xl">
+            <div key={row.description} className="flex items-center justify-between rounded-xl bg-goblin-900 p-4 text-2xl">
               <span>{row.description}</span>
-              <span className="font-bold text-emerald-400">×{row.quantity}</span>
+              <span className="font-bold text-goblin-400">×{row.quantity}</span>
             </div>
           ))}
-          {!allDay.length && <p className="text-zinc-500">{t.nothingOutstanding}</p>}
+          {!allDay.length && <p className="text-goblin-400">{t.nothingOutstanding}</p>}
         </div>
       ) : (
         <div className="flex flex-1 gap-3 overflow-x-auto p-3">
@@ -319,12 +328,12 @@ export function App() {
             const age = elapsedMin(tk.firedAt);
             return (
               <div key={tk.id}
-                className={`flex h-fit min-w-64 max-w-64 flex-col rounded-xl border-2 ${AGE_COLORS(age)} ${tk.status === 'READY' ? 'opacity-80 ring-2 ring-emerald-400' : ''}`}>
+                className={`flex h-fit min-w-64 max-w-64 flex-col rounded-xl border-2 ${AGE_COLORS(age)} ${tk.status === 'READY' ? 'opacity-80 ring-2 ring-goblin-400' : ''}`}>
                 <div className="flex items-center justify-between rounded-t-lg bg-black/40 px-3 py-2">
                   <span className="font-bold">
                     #{tk.order.number} {tk.order.resource?.name ?? tk.order.type}
                   </span>
-                  <span className="text-sm text-zinc-300">{i + 1}⃣ {age}m</span>
+                  <span className="text-sm text-goblin-300">{i + 1}⃣ {age}m</span>
                 </div>
                 {tk.course > 1 && <span className="bg-purple-900 px-3 py-0.5 text-xs">{t.course} {tk.course}</span>}
                 {tk.recalled && <span className="bg-red-900 px-3 py-0.5 text-xs">{t.recalled}</span>}
@@ -344,28 +353,29 @@ export function App() {
                 <div className="flex gap-1 p-2">
                   <button
                     onClick={() => void api(`/kds/tickets/${tk.id}/bump`, { method: 'POST' }).then(load)}
-                    className="flex-1 rounded-lg bg-emerald-700 py-3 font-bold active:bg-emerald-600">
+                    className="flex-1 rounded-lg bg-goblin-600 py-3 font-bold active:bg-goblin-600">
                     {tk.status === 'NEW' ? t.start : tk.status === 'IN_PROGRESS' ? t.ready : t.serve}
                   </button>
                   {(tk.status === 'READY' || tk.status === 'IN_PROGRESS') && (
                     <button
                       onClick={() => void api(`/kds/tickets/${tk.id}/recall`, { method: 'POST' }).then(load).catch(() => {})}
-                      className="rounded-lg bg-zinc-700 px-3 py-3 text-sm">
-                      ↩
+                      title={t.recalled}
+                      className="inline-flex items-center justify-center rounded-lg bg-goblin-700 px-3 py-3 text-sm">
+                      <Undo2 className="h-5 w-5" />
                     </button>
                   )}
                   <button
                     onClick={() => void api(`/kds/tickets/${tk.id}/reprint`, { method: 'POST' }).catch(() => {})}
                     title="Reprint"
-                    className="rounded-lg bg-zinc-700 px-3 py-3 text-sm">
-                    🖨
+                    className="inline-flex items-center justify-center rounded-lg bg-goblin-700 px-3 py-3 text-sm">
+                    <Printer className="h-5 w-5" />
                   </button>
                 </div>
               </div>
             );
           })}
           {!tickets.length && (
-            <div className="flex flex-1 items-center justify-center text-2xl text-zinc-600">
+            <div className="flex flex-1 items-center justify-center text-2xl text-goblin-700">
               {t.noTickets}
             </div>
           )}

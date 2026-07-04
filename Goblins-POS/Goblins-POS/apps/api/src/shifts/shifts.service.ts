@@ -332,7 +332,7 @@ export class ShiftsService {
       if (typeof shift.zReport === 'string') {
         try {
           zReportObj = JSON.parse(shift.zReport);
-        } catch (e) {
+        } catch {
           zReportObj = {};
         }
       } else {

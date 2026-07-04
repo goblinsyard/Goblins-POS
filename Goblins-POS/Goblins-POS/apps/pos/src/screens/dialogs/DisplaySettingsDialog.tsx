@@ -1,3 +1,4 @@
+import { Moon, Settings, Sun } from 'lucide-react';
 import { t } from '../../lib/i18n';
 import { usePos } from '../../lib/store';
 
@@ -25,8 +26,8 @@ export function DisplaySettingsDialog({ onClose }: { onClose: () => void }) {
         className="w-full max-w-md rounded-2xl bg-goblin-900 border border-goblin-800 p-6 text-goblin-50 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-6 text-xl font-bold text-goblin-300 border-b border-goblin-800 pb-2">
-          ⚙️ {t(lang, 'displaySettings')}
+        <h2 className="mb-6 flex items-center gap-2 text-xl font-bold text-goblin-300 border-b border-goblin-800 pb-2">
+          <Settings className="h-5 w-5" /> {t(lang, 'displaySettings')}
         </h2>
 
         {/* 1. Theme Mode */}
@@ -43,7 +44,7 @@ export function DisplaySettingsDialog({ onClose }: { onClose: () => void }) {
                   : 'bg-goblin-950 text-goblin-400 hover:bg-goblin-800 hover:text-goblin-200'
               }`}
             >
-              ☀️ {t(lang, 'lightMode')}
+              <Sun className="h-4 w-4" /> {t(lang, 'lightMode')}
             </button>
             <button
               onClick={() => setThemeMode('dark')}
@@ -53,7 +54,7 @@ export function DisplaySettingsDialog({ onClose }: { onClose: () => void }) {
                   : 'bg-goblin-950 text-goblin-400 hover:bg-goblin-800 hover:text-goblin-200'
               }`}
             >
-              🌙 {t(lang, 'darkMode')}
+              <Moon className="h-4 w-4" /> {t(lang, 'darkMode')}
             </button>
           </div>
         </div>

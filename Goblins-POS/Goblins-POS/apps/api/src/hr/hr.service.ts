@@ -42,7 +42,7 @@ export class HrService {
       hoursWorked = Math.round(hoursWorked * 100) / 100;
 
       // Calculate gross salary
-      let grossCents = 0;
+      let grossCents: number;
       if (user.salaryType === 'HOURLY') {
         grossCents = Math.round(hoursWorked * user.hourlyRateCents);
       } else {

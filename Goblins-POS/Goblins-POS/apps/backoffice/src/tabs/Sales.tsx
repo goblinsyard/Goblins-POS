@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { api, downloadCsv, egp, cairoTime } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Table, useLoad } from '../lib/ui';
+import { AlertTriangle } from 'lucide-react';
+import { CategoryBars, ChartCard, RevenueTrend } from '../lib/charts';
 
 const SECTIONS = ['sales reports', 'receipts', 'shifts report'] as const;
 const GROUPS = ['hour', 'day', 'department', 'category', 'item', 'method', 'staff'] as const;
@@ -24,16 +26,23 @@ function SalesReports() {
     () => api<{ key: string; orders: number; revenueCents: number; quantity: number }[]>(`/reports/sales?groupBy=${groupBy}`),
     [groupBy],
   );
+  const rows = data ?? [];
+  const chartRows = rows.map((r) => ({ label: r.key, value: r.revenueCents }));
   return (
-    <div>
+    <div className="space-y-4">
       <div className="mb-4 flex items-center gap-2">
         <Pills value={groupBy} onChange={setGroupBy} options={GROUPS} />
         <a href={`/api/reports/sales.csv?groupBy=${groupBy}`} target="_blank" rel="noreferrer"
           onClick={(e) => { e.preventDefault(); void downloadCsv(`/reports/sales.csv?groupBy=${groupBy}`, `sales-${groupBy}.csv`); }}
-          className="ml-auto rounded-lg bg-slate-700 px-3 py-1.5 text-sm text-white">
+          className="ml-auto rounded-lg bg-goblin-900 px-3 py-1.5 text-sm text-white">
           Export CSV
         </a>
       </div>
+      <ChartCard title="Revenue" subtitle={`Gross revenue by ${groupBy}`}>
+        {groupBy === 'day' || groupBy === 'hour'
+          ? <RevenueTrend points={chartRows} />
+          : <CategoryBars rows={chartRows} horizontal={groupBy === 'item' || groupBy === 'category'} />}
+      </ChartCard>
       <Table
         headers={[groupBy, 'Orders', 'Qty', 'Revenue']}
         rows={(data ?? []).map((r) => [r.key, String(r.orders), String(r.quantity), egp(r.revenueCents)])}
@@ -102,7 +111,7 @@ function ReceiptsList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+      <div className="flex flex-wrap gap-4 items-center bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
         <div className="w-48">
           <Field label="Time Period">
             <Select
@@ -127,7 +136,7 @@ function ReceiptsList() {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-sm bg-white"
+                  className="w-full rounded-lg border border-goblin-700 p-2 text-sm bg-goblin-900"
                 />
               </Field>
             </div>
@@ -137,7 +146,7 @@ function ReceiptsList() {
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-sm bg-white"
+                  className="w-full rounded-lg border border-goblin-700 p-2 text-sm bg-goblin-900"
                 />
               </Field>
             </div>
@@ -152,12 +161,12 @@ function ReceiptsList() {
                 placeholder="Search Order #, Customer, Server..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 pr-8 text-sm"
+                className="w-full rounded-lg border border-goblin-700 p-2 pr-8 text-sm"
               />
               {search && (
                 <button
                   onClick={() => setSearch('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm font-bold"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-goblin-400 hover:text-goblin-200 text-sm font-bold"
                 >
                   ×
                 </button>
@@ -171,13 +180,13 @@ function ReceiptsList() {
         </div>
       </div>
 
-      <div className="rounded-xl bg-white p-4 shadow overflow-hidden">
+      <div className="rounded-xl bg-goblin-900 p-4 shadow overflow-hidden">
         <Table
           headers={['Date/Time', 'Order #', 'Type', 'Status', 'Customer', 'Total', 'Payments', 'Actions']}
           rows={(receipts ?? []).map((r) => {
             const statusBadge = (
               <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                r.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' :
+                r.status === 'PAID' ? 'bg-goblin-700 text-goblin-500' :
                 r.status === 'VOIDED' ? 'bg-red-100 text-red-800' :
                 'bg-yellow-100 text-yellow-800'
               }`}>
@@ -196,7 +205,7 @@ function ReceiptsList() {
             ];
           })}
         />
-        {!receipts?.length && <p className="p-4 text-slate-400">No orders found.</p>}
+        {!receipts?.length && <p className="p-4 text-goblin-400">No orders found.</p>}
       </div>
 
       {selectedReceipt && (
@@ -243,13 +252,13 @@ function ReceiptDetailModal({ receipt, onClose, onDone }: {
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4 text-sm border-b pb-3">
           <div>
-            <p className="text-slate-400">Type</p>
-            <p className="font-semibold text-slate-800">{receipt.type}</p>
+            <p className="text-goblin-400">Type</p>
+            <p className="font-semibold text-goblin-50">{receipt.type}</p>
           </div>
           <div>
-            <p className="text-slate-400">Status</p>
+            <p className="text-goblin-400">Status</p>
             <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
-              receipt.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' :
+              receipt.status === 'PAID' ? 'bg-goblin-700 text-goblin-500' :
               receipt.status === 'VOIDED' ? 'bg-red-100 text-red-800' :
               'bg-yellow-100 text-yellow-800'
             }`}>
@@ -257,27 +266,27 @@ function ReceiptDetailModal({ receipt, onClose, onDone }: {
             </span>
           </div>
           <div>
-            <p className="text-slate-400">Date/Time</p>
-            <p className="font-semibold text-slate-800">{receipt.closedAt ? cairoTime(receipt.closedAt) : `${cairoTime(receipt.openedAt)} (Open)`}</p>
+            <p className="text-goblin-400">Date/Time</p>
+            <p className="font-semibold text-goblin-50">{receipt.closedAt ? cairoTime(receipt.closedAt) : `${cairoTime(receipt.openedAt)} (Open)`}</p>
           </div>
           <div>
-            <p className="text-slate-400">Opened By</p>
-            <p className="font-semibold text-slate-800">{receipt.openedBy.name}</p>
+            <p className="text-goblin-400">Opened By</p>
+            <p className="font-semibold text-goblin-50">{receipt.openedBy.name}</p>
           </div>
           <div>
-            <p className="text-slate-400">Customer</p>
-            <p className="font-semibold text-slate-800">{receipt.customer ? `${receipt.customer.name} (${receipt.customer.phone})` : 'Walk-in'}</p>
+            <p className="text-goblin-400">Customer</p>
+            <p className="font-semibold text-goblin-50">{receipt.customer ? `${receipt.customer.name} (${receipt.customer.phone})` : 'Walk-in'}</p>
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-bold text-slate-700 mb-2">Payments</h3>
+          <h3 className="text-sm font-bold text-goblin-100 mb-2">Payments</h3>
           <div className="space-y-3">
             {receipt.payments.map((p) => (
-              <div key={p.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
+              <div key={p.id} className="flex justify-between items-center bg-goblin-800 p-3 rounded-lg border">
                 <div>
-                  <span className="font-semibold text-slate-800">{egp(p.amountCents)}</span>
-                  <span className="text-xs text-slate-400 ml-2">via {p.method.name}</span>
+                  <span className="font-semibold text-goblin-50">{egp(p.amountCents)}</span>
+                  <span className="text-xs text-goblin-400 ml-2">via {p.method.name}</span>
                 </div>
                 {editingPaymentId === p.id ? (
                   <div className="flex gap-2 items-center">
@@ -301,7 +310,7 @@ function ReceiptDetailModal({ receipt, onClose, onDone }: {
 
         <div className="flex justify-between items-center border-t pt-3 text-sm font-bold">
           <span>Total Paid</span>
-          <span className="text-slate-800">{egp(receipt.totalCents)}</span>
+          <span className="text-goblin-50">{egp(receipt.totalCents)}</span>
         </div>
       </div>
     </Modal>
@@ -331,11 +340,11 @@ function ShiftsReport() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-slate-800">Shifts Report</h2>
+        <h2 className="text-lg font-bold text-goblin-50">Shifts Report</h2>
         <Btn onClick={reload}>Refresh</Btn>
       </div>
 
-      <div className="rounded-xl bg-white p-4 shadow overflow-hidden">
+      <div className="rounded-xl bg-goblin-900 p-4 shadow overflow-hidden">
         <Table
           headers={[
             'Opened At',
@@ -353,7 +362,7 @@ function ShiftsReport() {
             const isClosed = s.status === 'CLOSED';
             const statusBadge = (
               <span className={`px-2 py-1 rounded text-xs font-bold ${
-                isClosed ? 'bg-slate-100 text-slate-700' : 'bg-emerald-100 text-emerald-800'
+                isClosed ? 'bg-goblin-800 text-goblin-100' : 'bg-goblin-700 text-goblin-500'
               }`}>
                 {s.status}
               </span>
@@ -371,7 +380,7 @@ function ShiftsReport() {
               isClosed && s.expectedCents != null ? egp(s.expectedCents) : '—',
               isClosed && s.countedCents != null ? egp(s.countedCents) : '—',
               isClosed && s.varianceCents != null ? (
-                <span className={s.varianceCents < 0 ? 'text-red-600 font-semibold' : s.varianceCents > 0 ? 'text-emerald-700 font-semibold' : 'text-slate-800'}>
+                <span className={s.varianceCents < 0 ? 'text-red-600 font-semibold' : s.varianceCents > 0 ? 'text-goblin-500 font-semibold' : 'text-goblin-50'}>
                   {s.varianceCents > 0 ? '+' : ''}{egp(s.varianceCents)}
                 </span>
               ) : '—',
@@ -379,7 +388,7 @@ function ShiftsReport() {
             ];
           })}
         />
-        {!shifts?.length && <p className="p-4 text-slate-400">No shifts found.</p>}
+        {!shifts?.length && <p className="p-4 text-goblin-400">No shifts found.</p>}
       </div>
 
       {selectedShiftId && (
@@ -480,7 +489,7 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
   if (!data) {
     return (
       <Modal title="Shift Report Details" onClose={onClose} wide>
-        <p className="p-8 text-center text-slate-400">Loading shift report details...</p>
+        <p className="p-8 text-center text-goblin-400">Loading shift report details...</p>
       </Modal>
     );
   }
@@ -495,82 +504,82 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
   return (
     <Modal title={`Shift Report Details - ${isClosed ? 'Z-Report' : 'X-Report (Live)'}`} onClose={onClose} wide>
       <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-goblin-800 p-4 rounded-xl border border-goblin-800 text-sm">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">Status</p>
+            <p className="text-xs uppercase tracking-wide text-goblin-400">Status</p>
             <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-bold ${
-              isClosed ? 'bg-slate-200 text-slate-700' : 'bg-emerald-100 text-emerald-800'
+              isClosed ? 'bg-goblin-700 text-goblin-100' : 'bg-goblin-700 text-goblin-500'
             }`}>
               {shift.status}
             </span>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">Operator</p>
-            <p className="font-semibold text-slate-800 mt-1">{shift.openedBy.name}</p>
+            <p className="text-xs uppercase tracking-wide text-goblin-400">Operator</p>
+            <p className="font-semibold text-goblin-50 mt-1">{shift.openedBy.name}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">Opened At</p>
-            <p className="font-semibold text-slate-800 mt-1">{cairoTime(shift.openedAt)}</p>
+            <p className="text-xs uppercase tracking-wide text-goblin-400">Opened At</p>
+            <p className="font-semibold text-goblin-50 mt-1">{cairoTime(shift.openedAt)}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">Closed At</p>
-            <p className="font-semibold text-slate-800 mt-1">{shift.closedAt ? cairoTime(shift.closedAt) : 'Still Open'}</p>
+            <p className="text-xs uppercase tracking-wide text-goblin-400">Closed At</p>
+            <p className="font-semibold text-goblin-50 mt-1">{shift.closedAt ? cairoTime(shift.closedAt) : 'Still Open'}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-slate-700 border-b pb-2 mb-2">Sales Summary</h3>
+          <div className="bg-goblin-900 p-4 rounded-xl border border-goblin-700 shadow-sm space-y-3">
+            <h3 className="text-sm font-bold text-goblin-100 border-b pb-2 mb-2">Sales Summary</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-500">Gross Sales</span>
-                <span className="font-semibold text-slate-800">{egp(report.grossCents)}</span>
+                <span className="text-goblin-300">Gross Sales</span>
+                <span className="font-semibold text-goblin-50">{egp(report.grossCents)}</span>
               </div>
               <div className="flex justify-between text-red-600">
                 <span>Discounts ({report.discountCount})</span>
                 <span>-{egp(report.discountCents)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Tax</span>
-                <span className="font-semibold text-slate-800">{egp(report.taxCents)}</span>
+                <span className="text-goblin-300">Tax</span>
+                <span className="font-semibold text-goblin-50">{egp(report.taxCents)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Service Charge</span>
-                <span className="font-semibold text-slate-800">{egp(report.serviceChargeCents)}</span>
+                <span className="text-goblin-300">Service Charge</span>
+                <span className="font-semibold text-goblin-50">{egp(report.serviceChargeCents)}</span>
               </div>
-              <div className="flex justify-between text-emerald-700 font-semibold">
+              <div className="flex justify-between text-goblin-500 font-semibold">
                 <span>Tips</span>
                 <span>{egp(report.tipsCents)}</span>
               </div>
-              <div className="flex justify-between border-t pt-2 font-bold text-base text-slate-800">
+              <div className="flex justify-between border-t pt-2 font-bold text-base text-goblin-50">
                 <span>Net Sales</span>
                 <span>{egp(report.subtotalCents)}</span>
               </div>
-              <div className="flex justify-between text-xs text-slate-400 pt-1">
+              <div className="flex justify-between text-xs text-goblin-400 pt-1">
                 <span>Paid Orders: {report.orderCount}</span>
                 <span>Voided Orders: {report.voidedCount}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-slate-700 border-b pb-2 mb-2">Cash Drawer Reconciliation</h3>
+          <div className="bg-goblin-900 p-4 rounded-xl border border-goblin-700 shadow-sm space-y-3">
+            <h3 className="text-sm font-bold text-goblin-100 border-b pb-2 mb-2">Cash Drawer Reconciliation</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-500">Opening Float</span>
-                <span className="font-semibold text-slate-800">{egp(report.cash.floatCents)}</span>
+                <span className="text-goblin-300">Opening Float</span>
+                <span className="font-semibold text-goblin-50">{egp(report.cash.floatCents)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Cash Sales</span>
-                <span className="font-semibold text-slate-800">{egp(report.cash.salesCents)}</span>
+                <span className="text-goblin-300">Cash Sales</span>
+                <span className="font-semibold text-goblin-50">{egp(report.cash.salesCents)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Cash Movements</span>
-                <span className={`font-semibold ${report.cash.movementsCents < 0 ? 'text-red-600' : report.cash.movementsCents > 0 ? 'text-emerald-700' : 'text-slate-800'}`}>
+                <span className="text-goblin-300">Cash Movements</span>
+                <span className={`font-semibold ${report.cash.movementsCents < 0 ? 'text-red-600' : report.cash.movementsCents > 0 ? 'text-goblin-500' : 'text-goblin-50'}`}>
                   {report.cash.movementsCents > 0 ? '+' : ''}{egp(report.cash.movementsCents)}
                 </span>
               </div>
-              <div className="flex justify-between border-t pt-2 font-semibold text-slate-800">
+              <div className="flex justify-between border-t pt-2 font-semibold text-goblin-50">
                 <span>Expected Drawer Cash</span>
                 <span>{egp(report.cash.expectedCents)}</span>
               </div>
@@ -578,10 +587,10 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
               {isClosed ? (
                 <>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-semibold">Actual Counted Cash</span>
+                    <span className="text-goblin-300 font-semibold">Actual Counted Cash</span>
                     {!isEditingCount ? (
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-800">{egp(report.countedCents ?? shift.countedCents ?? 0)}</span>
+                        <span className="font-bold text-goblin-50">{egp(report.countedCents ?? shift.countedCents ?? 0)}</span>
                         <button
                           onClick={() => {
                             setNewCount(String((report.countedCents ?? shift.countedCents ?? 0) / 100));
@@ -599,7 +608,7 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
                           type="number"
                           value={newCount}
                           onChange={(e) => setNewCount(e.target.value)}
-                          className="w-24 rounded border border-slate-300 p-1 text-xs text-right font-mono"
+                          className="w-24 rounded border border-goblin-700 p-1 text-xs text-right font-mono"
                           disabled={reconcileLoading}
                         />
                         <button
@@ -611,7 +620,7 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
                         </button>
                         <button
                           onClick={() => setIsEditingCount(false)}
-                          className="px-1.5 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px] hover:bg-slate-300"
+                          className="px-1.5 py-0.5 bg-goblin-700 text-goblin-100 rounded text-[10px] hover:bg-goblin-700"
                           disabled={reconcileLoading}
                         >
                           Cancel
@@ -622,14 +631,14 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
                   {reconcileErr && <p className="text-[10px] text-red-600 text-right mt-1">{reconcileErr}</p>}
                   <div className="flex justify-between border-t pt-2 font-bold text-base">
                     <span>Variance (Difference)</span>
-                    <span className={(report.varianceCents ?? shift.varianceCents ?? 0) < 0 ? 'text-red-600' : (report.varianceCents ?? shift.varianceCents ?? 0) > 0 ? 'text-emerald-700' : 'text-slate-800'}>
+                    <span className={(report.varianceCents ?? shift.varianceCents ?? 0) < 0 ? 'text-red-600' : (report.varianceCents ?? shift.varianceCents ?? 0) > 0 ? 'text-goblin-500' : 'text-goblin-50'}>
                       {(report.varianceCents ?? shift.varianceCents ?? 0) > 0 ? '+' : ''}{egp(report.varianceCents ?? shift.varianceCents ?? 0)}
                     </span>
                   </div>
                 </>
               ) : (
-                <div className="p-2 bg-yellow-50 text-yellow-800 rounded-lg text-xs border border-yellow-100 mt-2">
-                  ⚠️ This shift is still active. Final counted cash and variance will be determined upon shift closure.
+                <div className="inline-flex items-center gap-1 p-2 bg-yellow-50 text-yellow-800 rounded-lg text-xs border border-yellow-100 mt-2">
+                  <AlertTriangle className="h-4 w-4" /> This shift is still active. Final counted cash and variance will be determined upon shift closure.
                 </div>
               )}
             </div>
@@ -637,42 +646,42 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-slate-700 border-b pb-2 mb-2">Payment Methods Breakdown</h3>
+          <div className="bg-goblin-900 p-4 rounded-xl border border-goblin-700 shadow-sm space-y-3">
+            <h3 className="text-sm font-bold text-goblin-100 border-b pb-2 mb-2">Payment Methods Breakdown</h3>
             <div className="space-y-2 text-sm">
               {Object.entries(report.byMethod).map(([methodName, data]) => (
                 <div key={methodName} className="flex justify-between">
-                  <span className="text-slate-500">{methodName} ({data.count} tx)</span>
-                  <span className="font-semibold text-slate-800">{egp(data.amountCents)}</span>
+                  <span className="text-goblin-300">{methodName} ({data.count} tx)</span>
+                  <span className="font-semibold text-goblin-50">{egp(data.amountCents)}</span>
                 </div>
               ))}
               {Object.keys(report.byMethod).length === 0 && (
-                <p className="text-xs text-slate-400 py-2">No payments recorded in this shift.</p>
+                <p className="text-xs text-goblin-400 py-2">No payments recorded in this shift.</p>
               )}
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-slate-700 border-b pb-2 mb-2">Departments Breakdown</h3>
+          <div className="bg-goblin-900 p-4 rounded-xl border border-goblin-700 shadow-sm space-y-3">
+            <h3 className="text-sm font-bold text-goblin-100 border-b pb-2 mb-2">Departments Breakdown</h3>
             <div className="space-y-2 text-sm">
               {Object.entries(report.byDepartment).map(([dept, amountCents]) => (
                 <div key={dept} className="flex justify-between">
-                  <span className="text-slate-500">{dept}</span>
-                  <span className="font-semibold text-slate-800">{egp(amountCents)}</span>
+                  <span className="text-goblin-300">{dept}</span>
+                  <span className="font-semibold text-goblin-50">{egp(amountCents)}</span>
                 </div>
               ))}
               {Object.keys(report.byDepartment).length === 0 && (
-                <p className="text-xs text-slate-400 py-2">No sales recorded in this shift.</p>
+                <p className="text-xs text-goblin-400 py-2">No sales recorded in this shift.</p>
               )}
             </div>
           </div>
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-sm font-bold text-slate-700">Cash Movements History</h3>
+          <h3 className="text-sm font-bold text-goblin-100">Cash Movements History</h3>
           <div className="max-h-60 overflow-y-auto rounded-lg border">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 text-xs uppercase sticky top-0">
+              <thead className="bg-goblin-800 text-goblin-300 text-xs uppercase sticky top-0">
                 <tr>
                   <th className="p-3">Time</th>
                   <th className="p-3">Kind</th>
@@ -683,27 +692,27 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
               </thead>
               <tbody className="divide-y">
                 {shift.cashMovements.map((move) => (
-                  <tr key={move.id} className="hover:bg-slate-50">
-                    <td className="p-3 text-xs text-slate-500">{cairoTime(move.createdAt)}</td>
+                  <tr key={move.id} className="hover:bg-goblin-800">
+                    <td className="p-3 text-xs text-goblin-300">{cairoTime(move.createdAt)}</td>
                     <td className="p-3 text-xs">
                       <span className={`px-1.5 py-0.5 rounded text-xs font-semibold ${
-                        move.kind === 'PAID_IN' ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' :
+                        move.kind === 'PAID_IN' ? 'bg-goblin-800 text-goblin-500 border border-goblin-600' :
                         move.kind === 'PAID_OUT' || move.kind === 'PETTY_CASH' || move.kind === 'CASH_TRANSFER' ? 'bg-red-50 text-red-800 border border-red-100' :
-                        'bg-slate-50 text-slate-600 border border-slate-100'
+                        'bg-goblin-800 text-goblin-200 border border-goblin-800'
                       }`}>
                         {formatMovementKind(move.kind)}
                       </span>
                     </td>
-                    <td className="p-3 text-slate-700">{move.user.name}</td>
-                    <td className="p-3 text-slate-600 truncate max-w-[200px]">{move.reason || '—'}</td>
-                    <td className={`p-3 text-right font-semibold ${move.amountCents < 0 ? 'text-red-600' : move.amountCents > 0 ? 'text-emerald-700' : 'text-slate-800'}`}>
+                    <td className="p-3 text-goblin-100">{move.user.name}</td>
+                    <td className="p-3 text-goblin-200 truncate max-w-[200px]">{move.reason || '—'}</td>
+                    <td className={`p-3 text-right font-semibold ${move.amountCents < 0 ? 'text-red-600' : move.amountCents > 0 ? 'text-goblin-500' : 'text-goblin-50'}`}>
                       {move.amountCents > 0 ? '+' : ''}{egp(move.amountCents)}
                     </td>
                   </tr>
                 ))}
                 {shift.cashMovements.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="p-4 text-center text-slate-400 text-sm">No cash movements recorded.</td>
+                    <td colSpan={5} className="p-4 text-center text-goblin-400 text-sm">No cash movements recorded.</td>
                   </tr>
                 )}
               </tbody>

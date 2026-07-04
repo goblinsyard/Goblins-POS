@@ -1,0 +1,205 @@
+/**
+ * Goblins shared theme tokens — single source of truth for the `goblin` color
+ * scale across POS, back office and KDS. Import once per app (after the Tailwind
+ * layers) e.g. in the app's index.css:  @import '../../../packages/ui/theme.css';
+ *
+ * The scale is INVERTED between modes so the same utility class works in both:
+ * in dark mode goblin-900 is the darkest surface; the `.light` override flips the
+ * ramp so goblin-900 becomes the lightest surface. Add `light` to <html> for light
+ * mode and one of `theme-goblin|indigo|rose|amber|slate` to pick the accent.
+ */
+
+/* 1. Goblin Theme (Default Green) */
+:root, .theme-goblin {
+  --goblin-50: 242 248 236;
+  --goblin-100: 224 238 211;
+  --goblin-200: 195 222 171;
+  --goblin-300: 159 201 122;
+  --goblin-400: 126 178 81;
+  --goblin-500: 95 151 53;
+  --goblin-600: 72 120 39;
+  --goblin-700: 56 93 33;
+  --goblin-800: 47 75 31;
+  --goblin-900: 41 64 30;
+  --goblin-950: 19 35 12;
+}
+
+.light, .light .theme-goblin {
+  --goblin-50: 19 35 12;
+  --goblin-100: 41 64 30;
+  --goblin-200: 47 75 31;
+  --goblin-300: 56 93 33;
+  --goblin-400: 72 120 39;
+  --goblin-500: 95 151 53;
+  --goblin-600: 72 120 39;
+  --goblin-700: 195 222 171;
+  --goblin-800: 224 230 218;
+  --goblin-900: 255 255 255;
+  --goblin-950: 242 248 236;
+}
+
+/* 2. Indigo Theme (Ocean Blue) */
+.theme-indigo {
+  --goblin-50: 248 250 252;
+  --goblin-100: 226 232 240;
+  --goblin-200: 203 213 225;
+  --goblin-300: 147 197 253;
+  --goblin-400: 96 165 250;
+  --goblin-500: 59 130 246;
+  --goblin-600: 37 99 235;
+  --goblin-700: 29 78 216;
+  --goblin-800: 30 41 59;
+  --goblin-900: 15 23 42;
+  --goblin-950: 11 15 25;
+}
+
+.light .theme-indigo {
+  --goblin-50: 15 23 42;
+  --goblin-100: 30 41 59;
+  --goblin-200: 51 65 85;
+  --goblin-300: 29 78 216;
+  --goblin-400: 37 99 235;
+  --goblin-500: 59 130 246;
+  --goblin-600: 37 99 235;
+  --goblin-700: 203 213 225;
+  --goblin-800: 226 232 240;
+  --goblin-900: 255 255 255;
+  --goblin-950: 240 244 248;
+}
+
+/* 3. Rose Theme (Crimson Red) */
+.theme-rose {
+  --goblin-50: 255 241 242;
+  --goblin-100: 255 228 230;
+  --goblin-200: 254 205 211;
+  --goblin-300: 252 165 165;
+  --goblin-400: 251 113 133;
+  --goblin-500: 190 18 60;
+  --goblin-600: 159 18 57;
+  --goblin-700: 90 32 39;
+  --goblin-800: 66 27 32;
+  --goblin-900: 45 19 22;
+  --goblin-950: 28 13 15;
+}
+
+.light .theme-rose {
+  --goblin-50: 28 13 15;
+  --goblin-100: 45 19 22;
+  --goblin-200: 66 27 32;
+  --goblin-300: 90 32 39;
+  --goblin-400: 159 18 57;
+  --goblin-500: 190 18 60;
+  --goblin-600: 159 18 57;
+  --goblin-700: 254 205 211;
+  --goblin-800: 255 228 230;
+  --goblin-900: 255 255 255;
+  --goblin-950: 255 241 242;
+}
+
+/* 4. Amber Theme (Golden Bronze) */
+.theme-amber {
+  --goblin-50: 255 251 235;
+  --goblin-100: 254 243 199;
+  --goblin-200: 253 230 138;
+  --goblin-300: 252 211 77;
+  --goblin-400: 245 158 11;
+  --goblin-500: 217 119 6;
+  --goblin-600: 180 83 9;
+  --goblin-700: 87 62 25;
+  --goblin-800: 64 46 21;
+  --goblin-900: 45 32 16;
+  --goblin-950: 28 21 12;
+}
+
+.light .theme-amber {
+  --goblin-50: 28 21 12;
+  --goblin-100: 45 32 16;
+  --goblin-200: 64 46 21;
+  --goblin-300: 87 62 25;
+  --goblin-400: 180 83 9;
+  --goblin-500: 217 119 6;
+  --goblin-600: 180 83 9;
+  --goblin-700: 253 230 138;
+  --goblin-800: 254 243 199;
+  --goblin-900: 255 255 255;
+  --goblin-950: 255 251 235;
+}
+
+/* 5. Slate Theme (Obsidian Monochrome) */
+.theme-slate {
+  --goblin-50: 249 250 251;
+  --goblin-100: 243 244 246;
+  --goblin-200: 229 231 235;
+  --goblin-300: 209 213 219;
+  --goblin-400: 156 163 175;
+  --goblin-500: 107 114 128;
+  --goblin-600: 75 85 99;
+  --goblin-700: 55 65 81;
+  --goblin-800: 31 41 55;
+  --goblin-900: 17 24 39;
+  --goblin-950: 9 13 22;
+}
+
+.light .theme-slate {
+  --goblin-50: 17 24 39;
+  --goblin-100: 31 41 55;
+  --goblin-200: 55 65 81;
+  --goblin-300: 75 85 99;
+  --goblin-400: 107 114 128;
+  --goblin-500: 107 114 128;
+  --goblin-600: 75 85 99;
+  --goblin-700: 229 231 235;
+  --goblin-800: 243 244 246;
+  --goblin-900: 255 255 255;
+  --goblin-950: 249 250 251;
+}
+
+/* --- CHART TOKENS (data-viz) ---
+   Validated categorical palette (green-free; green is reserved for brand/single
+   series). Fixed slot order = entity identity. Values differ by light/dark and are
+   validated (CVD-safe, in-band) against the goblin card surfaces (#fff / #29401E).
+   Referenced by Recharts as var(--chart-N) so charts re-theme with the toggle. */
+:root, .theme-goblin, .theme-indigo, .theme-rose, .theme-amber, .theme-slate {
+  --chart-1: #3987e5; /* blue   */
+  --chart-2: #199e70; /* aqua   */
+  --chart-3: #c98500; /* yellow */
+  --chart-4: #9085e9; /* violet */
+  --chart-5: #e66767; /* red    */
+  --chart-6: #d95926; /* orange */
+}
+.light, .light .theme-goblin, .light .theme-indigo, .light .theme-rose, .light .theme-amber, .light .theme-slate {
+  --chart-1: #2a78d6;
+  --chart-2: #1baf7a;
+  --chart-3: #eda100;
+  --chart-4: #4a3aa7;
+  --chart-5: #e34948;
+  --chart-6: #eb6834;
+}
+
+/* --- ACCESSIBILITY CONTRAST FIXES --- */
+/* Enforce white text on solid accent buttons/badges for legibility. */
+.bg-goblin-600,
+.bg-goblin-500,
+.bg-goblin-700,
+.bg-red-700,
+.bg-amber-600,
+.bg-sky-700,
+button.bg-goblin-600,
+button.bg-goblin-500,
+button.bg-goblin-700,
+button.bg-red-700,
+button.bg-amber-600,
+button.bg-sky-700 {
+  color: #ffffff !important;
+}
+
+/* Inputs inherit theme text color + smooth transitions. */
+input, select, textarea {
+  color: inherit;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* In light mode, hover:text-white becomes the dark accent instead of white. */
+.light .hover\:text-white:hover {
+  color: rgb(var(--goblin-50)) !important;
+}

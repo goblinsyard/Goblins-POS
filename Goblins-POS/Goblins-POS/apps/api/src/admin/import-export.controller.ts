@@ -962,16 +962,15 @@ export class ImportExportController {
   @Post('import/vendors-from-poster')
   @RequirePermissions('settings.manage')
   async syncVendorsFromPoster(@Req() req: AuthedRequest) {
-    const POSTER_ACCOUNT = process.env.POSTER_ACCOUNT ?? 'goblinsyard';
     const POSTER_TOKEN = process.env.POSTER_TOKEN ?? '';
 
-    let suppliers: any[] = [];
+    let suppliers: any[];
     try {
       const url = `https://joinposter.com/api/suppliers.getSuppliers?token=${POSTER_TOKEN}`;
       const res = await fetch(url);
       const json = await res.json() as { response?: any[] };
       suppliers = json.response ?? [];
-    } catch (e) {
+    } catch {
       throw new BadRequestException('Failed to fetch suppliers from Poster POS.');
     }
 

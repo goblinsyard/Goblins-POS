@@ -36,16 +36,16 @@ export function RatePlansView() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-800">Rate Plans</h1>
+        <h1 className="text-xl font-bold text-goblin-50">Rate Plans</h1>
         <Btn kind="primary" onClick={() => setNewPlanOpen(true)}>+ New rate plan</Btn>
       </div>
       <ErrorBanner message={err} />
       {(plans ?? []).map((p) => (
-        <div key={p.id} className="rounded-xl bg-white p-5 shadow">
+        <div key={p.id} className="rounded-xl bg-goblin-900 p-5 shadow">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-700">{p.name}</h2>
+            <h2 className="font-semibold text-goblin-100">{p.name}</h2>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">{p.resources.map((r) => r.name).join(', ')}</span>
+              <span className="text-xs text-goblin-400">{p.resources.map((r) => r.name).join(', ')}</span>
               {p.resources.length === 0 && (
                 <button onClick={() => {
                   if (confirm(`Are you sure you want to delete rate plan "${p.name}"?`)) {
@@ -58,22 +58,22 @@ export function RatePlansView() {
             </div>
           </div>
           <div className="flex flex-wrap gap-4 text-sm">
-            <button onClick={() => void edit(p.id, 'hourlyCents', p.hourlyCents, 'hourly rate')} className="rounded-lg bg-slate-100 px-3 py-2">
+            <button onClick={() => void edit(p.id, 'hourlyCents', p.hourlyCents, 'hourly rate')} className="rounded-lg bg-goblin-800 px-3 py-2">
               Hourly: <b>{egp(p.hourlyCents)}</b>
             </button>
             {p.hourlyMultiCents != null && (
-              <button onClick={() => void edit(p.id, 'hourlyMultiCents', p.hourlyMultiCents!, 'multiplayer rate')} className="rounded-lg bg-slate-100 px-3 py-2">
+              <button onClick={() => void edit(p.id, 'hourlyMultiCents', p.hourlyMultiCents!, 'multiplayer rate')} className="rounded-lg bg-goblin-800 px-3 py-2">
                 Multiplayer: <b>{egp(p.hourlyMultiCents)}</b>
               </button>
             )}
-            <button onClick={() => void edit(p.id, 'minimumCents', p.minimumCents, 'minimum charge')} className="rounded-lg bg-slate-100 px-3 py-2">
+            <button onClick={() => void edit(p.id, 'minimumCents', p.minimumCents, 'minimum charge')} className="rounded-lg bg-goblin-800 px-3 py-2">
               Minimum: <b>{egp(p.minimumCents)}</b>
             </button>
-            <span className="rounded-lg bg-slate-100 px-3 py-2">Round: <b>{p.roundToMinutes} min</b></span>
+            <span className="rounded-lg bg-goblin-800 px-3 py-2">Round: <b>{p.roundToMinutes} min</b></span>
             <Btn onClick={() => setRuleFor(p)}>+ Time rule</Btn>
           </div>
           {p.rules.length > 0 && (
-            <div className="mt-3 space-y-1 text-sm text-slate-500">
+            <div className="mt-3 space-y-1 text-sm text-goblin-300">
               {p.rules.map((r) => (
                 <div key={r.id} className="flex items-center gap-2">
                   <span>
@@ -135,7 +135,7 @@ function NewRuleModal({ plan, onClose, onDone }: { plan: RatePlan; onClose: () =
           <div className="flex gap-1">
             {DAYS.map((d, i) => (
               <button key={d} onClick={() => setDays((cur) => cur.includes(i) ? cur.filter((x) => x !== i) : [...cur, i])}
-                className={`rounded px-2 py-1 text-xs ${days.includes(i) ? 'bg-emerald-700 text-white' : 'bg-slate-100'}`}>
+                className={`rounded px-2 py-1 text-xs ${days.includes(i) ? 'bg-goblin-600 text-white' : 'bg-goblin-800'}`}>
                 {d}
               </button>
             ))}

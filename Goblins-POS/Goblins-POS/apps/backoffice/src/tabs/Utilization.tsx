@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { api, egp, pct } from '../lib/api';
 import { Spinner, Table, useLoad } from '../lib/ui';
+import { CategoryBars, ChartCard } from '../lib/charts';
 
 interface Utilization {
   resources: { name: string; type: string; sessions: number; minutes: number; revenueCents: number; occupancyPctBps: number; revenuePerAvailableHourCents: number }[];
@@ -22,14 +23,20 @@ export function UtilizationView() {
           egp(r.revenueCents), pct(r.occupancyPctBps), egp(r.revenuePerAvailableHourCents),
         ])}
       />
-      <h2 className="mb-2 mt-6 font-semibold text-slate-700">Peak heatmap (14 days)</h2>
-      <div className="overflow-x-auto rounded-xl bg-white p-4 shadow">
+      <div className="mt-6">
+        <ChartCard title="Revenue per available hour" subtitle="By resource, last 14 days">
+          <CategoryBars horizontal
+            rows={data.resources.map((r) => ({ label: r.name, value: r.revenuePerAvailableHourCents }))} />
+        </ChartCard>
+      </div>
+      <h2 className="mb-2 mt-6 font-semibold text-goblin-100">Peak heatmap (14 days)</h2>
+      <div className="overflow-x-auto rounded-xl bg-goblin-900 p-4 shadow">
         <div className="grid grid-cols-[40px_repeat(24,minmax(16px,1fr))] gap-0.5 text-xs">
           <div />
-          {Array.from({ length: 24 }, (_, h) => <div key={h} className="text-center text-slate-400">{h}</div>)}
+          {Array.from({ length: 24 }, (_, h) => <div key={h} className="text-center text-goblin-400">{h}</div>)}
           {days.map((d, dow) => (
             <Fragment key={d}>
-              <div className="pr-1 text-right text-slate-500">{d}</div>
+              <div className="pr-1 text-right text-goblin-300">{d}</div>
               {Array.from({ length: 24 }, (_, h) => {
                 const cell = data.heatmap.find((x) => x.dayOfWeek === dow && x.hour === h);
                 const intensity = cell ? cell.minutes / maxHeat : 0;

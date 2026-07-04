@@ -50,7 +50,7 @@ async function main() {
     },
   });
 
-  const mainStore = await prisma.storeLocation.create({
+  await prisma.storeLocation.create({
     data: { branchId: branch.id, name: 'Main store', nameAr: 'المخزن الرئيسي' },
   });
   await prisma.storeLocation.create({
@@ -95,7 +95,7 @@ async function main() {
       { name: 'Mobile Wallet', nameAr: 'محفظة', kind: 'WALLET', sortOrder: 3 },
     ],
   });
-  const vat = await prisma.taxRate.create({
+  await prisma.taxRate.create({
     data: { name: 'VAT 14%', rateBps: 1400, isDefault: true },
   });
 

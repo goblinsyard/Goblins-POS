@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import {
+  ArrowLeft, ArrowLeftRight, ChevronDown, ChevronRight, Ellipsis, Flame,
+  Merge, Palette, RotateCcw, Send, ShoppingCart, Split, Star, Trash2, User,
+} from 'lucide-react';
 import { api } from '../lib/api';
 import { fmtMoney, t } from '../lib/i18n';
 import { can, usePos } from '../lib/store';
@@ -328,8 +332,8 @@ export function OrderScreen() {
       {/* left: menu */}
       <div className={`flex-1 flex-col h-full max-h-screen overflow-hidden ${mobileTab === 'menu' ? 'flex' : 'hidden md:flex'}`}>
         <header className="flex items-center gap-2 border-b border-goblin-800 px-3 py-2">
-          <button onClick={leave} className="rounded-xl bg-goblin-800 px-4 py-2">
-            ← {t(lang, 'floor')}
+          <button onClick={leave} className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-800 px-4 py-2">
+            <ArrowLeft className="h-4 w-4" /> {t(lang, 'floor')}
           </button>
           <h1 className="text-lg font-bold">
             {t(lang, 'order')} #{order.number}
@@ -342,14 +346,14 @@ export function OrderScreen() {
               className="rounded-xl bg-goblin-800 px-3 py-2 hover:bg-goblin-750 transition-colors"
               title={lang === 'ar' ? 'إعدادات العرض' : 'Display Settings'}
             >
-              🎨
+              <Palette className="h-5 w-5" />
             </button>
             <button onClick={() => setCustomerOpen(true)}
-              className={`rounded-xl px-4 py-2 ${order.customer ? 'bg-goblin-600 font-semibold text-white' : 'bg-goblin-800'}`}>
-              👤 {order.customer ? order.customer.name : t(lang, 'customer')}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 ${order.customer ? 'bg-goblin-600 font-semibold text-white' : 'bg-goblin-800'}`}>
+              <User className="h-4 w-4" /> {order.customer ? order.customer.name : t(lang, 'customer')}
             </button>
-            <button onClick={() => setActionsOpen(true)} className="rounded-xl bg-goblin-800 px-4 py-2">
-              ⋯ {t(lang, 'actions')}
+            <button onClick={() => setActionsOpen(true)} className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-800 px-4 py-2">
+              <Ellipsis className="h-4 w-4" /> {t(lang, 'actions')}
             </button>
           </div>
         </header>
@@ -391,11 +395,11 @@ export function OrderScreen() {
                 setActiveSubCat(null);
                 setActiveSubSubCat(null);
               }}
-              className={`w-full text-left rounded-xl px-2.5 py-2 text-sm font-semibold transition-all ${
+              className={`w-full inline-flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all ${
                 activeParentCat === 'favorites' ? 'bg-amber-600 text-white font-bold' : 'bg-goblin-950/40 text-goblin-300 hover:bg-goblin-800'
               }`}
             >
-              ★ {lang === 'ar' ? 'المفضلة' : 'Favorites'}
+              <Star className="h-4 w-4" /> {lang === 'ar' ? 'المفضلة' : 'Favorites'}
             </button>
 
             {/* Combos virtual category */}
@@ -405,11 +409,11 @@ export function OrderScreen() {
                 setActiveSubCat(null);
                 setActiveSubSubCat(null);
               }}
-              className={`w-full text-left rounded-xl px-2.5 py-2 text-sm font-semibold transition-all ${
+              className={`w-full inline-flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all ${
                 activeParentCat === 'combos' ? 'bg-indigo-600 text-white font-bold' : 'bg-goblin-950/40 text-goblin-300 hover:bg-goblin-800'
               }`}
             >
-              ★ {lang === 'ar' ? 'الوجبات المشتركة' : 'Combos'}
+              <Star className="h-4 w-4" /> {lang === 'ar' ? 'الوجبات المشتركة' : 'Combos'}
             </button>
 
             {/* Parent categories */}
@@ -445,7 +449,7 @@ export function OrderScreen() {
                     >
                       <span className="truncate">{lang === 'ar' && c.nameAr ? c.nameAr : c.name}</span>
                       {subCats.length > 0 && (
-                        <span className="text-[8px] opacity-65">{isParentActive ? '▼' : '▶'}</span>
+                        <span className="opacity-65">{isParentActive ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}</span>
                       )}
                     </button>
 
@@ -480,7 +484,7 @@ export function OrderScreen() {
                               >
                                 <span className="truncate">{lang === 'ar' && sc.nameAr ? sc.nameAr : sc.name}</span>
                                 {subSubCats.length > 0 && (
-                                  <span className="text-[7px] opacity-65">{isSubActive ? '▼' : '▶'}</span>
+                                  <span className="opacity-65">{isSubActive ? <ChevronDown className="h-2.5 w-2.5" /> : <ChevronRight className="h-2.5 w-2.5" />}</span>
                                 )}
                               </button>
 
@@ -570,7 +574,7 @@ export function OrderScreen() {
 
                       // By default (or if "All" is active), return items of this subcategory
                       // plus items of any of its children categories (Level 3)
-                      let items = [...currentSub.items];
+                      const items = [...currentSub.items];
                       const level3Cats = menu.filter((c) => c.parentCategoryId === currentSub.id);
                       for (const l3 of level3Cats) {
                         items.push(...l3.items);
@@ -609,7 +613,7 @@ export function OrderScreen() {
                 onClick={() => setMobileTab('cart')}
                 className="w-full rounded-xl bg-goblin-600 py-3.5 font-bold text-center flex justify-between px-4 text-sm text-white hover:bg-goblin-500 transition-colors"
               >
-                <span>🛒 {lang === 'ar' ? 'عرض الطلب' : 'View Order'} ({order.items.length})</span>
+                <span className="inline-flex items-center gap-1.5"><ShoppingCart className="h-4 w-4" /> {lang === 'ar' ? 'عرض الطلب' : 'View Order'} ({order.items.length})</span>
                 <span>{fmtMoney(order.totalCents, lang)}</span>
               </button>
             </div>
@@ -623,9 +627,9 @@ export function OrderScreen() {
         <div className="md:hidden p-3 border-b border-goblin-800 bg-goblin-900 flex items-center justify-between">
           <button
             onClick={() => setMobileTab('menu')}
-            className="rounded-xl bg-goblin-800 px-4 py-2 text-sm font-semibold active:bg-goblin-700"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-800 px-4 py-2 text-sm font-semibold active:bg-goblin-700"
           >
-            ← {lang === 'ar' ? 'العودة للمنيو' : 'Back to Menu'}
+            <ArrowLeft className="h-4 w-4" /> {lang === 'ar' ? 'العودة للمنيو' : 'Back to Menu'}
           </button>
           <span className="font-bold text-goblin-300">#{order.number}</span>
         </div>
@@ -648,9 +652,9 @@ export function OrderScreen() {
                 <span className="font-semibold text-goblin-400">Seat Customer:</span>
                 <button
                   onClick={() => setSeatCustomerOpen(true)}
-                  className="rounded bg-goblin-800 px-2.5 py-1 font-bold hover:bg-goblin-750"
+                  className="inline-flex items-center gap-1 rounded bg-goblin-800 px-2.5 py-1 font-bold hover:bg-goblin-750"
                 >
-                  👤 {order.seatCustomers?.find((sc) => sc.seat === seat)?.customer?.name || 'Assign'}
+                  <User className="h-3.5 w-3.5" /> {order.seatCustomers?.find((sc) => sc.seat === seat)?.customer?.name || 'Assign'}
                 </button>
               </div>
             )}
@@ -719,8 +723,8 @@ export function OrderScreen() {
               <Row k={`${t(lang, 'seat')} ${seat}`} v={fmtMoney(seatCents, lang)} />
               {!isPaid && seatItems.length > 0 && otherItems.length > 0 && can(user, 'order.split') && (
                 <button onClick={() => void splitSeat()}
-                  className="w-full rounded-lg bg-goblin-700 py-2 font-sans text-xs font-semibold">
-                  ⑂ {t(lang, 'splitSeat')}
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-goblin-700 py-2 font-sans text-xs font-semibold">
+                  <Split className="h-3.5 w-3.5" /> {t(lang, 'splitSeat')}
                 </button>
               )}
             </>
@@ -769,9 +773,9 @@ export function OrderScreen() {
               onClick={() => void api(`/kds/orders/${order.id}/send`, { method: 'POST' })
                 .then(reload)
                 .catch((e) => setError(e instanceof Error ? e.message : 'Send failed'))}
-              className="col-span-2 rounded-xl bg-amber-600 py-3 font-bold text-white active:bg-amber-500"
+              className="col-span-2 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-600 py-3 font-bold text-white active:bg-amber-500"
             >
-              ➤ {t(lang, 'send')}
+              <Send className="h-4 w-4" /> {t(lang, 'send')}
             </button>
           )}
           {!isPaid && can(user, 'discount.apply') && (
@@ -783,8 +787,8 @@ export function OrderScreen() {
             {t(lang, 'receipt')}
           </button>
           {isPaid && (
-            <button onClick={() => setFeedbackOpen(true)} className="rounded-xl bg-goblin-800 py-3">
-              ★ {t(lang, 'feedback')}
+            <button onClick={() => setFeedbackOpen(true)} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-goblin-800 py-3">
+              <Star className="h-4 w-4" /> {t(lang, 'feedback')}
             </button>
           )}
           {!isPaid && can(user, 'payment.take') && (
@@ -818,22 +822,22 @@ export function OrderScreen() {
           <div className="w-full max-w-sm space-y-2 rounded-2xl bg-goblin-900 border border-goblin-800 p-5 text-goblin-50" onClick={(e) => e.stopPropagation()}>
             <h2 className="mb-2 text-lg font-bold">{t(lang, 'actions')} — #{order.number}</h2>
             {!isPaid && can(user, 'order.split') && order.items.filter((i) => i.status !== 'VOIDED' && !i.isTimeCharge).length > 1 && (
-              <ActionBtn onClick={() => { setActionsOpen(false); setSplitting(true); }}>⑂ {t(lang, 'splitBill')}</ActionBtn>
+              <ActionBtn onClick={() => { setActionsOpen(false); setSplitting(true); }}><Split className="h-4 w-4" /> {t(lang, 'splitBill')}</ActionBtn>
             )}
             {!isPaid && can(user, 'order.split') && (
-              <ActionBtn onClick={() => { setActionsOpen(false); setMerging(true); }}>⇥ {t(lang, 'mergeInto')}</ActionBtn>
+              <ActionBtn onClick={() => { setActionsOpen(false); setMerging(true); }}><Merge className="h-4 w-4" /> {t(lang, 'mergeInto')}</ActionBtn>
             )}
             {!isPaid && order.resourceId && can(user, 'order.transfer') && (
-              <ActionBtn onClick={() => { setActionsOpen(false); setMoving(true); }}>⇄ {t(lang, 'moveTable')}</ActionBtn>
+              <ActionBtn onClick={() => { setActionsOpen(false); setMoving(true); }}><ArrowLeftRight className="h-4 w-4" /> {t(lang, 'moveTable')}</ActionBtn>
             )}
             {laterCourses.map((c) => (
-              <ActionBtn key={c} onClick={() => void fireCourse(c)}>🔥 {t(lang, 'fireCourse')} (C{c})</ActionBtn>
+              <ActionBtn key={c} onClick={() => void fireCourse(c)}><Flame className="h-4 w-4" /> {t(lang, 'fireCourse')} (C{c})</ActionBtn>
             ))}
             {hasPayments && can(user, 'payment.refund') && (
-              <ActionBtn danger onClick={() => { setActionsOpen(false); setRefunding(true); }}>↩ {t(lang, 'refund')}</ActionBtn>
+              <ActionBtn danger onClick={() => { setActionsOpen(false); setRefunding(true); }}><RotateCcw className="h-4 w-4" /> {t(lang, 'refund')}</ActionBtn>
             )}
             {!isPaid && !hasPayments && can(user, 'order.void') && (
-              <ActionBtn danger onClick={() => { setActionsOpen(false); setVoidingOrder(true); }}>✕ {t(lang, 'voidOrder')}</ActionBtn>
+              <ActionBtn danger onClick={() => { setActionsOpen(false); setVoidingOrder(true); }}><Trash2 className="h-4 w-4" /> {t(lang, 'voidOrder')}</ActionBtn>
             )}
             <button onClick={() => setActionsOpen(false)} className="mt-2 w-full rounded-xl bg-goblin-800 py-3">
               {t(lang, 'close')}
@@ -955,9 +959,9 @@ export function OrderScreen() {
                 onClick={() => {
                   setMovingItemTablePicker(true);
                 }}
-                className="w-full rounded-xl bg-sky-700 py-3 font-bold hover:bg-sky-650"
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-700 py-3 font-bold hover:bg-sky-650"
               >
-                ⇄ Transfer to Another Table
+                <ArrowLeftRight className="h-4 w-4" /> Transfer to Another Table
               </button>
             </div>
 
@@ -1069,7 +1073,7 @@ export function OrderScreen() {
 function ActionBtn({ children, onClick, danger }: { children: React.ReactNode; onClick: () => void; danger?: boolean }) {
   return (
     <button onClick={onClick}
-      className={`w-full rounded-xl py-3 text-start ps-4 font-semibold ${danger ? 'bg-red-900/60 text-red-200' : 'bg-goblin-800'}`}>
+      className={`flex w-full items-center gap-2 rounded-xl py-3 text-start ps-4 font-semibold ${danger ? 'bg-red-900/60 text-red-200' : 'bg-goblin-800'}`}>
       {children}
     </button>
   );

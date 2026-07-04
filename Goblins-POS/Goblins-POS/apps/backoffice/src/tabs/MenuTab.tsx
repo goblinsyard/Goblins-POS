@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, egp, parseEgp } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Table, TextInput, useLoad } from '../lib/ui';
+import { X, Star, ChevronDown, AlertTriangle } from 'lucide-react';
 
 interface TaxRate { id: string; name: string; isDefault: boolean }
 interface MenuCat {
@@ -53,7 +54,7 @@ const DEPARTMENTS = ['RESTAURANT', 'BAR', 'BILLIARDS', 'PLAYSTATION'];
 
 export function MenuView() {
   const { data: menu, error, reload } = useLoad(() => api<MenuCat[]>('/menu'));
-  const { data: stations, reload: reloadStations } = useLoad(() => api<{ id: string; name: string; kind: string; isActive: boolean }[]>('/kds/stations'));
+  const { data: stations } = useLoad(() => api<{ id: string; name: string; kind: string; isActive: boolean }[]>('/kds/stations'));
   const [newItemCat, setNewItemCat] = useState<MenuCat | null>(null);
   const [duplicatingItem, setDuplicatingItem] = useState<any | null>(null);
   const [newCatOpen, setNewCatOpen] = useState(false);
@@ -127,19 +128,6 @@ export function MenuView() {
   async function toggle86(itemId: string, is86ed: boolean) {
     await run(() => api(`/menu/items/${itemId}/86`, { method: 'PATCH', body: { is86ed: !is86ed } }));
   }
-  async function setPrice(itemId: string, current: number) {
-    const input = prompt('New price (EGP):', String(current / 100));
-    if (!input) return;
-    const cents = parseEgp(input);
-    if (cents == null || cents <= 0) { setActionErr('Invalid price'); return; }
-    await run(() => api(`/admin/menu/items/${itemId}`, { method: 'PATCH', body: { priceCents: cents } }));
-  }
-  async function rename(itemId: string, current: string) {
-    const input = prompt('New name:', current);
-    if (!input) return;
-    await run(() => api(`/admin/menu/items/${itemId}`, { method: 'PATCH', body: { name: input } }));
-  }
-
   const [editItemOpen, setEditItemOpen] = useState<any | null>(null);
   async function deleteItem(itemId: string, itemName: string) {
     if (!confirm(`Are you sure you want to delete or deactivate menu item "${itemName}"?`)) return;
@@ -153,7 +141,7 @@ export function MenuView() {
   if (error) return <p className="p-8 text-red-600">{error}</p>;
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+      <div className="flex items-center justify-between border-b border-goblin-700 pb-3">
         <Pills
           value={subTab}
           onChange={setSubTab as any}
@@ -172,7 +160,7 @@ export function MenuView() {
 
       {subTab === 'items' && (
         <>
-          <div className="mb-4 flex flex-wrap items-end gap-3 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+          <div className="mb-4 flex flex-wrap items-end gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
             <div className="w-64">
               <Field label="Search Menu Items">
                 <TextInput value={itemsSearch} onChange={setItemsSearch} placeholder="Search item, category, or Arabic name..." />
@@ -328,14 +316,14 @@ export function MenuView() {
                   setDraggedCatId(null);
                   setDragOverCatId(null);
                 }}
-                className={`${isSub ? 'ml-8 border-l-2 border-slate-200 pl-4 mt-4' : 'mt-6'} transition-all ${
+                className={`${isSub ? 'ml-8 border-l-2 border-goblin-700 pl-4 mt-4' : 'mt-6'} transition-all ${
                   isDragOver ? 'border-2 border-indigo-400 border-dashed bg-indigo-50/10 rounded-xl p-2' : ''
                 }`}
               >
-                <div className="mb-2 flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
+                <div className="mb-2 flex items-center justify-between bg-goblin-800 p-2 rounded-lg border border-goblin-800">
                   <div className="flex items-center gap-2">
                     <span
-                      className="text-slate-400 cursor-grab active:cursor-grabbing font-bold mr-1 select-none text-base"
+                      className="text-goblin-400 cursor-grab active:cursor-grabbing font-bold mr-1 select-none text-base"
                       title="Drag to reorder siblings"
                     >
                       ⋮⋮
@@ -343,25 +331,25 @@ export function MenuView() {
                     <button
                       type="button"
                       onClick={() => setCollapsedCats((prev) => ({ ...prev, [cat.id]: !prev[cat.id] }))}
-                      className="text-slate-400 hover:text-slate-600 font-mono text-[9px] w-4 h-4 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded border border-slate-200 select-none cursor-pointer"
+                      className="text-goblin-400 hover:text-goblin-200 font-mono text-[9px] w-4 h-4 flex items-center justify-center bg-goblin-800 hover:bg-goblin-700 rounded border border-goblin-700 select-none cursor-pointer"
                     >
-                      {isCollapsed ? '▶' : '▼'}
+                      {isCollapsed ? '▶' : <ChevronDown className="h-4 w-4" />}
                     </button>
                     {cat.color && (
-                      <span className="h-4 w-4 rounded-full border border-slate-350" style={{ backgroundColor: cat.color }} />
+                      <span className="h-4 w-4 rounded-full border border-goblin-700" style={{ backgroundColor: cat.color }} />
                     )}
                     <h2
-                      className="font-semibold text-slate-700 cursor-pointer select-none hover:text-slate-900"
+                      className="font-semibold text-goblin-100 cursor-pointer select-none hover:text-goblin-50"
                       onClick={() => setCollapsedCats((prev) => ({ ...prev, [cat.id]: !prev[cat.id] }))}
                     >
                       {cat.name} {cat.nameAr ? `(${cat.nameAr})` : ''}
-                      {isSub && <span className="ml-2 text-xs text-slate-400 font-normal">(Subcategory)</span>}
+                      {isSub && <span className="ml-2 text-xs text-goblin-400 font-normal">(Subcategory)</span>}
                     </h2>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setEditCatOpen(cat)}
-                      className="text-xs font-medium text-slate-500 hover:text-slate-800 bg-white border border-slate-200 rounded px-2.5 py-1"
+                      className="text-xs font-medium text-goblin-300 hover:text-goblin-50 bg-goblin-900 border border-goblin-700 rounded px-2.5 py-1"
                     >
                       Edit Category
                     </button>
@@ -371,16 +359,16 @@ export function MenuView() {
 
                 {!isCollapsed && (
                   <>
-                    <div className="overflow-hidden rounded-xl bg-white shadow border border-slate-150">
+                    <div className="overflow-hidden rounded-xl bg-goblin-900 shadow border border-goblin-800">
                       <table className="w-full text-sm">
                         <tbody>
                           {cat.items.map((i) => (
-                            <tr key={i.id} className="border-t first:border-0 hover:bg-slate-50/50">
+                            <tr key={i.id} className="border-t first:border-0 hover:bg-goblin-800/50">
                               <td className={`p-3 ${i.is86ed ? 'text-red-400 line-through' : ''}`}>
                                 <div className="flex items-center gap-1.5">
                                   {i.isFavorite && (
                                     <span className="text-amber-500 text-base font-bold animate-pulse" title="Favorite Item">
-                                      ★
+                                      <Star className="h-4 w-4 fill-current" />
                                     </span>
                                   )}
                                   <span>
@@ -388,10 +376,10 @@ export function MenuView() {
                                   </span>
                                   {!i.stationId && !cat.stationId && (
                                     <span
-                                      className="ms-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700"
+                                      className="ms-2 inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700"
                                       title="Without a station this item never appears on a kitchen/bar monitor"
                                     >
-                                      ⚠ no station
+                                      <AlertTriangle className="h-3.5 w-3.5" /> no station
                                     </span>
                                   )}
                                   {!i.stationId && cat.stationId && (
@@ -408,17 +396,18 @@ export function MenuView() {
                               <td className="p-3 text-right">
                                 <button
                                   onClick={() => void toggleFavorite(i.id, i.isFavorite ?? false)}
-                                  className={`mr-2 rounded px-2.5 py-1 text-xs border font-medium transition ${
+                                  className={`mr-2 inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs border font-medium transition ${
                                     i.isFavorite
                                       ? 'bg-amber-50 border-amber-200 text-amber-700'
-                                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                      : 'bg-goblin-900 border-goblin-700 text-goblin-200 hover:bg-goblin-800'
                                   }`}
                                 >
-                                  {i.isFavorite ? '★ Unfav' : '☆ Fav'}
+                                  <Star className={`h-4 w-4 ${i.isFavorite ? 'fill-current' : ''}`} />
+                                  {i.isFavorite ? 'Unfav' : 'Fav'}
                                 </button>
                                 <button
                                   onClick={() => setEditItemOpen({ ...i, categoryId: cat.id })}
-                                  className="mr-2 rounded border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50 font-medium"
+                                  className="mr-2 rounded border border-goblin-700 bg-goblin-900 px-2.5 py-1 text-xs text-goblin-200 hover:bg-goblin-800 font-medium"
                                 >
                                   Edit
                                 </button>
@@ -427,7 +416,7 @@ export function MenuView() {
                                     setDuplicatingItem(i);
                                     setNewItemCat(cat);
                                   }}
-                                  className="mr-2 rounded border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                                  className="mr-2 rounded border border-goblin-700 bg-goblin-900 px-2.5 py-1 text-xs text-goblin-200 hover:bg-goblin-800"
                                 >
                                   Duplicate
                                 </button>
@@ -441,7 +430,7 @@ export function MenuView() {
                                   onClick={() => void toggle86(i.id, i.is86ed)}
                                   className={`rounded px-2.5 py-1 text-xs border font-medium transition ${
                                     i.is86ed
-                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                                      ? 'bg-goblin-800 border-goblin-600 text-goblin-500 hover:bg-goblin-700'
                                       : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
                                   }`}
                                 >
@@ -452,7 +441,7 @@ export function MenuView() {
                           ))}
                           {!cat.items.length && (
                             <tr>
-                              <td className="p-4 text-slate-400 text-center italic" colSpan={3}>
+                              <td className="p-4 text-goblin-400 text-center italic" colSpan={3}>
                                 No items in this category
                               </td>
                             </tr>
@@ -471,7 +460,7 @@ export function MenuView() {
             return renderedCards.length > 0 ? (
               renderedCards
             ) : (
-              <p className="text-center text-sm text-slate-400 py-8 bg-white rounded-xl shadow-sm border border-slate-100 italic">
+              <p className="text-center text-sm text-goblin-400 py-8 bg-goblin-900 rounded-xl shadow-sm border border-goblin-800 italic">
                 No matching categories or items found.
               </p>
             );
@@ -610,7 +599,7 @@ function CombosView({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+      <div className="flex flex-wrap items-end gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
         <div className="w-64">
           <Field label="Search Combos">
             <TextInput value={search} onChange={setSearch} placeholder="Search combo name or component..." />
@@ -631,8 +620,8 @@ function CombosView({
         headers={['Name', 'Price', 'Components', 'Actions']}
         rows={filteredCombos.map((c) => [
           <div key="name">
-            <div className="font-semibold text-slate-800">{c.name}</div>
-            {c.nameAr && <div className="text-xs text-slate-400">{c.nameAr}</div>}
+            <div className="font-semibold text-goblin-50">{c.name}</div>
+            {c.nameAr && <div className="text-xs text-goblin-400">{c.nameAr}</div>}
           </div>,
           egp(c.priceCents),
           c.lines.map((l) => `${l.quantity}× ${l.item?.name || 'Item'}`).join(', ') || '—',
@@ -643,7 +632,7 @@ function CombosView({
         ])}
       />
       {filteredCombos.length === 0 && (
-        <p className="text-sm text-slate-400 mt-2">
+        <p className="text-sm text-goblin-400 mt-2">
           {combos.length === 0 ? 'No combos defined yet.' : 'No matching combos found.'}
         </p>
       )}
@@ -718,9 +707,9 @@ function ComboFormModal({
         <Field label="Combo Name (Arabic)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
         <Field label="Price (EGP)"><TextInput type="number" value={price} onChange={setPrice} /></Field>
         
-        <div className="border-t border-slate-100 pt-3">
+        <div className="border-t border-goblin-800 pt-3">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-sm font-semibold text-slate-700">Components</h3>
+            <h3 className="text-sm font-semibold text-goblin-100">Components</h3>
             <Btn onClick={addLine}>+ Add Item</Btn>
           </div>
           
@@ -740,17 +729,17 @@ function ComboFormModal({
                     type="number"
                     value={line.quantity}
                     onChange={(e) => updateLine(idx, 'quantity', parseInt(e.target.value, 10) || 1)}
-                    className="w-full rounded-lg border border-slate-300 p-1.5 text-sm"
+                    className="w-full rounded-lg border border-goblin-700 p-1.5 text-sm"
                     min="1"
                   />
                 </div>
-                <Btn kind="danger" onClick={() => removeLine(idx)}>✕</Btn>
+                <Btn kind="danger" onClick={() => removeLine(idx)}><X className="h-4 w-4" /></Btn>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="border-t border-slate-100 pt-3 flex justify-end">
+        <div className="border-t border-goblin-800 pt-3 flex justify-end">
           <Btn kind="primary" onClick={() => void submit()}>{combo ? 'Save Combo' : 'Create Combo'}</Btn>
         </div>
       </div>
@@ -844,7 +833,7 @@ function ModifiersView({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end gap-3 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+      <div className="flex flex-wrap items-end gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
         <div className="w-64">
           <Field label="Search Modifiers">
             <TextInput value={search} onChange={setSearch} placeholder="Search group, option, or linked item..." />
@@ -877,10 +866,10 @@ function ModifiersView({
           const linkedItemNames = g.items.map((i) => i.item?.name).join(', ') || '—';
           return [
             <div key="name">
-              <div className="font-semibold text-slate-800">{g.name}</div>
-              {g.nameAr && <div className="text-xs text-slate-400">{g.nameAr}</div>}
+              <div className="font-semibold text-goblin-50">{g.name}</div>
+              {g.nameAr && <div className="text-xs text-goblin-400">{g.nameAr}</div>}
             </div>,
-            <span key="limits" className="text-xs text-slate-500 font-mono">
+            <span key="limits" className="text-xs text-goblin-300 font-mono">
               Min: {g.minSelect} / Max: {g.maxSelect}
             </span>,
             <div key="items" className="max-w-[150px] text-xs truncate" title={linkedItemNames}>
@@ -888,24 +877,24 @@ function ModifiersView({
             </div>,
             <div key="options" className="space-y-1">
               {g.modifiers.map((m) => (
-                <div key={m.id} className="flex items-center justify-between gap-4 text-xs bg-slate-50 border border-slate-100 rounded px-2 py-1">
-                  <span className={m.isActive ? 'text-slate-700 font-medium' : 'text-slate-400 line-through'}>
+                <div key={m.id} className="flex items-center justify-between gap-4 text-xs bg-goblin-800 border border-goblin-800 rounded px-2 py-1">
+                  <span className={m.isActive ? 'text-goblin-100 font-medium' : 'text-goblin-400 line-through'}>
                     {m.name} {m.nameAr ? `(${m.nameAr})` : ''} — <span className="font-semibold">{m.priceDeltaCents >= 0 ? '+' : ''}{egp(m.priceDeltaCents)}</span>{m.exclusionGroup && <span className="ml-2 text-xs bg-amber-100 text-amber-700 rounded px-1">group: {m.exclusionGroup}</span>}
                   </span>
                   <div className="flex items-center gap-1.5">
                     <button onClick={() => setOptionModalOpen({ groupId: g.id, modifier: m })} className="text-blue-600 hover:text-blue-800 font-semibold">Edit</button>
-                    <span className="text-slate-300">|</span>
-                    <button onClick={() => void toggleOptionActive(m)} className={m.isActive ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'}>
+                    <span className="text-goblin-400">|</span>
+                    <button onClick={() => void toggleOptionActive(m)} className={m.isActive ? 'text-amber-600 hover:text-amber-800' : 'text-goblin-500 hover:text-goblin-500'}>
                       {m.isActive ? 'Disable' : 'Enable'}
                     </button>
-                    <span className="text-slate-300">|</span>
+                    <span className="text-goblin-400">|</span>
                     <button onClick={() => void deleteOption(m.id)} className="text-red-600 hover:text-red-800">Delete</button>
                   </div>
                 </div>
               ))}
-              {!g.modifiers.length && <span className="text-xs text-slate-400 italic">No options defined</span>}
+              {!g.modifiers.length && <span className="text-xs text-goblin-400 italic">No options defined</span>}
             </div>,
-            <span key="status" className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${g.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
+            <span key="status" className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${g.isActive ? 'bg-goblin-700 text-goblin-500' : 'bg-goblin-800 text-goblin-200'}`}>
               {g.isActive ? 'active' : 'inactive'}
             </span>,
             <div key="actions" className="flex flex-col gap-1 w-28">
@@ -1084,7 +1073,7 @@ function OptionFormModal({
         <Field label="Sort Order"><TextInput type="number" value={sortOrder} onChange={setSortOrder} /></Field>
         <Field label="Exclusion Group (optional)">
           <TextInput value={exclusionGroup} onChange={setExclusionGroup} />
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-goblin-300">
             Tag options with a group name (e.g. <strong>pasta</strong> or <strong>sides</strong>).
             When a customer picks from one group, the other group is dimmed out.
             Leave empty for normal behaviour.
@@ -1140,26 +1129,26 @@ function LinkItemsModal({
       <div className="space-y-4">
         <TextInput value={search} onChange={setSearch} placeholder="Search menu items…" />
         
-        <div className="max-h-[50vh] overflow-y-auto border border-slate-100 rounded-xl p-3 grid grid-cols-2 md:grid-cols-3 gap-2">
+        <div className="max-h-[50vh] overflow-y-auto border border-goblin-800 rounded-xl p-3 grid grid-cols-2 md:grid-cols-3 gap-2">
           {filteredItems.map((item) => {
             const isChecked = selected.includes(item.id);
             return (
-              <label key={item.id} className={`flex items-center gap-2 p-2 rounded-lg border text-sm cursor-pointer hover:bg-slate-50 transition ${isChecked ? 'bg-emerald-50/55 border-emerald-300 text-emerald-900' : 'bg-white border-slate-200 text-slate-700'}`}>
+              <label key={item.id} className={`flex items-center gap-2 p-2 rounded-lg border text-sm cursor-pointer hover:bg-goblin-800 transition ${isChecked ? 'bg-goblin-800/55 border-goblin-600 text-goblin-600' : 'bg-goblin-900 border-goblin-700 text-goblin-100'}`}>
                 <input
                   type="checkbox"
                   checked={isChecked}
                   onChange={() => toggleItem(item.id)}
-                  className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-500"
+                  className="rounded border-goblin-700 text-goblin-500 focus:ring-goblin-500"
                 />
                 <span className="truncate">{item.name}</span>
               </label>
             );
           })}
-          {!filteredItems.length && <p className="col-span-full text-slate-400 text-center py-4">No matching items</p>}
+          {!filteredItems.length && <p className="col-span-full text-goblin-400 text-center py-4">No matching items</p>}
         </div>
 
         <div className="flex justify-between items-center pt-2">
-          <span className="text-xs text-slate-500 font-medium">{selected.length} items selected</span>
+          <span className="text-xs text-goblin-300 font-medium">{selected.length} items selected</span>
           <div className="flex gap-2">
             <Btn onClick={() => setSelected([])} kind="ghost">Select None</Btn>
             <Btn onClick={() => setSelected(allItems.map((i) => i.id))} kind="ghost">Select All</Btn>
@@ -1262,7 +1251,7 @@ function CategoryFormModal({
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`h-7 w-7 rounded-full border-2 transition ${color === c ? 'border-slate-800 scale-110' : 'border-slate-200 hover:scale-105'}`}
+                  className={`h-7 w-7 rounded-full border-2 transition ${color === c ? 'border-goblin-700 scale-110' : 'border-goblin-700 hover:scale-105'}`}
                   style={{ backgroundColor: c }}
                   title={c}
                 />
@@ -1272,10 +1261,10 @@ function CategoryFormModal({
                   type="color"
                   value={color && color.startsWith('#') && color.length === 7 ? color : '#3b82f6'}
                   onChange={(e) => setColor(e.target.value)}
-                  className="h-8 w-8 cursor-pointer rounded border border-slate-300 p-0"
+                  className="h-8 w-8 cursor-pointer rounded border border-goblin-700 p-0"
                   title="Custom color"
                 />
-                <span className="text-xs text-slate-500 font-mono">{color || 'No color'}</span>
+                <span className="text-xs text-goblin-300 font-mono">{color || 'No color'}</span>
               </div>
             </div>
             {color && (
@@ -1297,23 +1286,23 @@ function CategoryFormModal({
           />
         </Field>
         {category && (
-          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer py-1">
+          <label className="flex items-center gap-2 text-sm text-goblin-100 cursor-pointer py-1">
             <input
               type="checkbox"
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
-              className="rounded border-slate-305 text-emerald-700 focus:ring-emerald-500"
+              className="rounded border-goblin-700 text-goblin-500 focus:ring-goblin-500"
             />
             <span>Active Category</span>
           </label>
         )}
         {(stations ?? []).length > 0 && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+          <div className="rounded-xl border border-goblin-700 bg-goblin-800 p-3 space-y-2">
             <Field label="Default Routing Station (inherited by items)">
               <select
                 value={stationId}
                 onChange={(e) => { setStationId(e.target.value); setApplyResult(null); }}
-                className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm"
+                className="w-full rounded-lg border border-goblin-700 bg-goblin-900 p-2.5 text-sm"
               >
                 <option value="">— None (items must set own station) —</option>
                 {(stations ?? []).map((st) => (
@@ -1323,7 +1312,7 @@ function CategoryFormModal({
             </Field>
             {category && stationId && (
               <div className="space-y-1.5">
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-goblin-300">
                   Items with no own station will <strong>inherit</strong> this automatically.
                   To also overwrite items that already have a station, use the button below.
                 </p>
@@ -1331,12 +1320,12 @@ function CategoryFormModal({
                   type="button"
                   disabled={applyLoading}
                   onClick={() => void applyToAllItems()}
-                  className="w-full rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 transition"
+                  className="w-full rounded-lg border border-goblin-600 bg-goblin-800 px-3 py-2 text-sm font-medium text-goblin-500 hover:bg-goblin-700 disabled:opacity-50 transition"
                 >
                   {applyLoading ? '⏳ Applying…' : `📍 Apply station to ALL items in this category`}
                 </button>
                 {applyResult && (
-                  <p className="text-xs font-medium text-emerald-700 bg-emerald-50 rounded px-2 py-1 border border-emerald-200">{applyResult}</p>
+                  <p className="text-xs font-medium text-goblin-500 bg-goblin-800 rounded px-2 py-1 border border-goblin-600">{applyResult}</p>
                 )}
               </div>
             )}
@@ -1428,20 +1417,20 @@ function ItemFormModal({
         </Field>
         <Field label="Department">
           <select value={department} onChange={(e) => setDepartment(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm">
+            className="w-full rounded-lg border border-goblin-700 bg-goblin-900 p-2.5 text-sm">
             {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </Field>
         <Field label="Station (Kitchen Routing — required to reach KDS / Printer)">
           <select value={stationId} onChange={(e) => setStationId(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm">
+            className="w-full rounded-lg border border-goblin-700 bg-goblin-900 p-2.5 text-sm">
             <option value="">— none (inherit from category or unrouted) —</option>
             {prepStations.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </Field>
-        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer py-1">
+        <label className="flex items-center gap-2 text-sm text-goblin-100 cursor-pointer py-1">
           <input type="checkbox" checked={isFavorite} onChange={(e) => setIsFavorite(e.target.checked)}
-            className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-500" />
+            className="rounded border-goblin-700 text-goblin-500 focus:ring-goblin-500" />
           <span>Add to Favorites (POS Quick Access)</span>
         </label>
         <div className="flex gap-2 pt-1">

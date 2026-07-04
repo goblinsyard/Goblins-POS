@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, cairoTime, egp, parseEgp } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Table, TextInput, useLoad } from '../lib/ui';
+import { X } from 'lucide-react';
 
 interface Supplier {
   id: string;
@@ -52,7 +53,7 @@ export function PurchasingView() {
 
 const PO_BADGE: Record<string, string> = {
   SENT: 'bg-blue-100 text-blue-700', PARTIALLY_RECEIVED: 'bg-amber-100 text-amber-700',
-  RECEIVED: 'bg-emerald-100 text-emerald-700', CANCELLED: 'bg-slate-100 text-slate-500',
+  RECEIVED: 'bg-goblin-700 text-goblin-500', CANCELLED: 'bg-goblin-800 text-goblin-300',
 };
 
 function PurchaseOrders() {
@@ -65,33 +66,33 @@ function PurchaseOrders() {
     <div className="space-y-4">
       <Btn kind="primary" onClick={() => setCreateOpen(true)}>+ New purchase order</Btn>
       {(pos ?? []).map((po) => (
-        <div key={po.id} className="rounded-xl bg-white p-4 shadow">
+        <div key={po.id} className="rounded-xl bg-goblin-900 p-4 shadow">
           <div className="mb-2 flex items-center gap-3">
-            <span className="font-semibold text-slate-700">{po.supplier.name}</span>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${PO_BADGE[po.status] ?? 'bg-slate-100'}`}>
+            <span className="font-semibold text-goblin-100">{po.supplier.name}</span>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${PO_BADGE[po.status] ?? 'bg-goblin-800'}`}>
               {po.status.replace('_', ' ')}
             </span>
-            <span className="text-xs text-slate-400">{cairoTime(po.createdAt)}</span>
+            <span className="text-xs text-goblin-400">{cairoTime(po.createdAt)}</span>
             {(po.status === 'SENT' || po.status === 'PARTIALLY_RECEIVED') && (
               <span className="ml-auto"><Btn onClick={() => setReceiving(po)}>Receive</Btn></span>
             )}
           </div>
-          <table className="w-full text-sm text-slate-600">
+          <table className="w-full text-sm text-goblin-200">
             <tbody>
               {po.lines.map((l) => (
                 <tr key={l.id} className="border-t first:border-0">
                   <td className="py-1.5">{l.ingredient.name}</td>
                   <td className="py-1.5">{qty(l.quantity)} {l.ingredient.uom.id}</td>
                   <td className="py-1.5">@ {egp(Number(l.unitCostCents))}</td>
-                  <td className="py-1.5 text-slate-400">received {qty(l.receivedQty)}</td>
+                  <td className="py-1.5 text-goblin-400">received {qty(l.receivedQty)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {po.notes && <p className="mt-1 text-xs text-slate-400">{po.notes}</p>}
+          {po.notes && <p className="mt-1 text-xs text-goblin-400">{po.notes}</p>}
         </div>
       ))}
-      {!pos?.length && <p className="text-sm text-slate-400">No purchase orders yet</p>}
+      {!pos?.length && <p className="text-sm text-goblin-400">No purchase orders yet</p>}
       {createOpen && <NewPoModal onClose={() => setCreateOpen(false)} onDone={() => { setCreateOpen(false); reload(); }} />}
       {receiving && <ReceiveModal po={receiving} onClose={() => setReceiving(null)} onDone={() => { setReceiving(null); reload(); }} />}
     </div>
@@ -152,7 +153,7 @@ function NewPoModal({ onClose, onDone }: { onClose: () => void; onDone: () => vo
               <TextInput value={l.unitCost} onChange={(v) => setLine(i, { unitCost: v })} type="number" />
             </Field>
             <button onClick={() => setLines((cur) => cur.filter((_, j) => j !== i))}
-              className="rounded-lg bg-slate-100 py-2 text-slate-400 hover:bg-red-50 hover:text-red-600">✕</button>
+              className="rounded-lg bg-goblin-800 py-2 text-goblin-400 hover:bg-red-50 hover:text-red-600"><X className="h-4 w-4" /></button>
           </div>
         ))}
         <Btn onClick={() => setLines((cur) => [...cur, { ingredientId: '', quantity: '', unitCost: '' }])}>+ Line</Btn>
@@ -240,7 +241,7 @@ function ReceiveModal({ po, onClose, onDone }: { po: Po; onClose: () => void; on
           </Field>
         </div>
         <table className="w-full text-sm">
-          <thead className="text-left text-xs uppercase text-slate-400">
+          <thead className="text-left text-xs uppercase text-goblin-400">
             <tr><th className="py-1">Item</th><th className="py-1">Outstanding</th><th className="py-1">Receive</th><th className="py-1">Expiry (optional)</th></tr>
           </thead>
           <tbody>
@@ -251,12 +252,12 @@ function ReceiveModal({ po, onClose, onDone }: { po: Po; onClose: () => void; on
                 <td className="py-2">
                   <input type="number" value={entries[l.id]?.quantity ?? ''} min={0}
                     onChange={(e) => setEntries((cur) => ({ ...cur, [l.id]: { expiresAt: cur[l.id]?.expiresAt ?? '', quantity: e.target.value } }))}
-                    className="w-24 rounded-lg border border-slate-300 p-1.5" />
+                    className="w-24 rounded-lg border border-goblin-700 p-1.5" />
                 </td>
                 <td className="py-2">
                   <input type="date" value={entries[l.id]?.expiresAt ?? ''}
                     onChange={(e) => setEntries((cur) => ({ ...cur, [l.id]: { quantity: cur[l.id]?.quantity ?? '', expiresAt: e.target.value } }))}
-                    className="rounded-lg border border-slate-300 p-1.5" />
+                    className="rounded-lg border border-goblin-700 p-1.5" />
                 </td>
               </tr>
             ))}
@@ -288,7 +289,7 @@ function Suppliers() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-slate-700">Suppliers Directory</h2>
+        <h2 className="text-lg font-bold text-goblin-100">Suppliers Directory</h2>
         <Btn kind="primary" onClick={() => { setEditingSupplier(null); setCreateOpen(true); }}>+ New supplier</Btn>
       </div>
       <Table
@@ -299,7 +300,7 @@ function Suppliers() {
           s.email ?? '—',
           s.taxId ?? '—',
           s.notes ?? '—',
-          s.isActive ? <span className="text-emerald-700 font-semibold">Active</span> : <span className="text-slate-400">Inactive</span>,
+          s.isActive ? <span className="text-goblin-500 font-semibold">Active</span> : <span className="text-goblin-400">Inactive</span>,
           <div key={s.id} className="flex gap-2">
             <Btn onClick={() => { setEditingSupplier(s); setCreateOpen(true); }}>Edit</Btn>
             {s.isActive && <Btn kind="danger" onClick={() => void handleDelete(s.id)}>Deactivate</Btn>}
@@ -362,8 +363,8 @@ function SupplierFormModal({ supplier, onClose, onDone }: {
         <Field label="Tax Registration ID (Tax ID)"><TextInput value={taxId} onChange={setTaxId} /></Field>
         <Field label="Notes / Terms"><TextInput value={notes} onChange={setNotes} /></Field>
         {supplier && (
-          <label className="flex items-center gap-2 text-sm text-slate-700 py-1 cursor-pointer">
-            <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded text-emerald-700" />
+          <label className="flex items-center gap-2 text-sm text-goblin-100 py-1 cursor-pointer">
+            <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded text-goblin-500" />
             <span>Active Supplier</span>
           </label>
         )}
@@ -384,7 +385,7 @@ function Production() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="mb-2 font-semibold text-slate-700">Producible recipes</h2>
+        <h2 className="mb-2 font-semibold text-goblin-100">Producible recipes</h2>
         <Table headers={['Recipe', 'Produces', 'Inputs', '']}
           rows={(recipes ?? []).map((r) => [
             r.name,
@@ -394,7 +395,7 @@ function Production() {
           ])} />
       </div>
       <div>
-        <h2 className="mb-2 font-semibold text-slate-700">Production log</h2>
+        <h2 className="mb-2 font-semibold text-goblin-100">Production log</h2>
         <Table headers={['Time', 'Process', 'Output', 'Batch', 'Labor', 'By']}
           rows={(log ?? []).map((p) => [
             cairoTime(p.createdAt), p.manufacturingProcess.name, p.manufacturingProcess.outputIngredient.name,
@@ -437,7 +438,7 @@ function ProduceModal({ recipe, onClose, onDone }: { recipe: Recipe; onClose: ()
         </Field>
         <Field label="Labor minutes (optional)"><TextInput value={laborMinutes} onChange={setLaborMinutes} type="number" /></Field>
         <Field label="Notes"><TextInput value={notes} onChange={setNotes} /></Field>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-goblin-400">
           Consumes per unit: {recipe.lines.map((l) => `${qty(l.quantity)} ${l.ingredient.uom.id} ${l.ingredient.name}`).join(' · ')}
         </p>
         <Btn kind="primary" onClick={() => void submit()}>Produce batch</Btn>
@@ -492,7 +493,7 @@ function ReceivedPurchases() {
           r.po ? `#${r.po.number}` : '—',
           r.po?.supplier.name ?? '—',
           r.movements.map((m) => `${qty(m.quantity)} ${m.ingredient.uom.id} ${m.ingredient.name}`).join(', '),
-          r.account ? r.account.name : <span className="text-slate-400">None</span>,
+          r.account ? r.account.name : <span className="text-goblin-400">None</span>,
           r.invoice?.number ?? '—',
           r.notes ?? '—',
           <div key={r.id} className="flex gap-2">
@@ -501,7 +502,7 @@ function ReceivedPurchases() {
           </div>
         ])}
       />
-      {!receipts?.length && <p className="text-sm text-slate-400">No goods receipts found</p>}
+      {!receipts?.length && <p className="text-sm text-goblin-400">No goods receipts found</p>}
       {editingReceipt && (
         <EditReceiptModal
           receipt={editingReceipt}

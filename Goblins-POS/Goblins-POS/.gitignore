@@ -8,8 +8,15 @@ build/
 
 # Environment files
 .env
-.env.local
-.env.production
+.env.*
+!.env.example
+
+# Vercel CLI (build output + local tokens — never commit)
+.vercel/
+
+# Local visual-QA artifacts (puppeteer screenshots + helper)
+qa-shots/
+qa-shot.mjs
 
 # Logs
 *.log

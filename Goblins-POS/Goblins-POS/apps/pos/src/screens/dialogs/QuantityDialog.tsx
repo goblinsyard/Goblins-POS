@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Delete } from 'lucide-react';
 import { t } from '../../lib/i18n';
 import { usePos } from '../../lib/store';
 
@@ -83,9 +84,9 @@ export function QuantityDialog({
           <button
             type="button"
             onClick={() => handleKeyPress('⌫')}
-            className="col-span-3 rounded-xl bg-red-900/40 border border-red-800/60 py-2.5 font-bold hover:bg-red-900/60 active:bg-red-800 transition-all text-red-200 text-sm"
+            className="col-span-3 inline-flex items-center justify-center gap-1.5 rounded-xl bg-red-900/40 border border-red-800/60 py-2.5 font-bold hover:bg-red-900/60 active:bg-red-800 transition-all text-red-200 text-sm"
           >
-            ⌫ {lang === 'ar' ? 'مسح التراجع' : 'Backspace'}
+            <Delete className="h-4 w-4" /> {lang === 'ar' ? 'مسح التراجع' : 'Backspace'}
           </button>
         </div>
 

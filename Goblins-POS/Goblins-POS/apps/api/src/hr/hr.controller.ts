@@ -1,5 +1,4 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
-import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Min, IsNumber, IsBoolean } from 'class-validator';
 import { AuthedRequest, RequirePermissions } from '../auth/auth.guard';
 import { HrService } from './hr.service';

@@ -23,6 +23,8 @@ services:
       DATABASE_URL: postgresql://goblins:goblins_dev_pw@db:5432/goblins_pos
       JWT_SECRET: change-me-in-production
       JWT_REFRESH_SECRET: change-me-too-in-production
+      # Shared secret authorizing the print-service on the realtime "print" room.
+      WS_SERVICE_TOKEN: change-me-print-service-token
       PORT: "3000"
       TZ: Africa/Cairo
       SEED_ON_START: "true"
@@ -49,6 +51,7 @@ services:
     environment:
       API_URL: http://api:3000
       PRINT_MODE: live # set "live" once real printers are configured in Settings → Printers
+      WS_SERVICE_TOKEN: change-me-print-service-token # must match the api value above
     volumes:
       - print-previews:/previews
     depends_on:

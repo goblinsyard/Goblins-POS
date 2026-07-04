@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Cake, Check, Plus, Star } from 'lucide-react';
 import { api } from '../../lib/api';
 import { fmtMoney, t } from '../../lib/i18n';
 import { can, usePos } from '../../lib/store';
@@ -117,7 +118,7 @@ export function CustomerDialog({ order, seat, onChanged, onClose }: {
                 </p>
               )}
               {flags?.birthdayThisWeek && (
-                <p className="mt-2 rounded-lg bg-pink-900/60 px-2 py-1 text-sm text-pink-200">{t(lang, 'birthdayThisWeek')}</p>
+                <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-pink-900/60 px-2 py-1 text-sm text-pink-200"><Cake className="h-4 w-4 shrink-0" /> {t(lang, 'birthdayThisWeek')}</p>
               )}
             </div>
             {!seat && order.status === 'OPEN' && due > 0 && can(user, 'payment.take') && (flags?.pointsBalance ?? 0) > 0 && (
@@ -163,13 +164,13 @@ export function CustomerDialog({ order, seat, onChanged, onClose }: {
                   onChange={(e) => setNewName(e.target.value)}
                   className="w-full rounded-xl bg-goblin-900 p-3" />
                 <button disabled={busy || !newName.trim() || !phone.trim()} onClick={() => void createAndAttach()}
-                  className="w-full rounded-xl bg-goblin-500 py-3 font-bold text-white disabled:opacity-40">
-                  {t(lang, 'newCustomer')} ✓
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-goblin-500 py-3 font-bold text-white disabled:opacity-40">
+                  {t(lang, 'newCustomer')} <Check className="h-4 w-4" />
                 </button>
               </div>
             ) : (
-              <button onClick={() => setCreating(true)} className="w-full rounded-xl bg-goblin-800 py-3">
-                + {t(lang, 'newCustomer')}
+              <button onClick={() => setCreating(true)} className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-goblin-800 py-3">
+                <Plus className="h-4 w-4" /> {t(lang, 'newCustomer')}
               </button>
             ))}
           </div>
@@ -212,9 +213,11 @@ export function FeedbackDialog({ orderId, onClose }: { orderId: string; onClose:
           <>
             <h2 className="mb-4 text-lg font-bold">{t(lang, 'feedback')}</h2>
             {error && <p className="mb-2 rounded bg-red-900/60 p-2 text-sm text-red-200">{error}</p>}
-            <div className="mb-4 flex justify-center gap-2 text-4xl" dir="ltr">
+            <div className="mb-4 flex justify-center gap-2 text-amber-400" dir="ltr">
               {[1, 2, 3, 4, 5].map((n) => (
-                <button key={n} onClick={() => setRating(n)} className={n <= rating ? '' : 'opacity-30'}>★</button>
+                <button key={n} onClick={() => setRating(n)} className={n <= rating ? '' : 'opacity-30'}>
+                  <Star className={`h-9 w-9 ${n <= rating ? 'fill-current' : ''}`} />
+                </button>
               ))}
             </div>
             <input type="text" placeholder={t(lang, 'comment')} value={comment}

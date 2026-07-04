@@ -1,4 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
+import {
+  Brush, CalendarDays, Check, Clock, Coins, Gamepad2, List, MapPin, Phone, Plus,
+  Star, StickyNote, Timer, TriangleAlert, User, Users, UtensilsCrossed, X,
+} from 'lucide-react';
 import { api } from '../lib/api';
 import { fmtMoney, t } from '../lib/i18n';
 import { usePos } from '../lib/store';
@@ -294,8 +298,8 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
       const startMinRaw = 720 + startPct * 840;
       const endMinRaw = 720 + endPct * 840;
 
-      let startMin = Math.round(startMinRaw / 15) * 15;
-      let endMin = Math.round(endMinRaw / 15) * 15;
+      const startMin = Math.round(startMinRaw / 15) * 15;
+      const endMin = Math.round(endMinRaw / 15) * 15;
 
       const diff = endPct - startPct;
       let duration = endMin - startMin;
@@ -370,8 +374,8 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
   return (
     <div className="space-y-4 text-goblin-50">
       {err && (
-        <div className="rounded-xl bg-red-950/60 p-4 border border-red-900 text-red-200 text-sm">
-          ⚠️ {err}
+        <div className="flex items-center gap-2 rounded-xl bg-red-950/60 p-4 border border-red-900 text-red-200 text-sm">
+          <TriangleAlert className="h-4 w-4 shrink-0" /> {err}
         </div>
       )}
 
@@ -385,7 +389,7 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
               : 'text-goblin-400 hover:text-white'
           }`}
         >
-          🎮 {lang === 'ar' ? 'أصول التأجير' : 'Rental Assets'}
+          <Gamepad2 className="h-4 w-4" /> {lang === 'ar' ? 'أصول التأجير' : 'Rental Assets'}
         </button>
         <button
           onClick={() => setActiveCategory('DINING')}
@@ -395,7 +399,7 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
               : 'text-goblin-400 hover:text-white'
           }`}
         >
-          🍽️ {lang === 'ar' ? 'طاولات الطعام' : 'Dining Tables'}
+          <UtensilsCrossed className="h-4 w-4" /> {lang === 'ar' ? 'طاولات الطعام' : 'Dining Tables'}
         </button>
       </div>
 
@@ -413,7 +417,7 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
                     : 'text-goblin-400 hover:text-white'
                 }`}
               >
-                📅 {t(lang, 'timelineView')}
+                <span className="inline-flex items-center justify-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> {t(lang, 'timelineView')}</span>
               </button>
               <button
                 onClick={() => setViewMode('list')}
@@ -423,7 +427,7 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
                     : 'text-goblin-400 hover:text-white'
                 }`}
               >
-                📝 {t(lang, 'listView')}
+                <span className="inline-flex items-center justify-center gap-1.5"><List className="h-3.5 w-3.5" /> {t(lang, 'listView')}</span>
               </button>
               <button
                 onClick={() => {
@@ -438,7 +442,7 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
                     : 'text-goblin-400 hover:text-white'
                 }`}
               >
-                ⏰ {lang === 'ar' ? 'الجدول الساعي' : 'Hourly Schedule'}
+                <span className="inline-flex items-center justify-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {lang === 'ar' ? 'الجدول الساعي' : 'Hourly Schedule'}</span>
               </button>
             </div>
 
@@ -505,13 +509,13 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
               className="rounded-xl bg-goblin-800 px-4 py-2.5 text-sm font-semibold hover:bg-goblin-700 transition-all flex items-center justify-center gap-1 active:scale-95 flex-1 sm:flex-initial"
               title={t(lang, 'runSweep')}
             >
-              🧹 {t(lang, 'runSweep')}
+              <Brush className="h-4 w-4" /> {t(lang, 'runSweep')}
             </button>
             <button
               onClick={() => setCreateOpen(true)}
               className="rounded-xl bg-goblin-600 px-4 py-2.5 text-sm font-bold hover:bg-goblin-500 transition-all shadow-md active:scale-95 flex items-center justify-center gap-1 flex-1 sm:flex-initial"
             >
-              ➕ {t(lang, 'newReservation')}
+              <Plus className="h-4 w-4" /> {t(lang, 'newReservation')}
             </button>
           </div>
         </div>
@@ -586,11 +590,11 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
                       return (
                         <div key={res.id} className="flex hover:bg-goblin-850/20 transition-colors h-14">
                           <div className="w-32 flex-shrink-0 p-3 border-r border-goblin-800 flex flex-col justify-center sticky left-0 bg-goblin-950/90 backdrop-blur-sm z-10 shadow-md">
-                            <span className="font-bold text-xs text-goblin-50 truncate">
-                              📍 {res.name}
+                            <span className="inline-flex items-center gap-1 font-bold text-xs text-goblin-50 truncate">
+                              <MapPin className="h-3 w-3 shrink-0" /> {res.name}
                             </span>
-                            <span className="text-[9px] text-goblin-400">
-                              👥 {res.capacity} {lang === 'ar' ? 'أفراد' : 'pax'}
+                            <span className="inline-flex items-center gap-1 text-[9px] text-goblin-400">
+                              <Users className="h-2.5 w-2.5 shrink-0" /> {res.capacity} {lang === 'ar' ? 'أفراد' : 'pax'}
                             </span>
                           </div>
 
@@ -615,8 +619,8 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
 
                               const startMinRaw = 720 + startPct * 840;
                               const endMinRaw = 720 + endPct * 840;
-                              let startMin = Math.round(startMinRaw / 15) * 15;
-                              let endMin = Math.round(endMinRaw / 15) * 15;
+                              const startMin = Math.round(startMinRaw / 15) * 15;
+                              const endMin = Math.round(endMinRaw / 15) * 15;
                               let duration = endMin - startMin;
                               if (endPct - startPct < 0.01 || duration < 15) {
                                 duration = 120;
@@ -648,12 +652,12 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
                                   }`}
                                   title={`${r.customer?.name ?? r.guestName ?? '—'} (${timeLabel(r.startAt)} - ${timeLabel(r.endAt)})`}
                                 >
-                                  <span className="text-[10px] font-bold truncate block w-full">
-                                    {r.status === 'CONFIRMED' ? '✓ ' : r.status === 'PENDING' ? '⏳ ' : ''}
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold truncate w-full">
+                                    {r.status === 'CONFIRMED' ? <Check className="h-2.5 w-2.5 shrink-0" /> : r.status === 'PENDING' ? <Clock className="h-2.5 w-2.5 shrink-0" /> : null}
                                     {r.customer?.name ?? r.guestName ?? '—'}
                                   </span>
-                                  <span className="text-[8px] font-mono opacity-80 block truncate w-full mt-0.5">
-                                    👥 {r.partySize} · {timeLabel(r.startAt).replace(/:00\s/g, ' ')}
+                                  <span className="inline-flex items-center gap-1 text-[8px] font-mono opacity-80 truncate w-full mt-0.5">
+                                    <Users className="h-2 w-2 shrink-0" /> {r.partySize} · {timeLabel(r.startAt).replace(/:00\s/g, ' ')}
                                   </span>
                                 </button>
                               );
@@ -676,7 +680,7 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
 
           {filtered.length === 0 && viewMode !== 'hourly' && (
             <div className="rounded-2xl border border-dashed border-goblin-800 py-16 text-center text-goblin-400">
-              <span className="text-4xl block mb-2">📅</span>
+              <CalendarDays className="mx-auto mb-2 h-10 w-10" />
               {t(lang, 'noReservations')}
             </div>
           )}
@@ -688,11 +692,11 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 overflow-y-auto animate-fade-in" onClick={() => setSelectedRes(null)}>
           <div className="w-full max-w-lg bg-goblin-950 rounded-2xl border border-goblin-800 p-5 text-goblin-50 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-goblin-800 pb-3 mb-4">
-              <h2 className="text-lg font-bold">
-                📅 {lang === 'ar' ? 'تفاصيل الحجز' : 'Reservation Details'}
+              <h2 className="inline-flex items-center gap-2 text-lg font-bold">
+                <CalendarDays className="h-5 w-5" /> {lang === 'ar' ? 'تفاصيل الحجز' : 'Reservation Details'}
               </h2>
-              <button onClick={() => setSelectedRes(null)} className="text-goblin-400 hover:text-goblin-50 text-xl p-1">
-                ✕
+              <button onClick={() => setSelectedRes(null)} className="text-goblin-400 hover:text-goblin-50 p-1">
+                <X className="h-5 w-5" />
               </button>
             </div>
             <ReservationCard
@@ -779,8 +783,8 @@ function ReservationCard({ r, lang, timeLabel, onStatusChange, onCheckIn }: Rese
           </div>
 
           <div className="flex flex-col">
-            <span className="text-base font-extrabold text-goblin-50">
-              📍 {r.resource.name}
+            <span className="inline-flex items-center gap-1.5 text-base font-extrabold text-goblin-50">
+              <MapPin className="h-4 w-4 shrink-0" /> {r.resource.name}
             </span>
             <span className="text-xs text-goblin-400 capitalize">
               {r.resource.type.replace('_', ' ').toLowerCase()}
@@ -799,12 +803,12 @@ function ReservationCard({ r, lang, timeLabel, onStatusChange, onCheckIn }: Rese
       {/* Body: Guest details */}
       <div className="space-y-2.5">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-base font-bold text-goblin-200">
-            👤 {guestName}
+          <span className="inline-flex items-center gap-1.5 text-base font-bold text-goblin-200">
+            <User className="h-4 w-4 shrink-0" /> {guestName}
           </span>
           {r.customer && r.customer.visitCount > 0 && (
-            <span className="text-[10px] bg-goblin-800 text-goblin-300 px-2 py-0.5 rounded-full font-mono font-bold">
-              ⭐ {r.customer.visitCount} {lang === 'ar' ? 'زيارة' : 'visits'}
+            <span className="inline-flex items-center gap-1 text-[10px] bg-goblin-800 text-goblin-300 px-2 py-0.5 rounded-full font-mono font-bold">
+              <Star className="h-3 w-3" /> {r.customer.visitCount} {lang === 'ar' ? 'زيارة' : 'visits'}
             </span>
           )}
         </div>
@@ -813,17 +817,17 @@ function ReservationCard({ r, lang, timeLabel, onStatusChange, onCheckIn }: Rese
         <div className="grid grid-cols-2 gap-2 text-xs text-goblin-300 bg-goblin-950/30 p-2.5 rounded-xl border border-goblin-850/50">
           {guestPhone && (
             <div className="flex items-center gap-1.5">
-              <span>📞</span>
+              <Phone className="h-3.5 w-3.5" />
               <span className="font-mono">{guestPhone}</span>
             </div>
           )}
           <div className="flex items-center gap-1.5">
-            <span>👥</span>
+            <Users className="h-3.5 w-3.5" />
             <span>{r.partySize} {lang === 'ar' ? 'أفراد' : 'pax'}</span>
           </div>
           {r.depositCents > 0 && (
             <div className="flex items-center gap-1.5 col-span-2 border-t border-goblin-850/30 pt-1.5 mt-0.5">
-              <span>💰</span>
+              <Coins className="h-3.5 w-3.5 text-emerald-400" />
               <span className="text-emerald-400 font-bold">
                 {lang === 'ar' ? 'تأمين' : 'Deposit'}: {fmtMoney(r.depositCents, lang)}
               </span>
@@ -832,8 +836,8 @@ function ReservationCard({ r, lang, timeLabel, onStatusChange, onCheckIn }: Rese
         </div>
 
         {r.notes && (
-          <p className="text-xs text-goblin-400 italic bg-goblin-950/60 p-2.5 rounded-xl border border-goblin-950 leading-relaxed">
-            📝 {r.notes}
+          <p className="inline-flex items-start gap-1.5 text-xs text-goblin-400 italic bg-goblin-950/60 p-2.5 rounded-xl border border-goblin-950 leading-relaxed">
+            <StickyNote className="h-3.5 w-3.5 shrink-0 mt-0.5" /> {r.notes}
           </p>
         )}
       </div>
@@ -981,25 +985,25 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 overflow-y-auto animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-lg bg-goblin-900 rounded-2xl border border-goblin-800 p-5 text-goblin-50 max-h-[95vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-goblin-800 pb-3 mb-4">
-          <h2 className="text-lg font-bold">
-            📅 {lang === 'ar' ? 'حجز جديد' : 'New Reservation'}
+          <h2 className="inline-flex items-center gap-2 text-lg font-bold">
+            <CalendarDays className="h-5 w-5" /> {lang === 'ar' ? 'حجز جديد' : 'New Reservation'}
           </h2>
-          <button onClick={onClose} className="text-goblin-400 hover:text-goblin-50 text-xl p-1">
-            ✕
+          <button onClick={onClose} className="text-goblin-400 hover:text-goblin-50 p-1">
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         {err && (
-          <div className="mb-4 rounded-xl bg-red-950/60 p-3.5 border border-red-900 text-red-200 text-sm">
-            ⚠️ {err}
+          <div className="mb-4 flex items-center gap-2 rounded-xl bg-red-950/60 p-3.5 border border-red-900 text-red-200 text-sm">
+            <TriangleAlert className="h-4 w-4 shrink-0" /> {err}
           </div>
         )}
 
         <div className="space-y-4">
           {/* CRM Profile Selector */}
           <div className="rounded-xl bg-goblin-950 p-3 border border-goblin-850">
-            <label className="block text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
-              👤 {lang === 'ar' ? 'ربط بملف عميل (اختياري)' : 'Link Customer Profile (Optional)'}
+            <label className="flex items-center gap-1.5 text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
+              <User className="h-3.5 w-3.5" /> {lang === 'ar' ? 'ربط بملف عميل (اختياري)' : 'Link Customer Profile (Optional)'}
             </label>
             {selectedCustomer ? (
               <div className="flex items-center justify-between bg-goblin-900 p-2.5 rounded-xl border border-goblin-800">
@@ -1058,8 +1062,8 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
 
           {/* Table Selector */}
           <div>
-            <label className="block text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
-              📍 {lang === 'ar' ? 'الطاولة / الغرفة' : 'Table / Room'}
+            <label className="flex items-center gap-1.5 text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
+              <MapPin className="h-3.5 w-3.5" /> {lang === 'ar' ? 'الطاولة / الغرفة' : 'Table / Room'}
             </label>
             <select
               value={resourceId}
@@ -1078,8 +1082,8 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
           {/* Date & Time fields */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
-              <label className="block text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
-                📅 {lang === 'ar' ? 'التاريخ' : 'Date'}
+              <label className="flex items-center gap-1.5 text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
+                <CalendarDays className="h-3.5 w-3.5" /> {lang === 'ar' ? 'التاريخ' : 'Date'}
               </label>
               <input
                 type="date"
@@ -1089,8 +1093,8 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
-                ⏰ {lang === 'ar' ? 'وقت البدء' : 'Start Time'}
+              <label className="flex items-center gap-1.5 text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
+                <Clock className="h-3.5 w-3.5" /> {lang === 'ar' ? 'وقت البدء' : 'Start Time'}
               </label>
               <input
                 type="time"
@@ -1100,8 +1104,8 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
-                ⏱ {lang === 'ar' ? 'المدة (بالدقائق)' : 'Minutes'}
+              <label className="flex items-center gap-1.5 text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
+                <Timer className="h-3.5 w-3.5" /> {lang === 'ar' ? 'المدة (بالدقائق)' : 'Minutes'}
               </label>
               <input
                 type="number"
@@ -1115,8 +1119,8 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
           {/* Guest Name & Phone info */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
-                👤 {lang === 'ar' ? 'اسم الضيف' : 'Guest Name'}
+              <label className="flex items-center gap-1.5 text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
+                <User className="h-3.5 w-3.5" /> {lang === 'ar' ? 'اسم الضيف' : 'Guest Name'}
               </label>
               <input
                 type="text"
@@ -1127,8 +1131,8 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
-                📞 {lang === 'ar' ? 'رقم الهاتف' : 'Phone'}
+              <label className="flex items-center gap-1.5 text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
+                <Phone className="h-3.5 w-3.5" /> {lang === 'ar' ? 'رقم الهاتف' : 'Phone'}
               </label>
               <input
                 type="text"
@@ -1143,8 +1147,8 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
           {/* Party size & Deposit */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
-                👥 {lang === 'ar' ? 'عدد الأفراد' : 'Party Size'}
+              <label className="flex items-center gap-1.5 text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
+                <Users className="h-3.5 w-3.5" /> {lang === 'ar' ? 'عدد الأفراد' : 'Party Size'}
               </label>
               <input
                 type="number"
@@ -1154,8 +1158,8 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
-                💰 {lang === 'ar' ? 'الدفعة المقدمة (جنيه - اختياري)' : 'Deposit (EGP, optional)'}
+              <label className="flex items-center gap-1.5 text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
+                <Coins className="h-3.5 w-3.5" /> {lang === 'ar' ? 'الدفعة المقدمة (جنيه - اختياري)' : 'Deposit (EGP, optional)'}
               </label>
               <input
                 type="number"
@@ -1169,8 +1173,8 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
-              📝 {lang === 'ar' ? 'ملاحظات' : 'Notes'}
+            <label className="flex items-center gap-1.5 text-xs font-bold text-goblin-400 mb-1.5 uppercase tracking-wide">
+              <StickyNote className="h-3.5 w-3.5" /> {lang === 'ar' ? 'ملاحظات' : 'Notes'}
             </label>
             <input
               type="text"

@@ -1017,7 +1017,7 @@ export class AdminController {
   // ---------- database manager ----------
 
   @Post('backup')
-  @RequirePermissions('admin')
+  @RequirePermissions('settings.manage')
   async createBackup(@Req() req: AuthedRequest) {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `goblins-backup-${stamp}.json`;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { TriangleAlert } from 'lucide-react';
 import { initOfflineSync } from './lib/api';
 import { usePos } from './lib/store';
 import { Floor } from './screens/Floor';
@@ -18,8 +19,8 @@ export function App() {
   return (
     <>
       {queued > 0 && (
-        <div className="fixed inset-x-0 top-0 z-[100] bg-amber-600 py-1 text-center text-sm font-semibold text-white">
-          ⚠ {queued} order update(s) queued offline — will sync when connection returns
+        <div className="fixed inset-x-0 top-0 z-[100] flex items-center justify-center gap-1.5 bg-amber-600 py-1 text-center text-sm font-semibold text-white">
+          <TriangleAlert className="h-4 w-4 shrink-0" /> {queued} order update(s) queued offline — will sync when connection returns
         </div>
       )}
       {!user ? <PinLogin /> : screen === 'order' ? <OrderScreen /> : <Floor />}

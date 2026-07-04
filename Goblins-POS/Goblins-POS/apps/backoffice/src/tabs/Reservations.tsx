@@ -11,9 +11,9 @@ interface Reservation {
 interface FloorZone { id: string; name: string; resources: { id: string; name: string; type: string }[] }
 
 const STATUS_BADGE: Record<string, string> = {
-  PENDING: 'bg-slate-100 text-slate-600', CONFIRMED: 'bg-blue-100 text-blue-700',
-  SEATED: 'bg-emerald-100 text-emerald-700', COMPLETED: 'bg-slate-100 text-slate-400',
-  NO_SHOW: 'bg-red-100 text-red-600', CANCELLED: 'bg-slate-100 text-slate-400 line-through',
+  PENDING: 'bg-goblin-800 text-goblin-200', CONFIRMED: 'bg-blue-100 text-blue-700',
+  SEATED: 'bg-goblin-700 text-goblin-500', COMPLETED: 'bg-goblin-800 text-goblin-400',
+  NO_SHOW: 'bg-red-100 text-red-600', CANCELLED: 'bg-goblin-800 text-goblin-400 line-through',
 };
 // mirrors the API's allowed status machine
 const NEXT: Record<string, string[]> = {
@@ -63,13 +63,13 @@ export function ReservationsView() {
   return (
     <div className="space-y-6">
       {/* Category Tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-goblin-700">
         <button
           onClick={() => setActiveCategory('RENTAL')}
           className={`border-b-2 px-4 py-2 text-sm font-semibold transition-all ${
             activeCategory === 'RENTAL'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              : 'border-transparent text-goblin-300 hover:text-goblin-100'
           }`}
         >
           🎮 Rental Assets (Billiards & PS)
@@ -79,7 +79,7 @@ export function ReservationsView() {
           className={`border-b-2 px-4 py-2 text-sm font-semibold transition-all ${
             activeCategory === 'DINING'
               ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              : 'border-transparent text-goblin-300 hover:text-goblin-100'
           }`}
         >
           🍽️ Dining Tables
@@ -93,17 +93,17 @@ export function ReservationsView() {
       <ErrorBanner message={err} />
       {[...byDay.entries()].map(([day, rows]) => (
         <div key={day}>
-          <h2 className="mb-2 font-semibold text-slate-700">{day}</h2>
+          <h2 className="mb-2 font-semibold text-goblin-100">{day}</h2>
           <div className="space-y-2">
             {rows.map((r) => (
-              <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-white p-3 shadow">
+              <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-goblin-900 p-3 shadow">
                 <span className="w-28 font-mono text-sm">{time(r.startAt)}–{time(r.endAt)}</span>
-                <span className="font-semibold text-slate-700">{r.resource.name}</span>
-                <span className="text-sm text-slate-600">
+                <span className="font-semibold text-goblin-100">{r.resource.name}</span>
+                <span className="text-sm text-goblin-200">
                   {r.customer?.name ?? r.guestName ?? '—'}
-                  {(r.customer?.phone ?? r.guestPhone) && <span className="text-slate-400"> · {r.customer?.phone ?? r.guestPhone}</span>}
+                  {(r.customer?.phone ?? r.guestPhone) && <span className="text-goblin-400"> · {r.customer?.phone ?? r.guestPhone}</span>}
                   {' '}· {r.partySize} pax
-                  {r.depositCents > 0 && <span className="text-emerald-700"> · deposit {egp(r.depositCents)}</span>}
+                  {r.depositCents > 0 && <span className="text-goblin-500"> · deposit {egp(r.depositCents)}</span>}
                 </span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[r.status] ?? ''}`}>{r.status.replace('_', ' ')}</span>
                 <span className="ml-auto flex gap-1">
@@ -119,7 +119,7 @@ export function ReservationsView() {
           </div>
         </div>
       ))}
-      {!filtered.length && <p className="text-sm text-slate-400">No reservations in the next 7 days for this category</p>}
+      {!filtered.length && <p className="text-sm text-goblin-400">No reservations in the next 7 days for this category</p>}
       {createOpen && (
         <NewReservationModal zones={zones ?? []} onClose={() => setCreateOpen(false)}
           onDone={() => { setCreateOpen(false); reload(); }} />

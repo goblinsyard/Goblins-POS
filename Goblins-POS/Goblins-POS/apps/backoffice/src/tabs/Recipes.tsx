@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, egp } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Spinner, Table, TextInput, useLoad } from '../lib/ui';
+import { X } from 'lucide-react';
 
 interface Uom { id: string; name?: string }
 interface Ingredient {
@@ -97,7 +98,7 @@ function MenuItemRecipes({ recipes, ingredients, locations, reload }: {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end gap-3 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+      <div className="mb-4 flex flex-wrap items-end gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
         <div className="w-64">
           <Field label="Search recipes">
             <TextInput value={search} onChange={setSearch} placeholder="Search item or ingredient..." />
@@ -133,7 +134,7 @@ function MenuItemRecipes({ recipes, ingredients, locations, reload }: {
           return [
             item.name, item.category,
             recipe
-              ? <div className="w-[300px] whitespace-normal break-words text-slate-600">{recipe.lines.map((l) => `${qty(l.quantity)} ${l.ingredient?.uom.id ?? ''} ${l.ingredient?.name ?? ''}`).join(', ')}</div>
+              ? <div className="w-[300px] whitespace-normal break-words text-goblin-200">{recipe.lines.map((l) => `${qty(l.quantity)} ${l.ingredient?.uom.id ?? ''} ${l.ingredient?.name ?? ''}`).join(', ')}</div>
               : <span key="n" className="text-amber-600">no recipe — stock won’t deduct</span>,
             cost != null ? egp(Math.round(cost)) : '—',
             <span key="actions" className="flex gap-2">
@@ -187,7 +188,7 @@ function Manufacturing({ processes, ingredients, locations, reload }: {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
         <div className="flex flex-wrap items-end gap-3">
           <div className="w-64">
             <Field label="Search processes">
@@ -206,13 +207,13 @@ function Manufacturing({ processes, ingredients, locations, reload }: {
         rows={filteredProcesses.map((r) => [
           r.name,
           r.outputIngredient ? `${r.outputIngredient.name} (${r.outputIngredient.uom.id})` : '—',
-          <div className="w-[300px] whitespace-normal break-words text-slate-600">
+          <div className="w-[300px] whitespace-normal break-words text-goblin-200">
             {r.lines.map((l) => `${qty(l.quantity)} ${l.ingredient?.uom.id ?? ''} ${l.ingredient?.name ?? ''}`).join(', ')}
           </div>,
           r.deductLocationName,
           <Btn key="e" onClick={() => setEditing(r)}>Edit</Btn>,
         ])} />
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="mt-2 text-xs text-goblin-400">
         A manufacturing process turns raw stock into an intermediate ingredient. Run batches from Purchasing → Production.
       </p>
       {(editing || creating) && (
@@ -322,7 +323,7 @@ function RecipeFormModal({ title, recipe, fixedTarget, intermediateTarget, ingre
             options={(locations.length ? locations.map((l) => l.name) : ['Kitchen', 'Bar']).map((n) => ({ value: n, label: n }))} />
         </Field>
         <div>
-          <p className="mb-1 text-xs uppercase tracking-wide text-slate-400">
+          <p className="mb-1 text-xs uppercase tracking-wide text-goblin-400">
             Ingredients (per {intermediateTarget ? 'one output unit' : 'one portion'})
           </p>
           {lines.map((l, i) => (
@@ -332,7 +333,7 @@ function RecipeFormModal({ title, recipe, fixedTarget, intermediateTarget, ingre
               <TextInput value={l.quantity} onChange={(v) => setLine(i, { quantity: v })} type="number" placeholder="qty" />
               <TextInput value={l.wastePct} onChange={(v) => setLine(i, { wastePct: v })} type="number" placeholder="waste %" />
               <button onClick={() => setLines((cur) => cur.filter((_, j) => j !== i))}
-                className="rounded-lg bg-slate-100 py-2 text-slate-400 hover:bg-red-50 hover:text-red-600">✕</button>
+                className="rounded-lg bg-goblin-800 py-2 text-goblin-400 hover:bg-red-50 hover:text-red-600"><X className="h-4 w-4" /></button>
             </div>
           ))}
           <Btn onClick={() => setLines((cur) => [...cur, { ingredientId: '', quantity: '', wastePct: '0' }])}>+ Line</Btn>
@@ -340,7 +341,7 @@ function RecipeFormModal({ title, recipe, fixedTarget, intermediateTarget, ingre
         <Field label="Prep instructions (optional)"><TextInput value={prep} onChange={setPrep} /></Field>
         <div className="flex items-center gap-3">
           <Btn kind="primary" onClick={() => void submit()}>{recipe ? 'Save recipe' : 'Create recipe'}</Btn>
-          <span className="text-sm text-slate-500">Theoretical cost: <b>{egp(Math.round(costPreview))}</b></span>
+          <span className="text-sm text-goblin-300">Theoretical cost: <b>{egp(Math.round(costPreview))}</b></span>
         </div>
       </div>
     </Modal>
@@ -377,7 +378,7 @@ function Ingredients({ ingredients, reload }: { ingredients: Ingredient[]; reloa
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
         <div className="flex flex-wrap items-end gap-3">
           <div className="w-64">
             <Field label="Search ingredients">
@@ -472,11 +473,11 @@ function IngredientModal({ ingredient, onClose, onDone }: {
           <Field label="Reorder point"><TextInput value={reorderPoint} onChange={setReorderPoint} type="number" /></Field>
           <Field label="Reorder qty"><TextInput value={reorderQty} onChange={setReorderQty} type="number" /></Field>
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-600">
+        <label className="flex items-center gap-2 text-sm text-goblin-200">
           <input type="checkbox" checked={intermediate} onChange={(e) => setIntermediate(e.target.checked)} />
           Intermediate (produced in-house by a manufacturing process)
         </label>
-        <label className="flex items-center gap-2 text-sm text-slate-600">
+        <label className="flex items-center gap-2 text-sm text-goblin-200">
           <input type="checkbox" checked={perishable} onChange={(e) => setPerishable(e.target.checked)} />
           Perishable (expiry tracked on receiving)
         </label>
@@ -587,7 +588,7 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
     }
   }
 
-  let barColor = 'bg-emerald-500';
+  let barColor = 'bg-goblin-500';
   let barText = 'Excellent (<= 30%)';
   if (simulatedFoodCostPct > 40) {
     barColor = 'bg-red-500';
@@ -600,20 +601,20 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
   return (
     <Modal title={`Cost & Margin Simulator — ${menuItem.name}`} onClose={onClose} wide>
       <ErrorBanner message={err} />
-      {msg && <p className="mb-3 rounded bg-emerald-100 p-2 text-emerald-700 font-semibold">{msg}</p>}
+      {msg && <p className="mb-3 rounded bg-goblin-700 p-2 text-goblin-500 font-semibold">{msg}</p>}
 
       <div className="grid gap-6 md:grid-cols-[1fr_320px]">
         <div className="space-y-4">
-          <h3 className="font-semibold text-slate-700 text-sm border-b pb-1">1. Adjust Recipe Quantities & Material Costs</h3>
+          <h3 className="font-semibold text-goblin-100 text-sm border-b pb-1">1. Adjust Recipe Quantities & Material Costs</h3>
           <div className="space-y-3">
             {lines.map((l, idx) => {
               const currentOverride = costOverrides[l.ingredientId] ?? '';
               const origCostEgp = (l.avgCostCents / 100).toFixed(2);
               return (
-                <div key={l.ingredientId} className="grid grid-cols-[2fr_1fr_1fr] gap-3 items-center bg-slate-50 p-2.5 rounded-lg border">
+                <div key={l.ingredientId} className="grid grid-cols-[2fr_1fr_1fr] gap-3 items-center bg-goblin-800 p-2.5 rounded-lg border">
                   <div>
-                    <span className="font-semibold text-slate-700 text-xs block truncate">{l.name}</span>
-                    <span className="text-[10px] text-slate-400">Current Cost: {origCostEgp} EGP/{l.uom}</span>
+                    <span className="font-semibold text-goblin-100 text-xs block truncate">{l.name}</span>
+                    <span className="text-[10px] text-goblin-400">Current Cost: {origCostEgp} EGP/{l.uom}</span>
                   </div>
                   
                   <Field label={`Qty (${l.uom})`}>
@@ -629,8 +630,8 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
           </div>
         </div>
 
-        <div className="space-y-4 bg-slate-50 p-4 rounded-xl border self-start">
-          <h3 className="font-semibold text-slate-700 text-sm border-b pb-1">2. Simulated Margins</h3>
+        <div className="space-y-4 bg-goblin-800 p-4 rounded-xl border self-start">
+          <h3 className="font-semibold text-goblin-100 text-sm border-b pb-1">2. Simulated Margins</h3>
           
           <div className="space-y-3">
             <Field label="Selling Price (EGP)">
@@ -639,28 +640,28 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
 
             <div className="space-y-2 text-xs divide-y">
               <div className="flex justify-between py-1.5">
-                <span className="text-slate-500 font-sans">Theoretical Cost</span>
-                <span className="font-semibold text-slate-800 font-mono">
+                <span className="text-goblin-300 font-sans">Theoretical Cost</span>
+                <span className="font-semibold text-goblin-50 font-mono">
                   {egp(Math.round(simulatedCost))}
-                  <span className="text-[10px] text-slate-400 block text-right font-normal font-sans">
+                  <span className="text-[10px] text-goblin-400 block text-right font-normal font-sans">
                     Prev: {egp(Math.round(originalCost))}
                   </span>
                 </span>
               </div>
               <div className="flex justify-between py-1.5">
-                <span className="text-slate-500 font-sans">Gross Margin</span>
-                <span className={`font-semibold font-mono ${simulatedMargin < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                <span className="text-goblin-300 font-sans">Gross Margin</span>
+                <span className={`font-semibold font-mono ${simulatedMargin < 0 ? 'text-red-600' : 'text-goblin-500'}`}>
                   {egp(Math.round(simulatedMargin))}
-                  <span className="text-[10px] text-slate-400 block text-right font-normal font-sans">
+                  <span className="text-[10px] text-goblin-400 block text-right font-normal font-sans">
                     Prev: {egp(Math.round(originalMargin))}
                   </span>
                 </span>
               </div>
               <div className="flex justify-between py-1.5">
-                <span className="text-slate-500 font-sans">Food Cost %</span>
-                <span className="font-semibold text-slate-800 font-mono">
+                <span className="text-goblin-300 font-sans">Food Cost %</span>
+                <span className="font-semibold text-goblin-50 font-mono">
                   {simulatedFoodCostPct.toFixed(1)}%
-                  <span className="text-[10px] text-slate-400 block text-right font-normal font-sans">
+                  <span className="text-[10px] text-goblin-400 block text-right font-normal font-sans">
                     Prev: {originalFoodCostPct.toFixed(1)}%
                   </span>
                 </span>
@@ -668,11 +669,11 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
             </div>
 
             <div className="pt-2">
-              <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+              <div className="flex justify-between text-[10px] text-goblin-300 mb-1">
                 <span>Food Cost Status</span>
                 <span>{barText}</span>
               </div>
-              <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+              <div className="w-full bg-goblin-700 h-2.5 rounded-full overflow-hidden">
                 <div 
                   className={`h-full ${barColor} transition-all duration-300`} 
                   style={{ width: `${Math.min(100, simulatedFoodCostPct)}%` }} 
@@ -690,7 +691,7 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
               <button 
                 onClick={saveSimulatedRecipe} 
                 disabled={busy} 
-                className="w-full rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold py-2.5 text-xs text-center transition font-sans">
+                className="w-full rounded-xl bg-goblin-900 hover:bg-goblin-950 text-white font-semibold py-2.5 text-xs text-center transition font-sans">
                 Save Recipe Quantities
               </button>
             </div>
