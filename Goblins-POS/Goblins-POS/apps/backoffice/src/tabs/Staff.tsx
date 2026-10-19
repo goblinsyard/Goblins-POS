@@ -149,7 +149,7 @@ export function StaffView() {
         <div className="space-y-6">
           <div className="flex gap-2">
             <Btn kind="primary" onClick={() => { setEditingStaff(null); setCreateOpen(true); }}>{tr('+ New staff member')}</Btn>
-            <Btn onClick={() => setMatrixOpen(true)}>{tr('Role permissions')}</Btn>
+            <Btn onClick={() => setMatrixOpen(true)}>{tr('Roles & permissions')}</Btn>
           </div>
           <div>
             <h2 className="mb-2 font-semibold text-goblin-100">{tr('Staff Directory')}</h2>
@@ -395,14 +395,30 @@ function StaffFormModal({ roles, onClose, onDone, staff }: { roles: Role[]; onCl
   );
 }
 
+const ROLE_TEMPLATES = ['Manager', 'Cashier', 'Waiter', 'Kitchen', 'Bar', 'Steward'];
+
+interface PermissionDef { id: string; group: string; label: string }
+
+/** Roles & permissions: create, rename and delete roles, and tick what each role may do. */
 function PermissionMatrixModal({ roles, onClose, onSaved }: { roles: Role[]; onClose: () => void; onSaved: () => void }) {
-  const allPerms = [...new Set(roles.flatMap((r) => r.permissions.map((p) => p.permissionId)))].sort();
-  const [grants, setGrants] = useState<Record<string, Set<string>>>(
-    Object.fromEntries(roles.map((r) => [r.id, new Set(r.permissions.map((p) => p.permissionId))])),
-  );
+  const { data: permDefs } = useLoad(() => api<PermissionDef[]>('/admin/permissions'));
+  const [grants, setGrants] = useState<Record<string, Set<string>>>({});
   const [dirty, setDirty] = useState<Set<string>>(new Set());
   const [err, setErr] = useState('');
   const [saving, setSaving] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
+  const [renaming, setRenaming] = useState<Role | null>(null);
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
+
+  // pick up roles added/removed while the window is open, keeping unsaved ticks
+  useEffect(() => {
+    setGrants((cur) => {
+      const next: Record<string, Set<string>> = {};
+      for (const r of roles) next[r.id] = dirty.has(r.id) && cur[r.id] ? cur[r.id]! : new Set(r.permissions.map((p) => p.permissionId));
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roles]);
 
   function toggle(roleId: string, perm: string) {
     setGrants((cur) => {
@@ -421,43 +437,86 @@ function PermissionMatrixModal({ roles, onClose, onSaved }: { roles: Role[]; onC
           method: 'PATCH', body: { permissionIds: [...(grants[roleId] ?? [])] },
         });
       }
+      setDirty(new Set());
       onSaved();
       onClose();
     } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
     finally { setSaving(false); }
   }
 
-  const groups = new Map<string, string[]>();
-  for (const p of allPerms) {
-    const g = p.split('.')[0] ?? p;
-    groups.set(g, [...(groups.get(g) ?? []), p]);
+  async function addStandard() {
+    setErr('');
+    try {
+      const res = await api<{ created: string[] }>('/admin/roles/standard', { method: 'POST' });
+      if (!res.created.length) setErr(tr('All standard roles already exist'));
+      onSaved();
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
+  async function deleteRole(r: Role) {
+    if (confirmDel !== r.id) { setConfirmDel(r.id); return; }
+    setErr(''); setConfirmDel(null);
+    try {
+      await api(`/admin/roles/${r.id}`, { method: 'DELETE' });
+      onSaved();
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
+  }
+
+  if (!permDefs) return <Modal title={tr('Roles & permissions')} onClose={onClose} wide><Spinner /></Modal>;
+
+  const groups = new Map<string, PermissionDef[]>();
+  for (const p of permDefs) groups.set(p.group, [...(groups.get(p.group) ?? []), p]);
+  const missingStandard = ROLE_TEMPLATES.filter((n) => !roles.some((r) => r.name === n));
+
   return (
-    <Modal title={tr('Role permissions')} onClose={onClose} wide>
+    <Modal title={tr('Roles & permissions')} onClose={onClose} wide>
       <ErrorBanner message={err} />
-      <div className="overflow-auto">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <Btn kind="primary" onClick={() => setNewOpen(true)}>{tr('+ New role')}</Btn>
+        {missingStandard.length > 0 && (
+          <Btn onClick={() => void addStandard()}>
+            {tr('Add standard roles')} ({missingStandard.map((n) => tr(n)).join(', ')})
+          </Btn>
+        )}
+      </div>
+      <div className="max-h-[60vh] overflow-auto rounded-xl border border-goblin-800">
         <table className="w-full text-xs">
-          <thead className="sticky top-0 bg-goblin-900 text-left text-goblin-300">
+          <thead className="sticky top-0 z-10 bg-goblin-900 text-left text-goblin-300">
             <tr>
               <th className="p-2">{tr('Permission')}</th>
-              {roles.map((r) => <th key={r.id} className="p-2 text-center">{r.name}</th>)}
+              {roles.map((r) => (
+                <th key={r.id} className="min-w-[96px] p-2 text-center align-top">
+                  <div className="font-semibold text-goblin-100">{tr(r.name)}</div>
+                  {r.name !== 'Owner' && (
+                    <div className="mt-1 flex justify-center gap-1">
+                      <button onClick={() => setRenaming(r)} className="rounded px-1.5 py-0.5 text-[10px] text-goblin-300 hover:bg-goblin-800">{tr('Rename')}</button>
+                      <button onClick={() => void deleteRole(r)}
+                        className={`rounded px-1.5 py-0.5 text-[10px] ${confirmDel === r.id ? 'bg-red-700 text-white' : 'text-red-400 hover:bg-red-950/50'}`}>
+                        {confirmDel === r.id ? tr('Tap again to delete') : tr('Delete')}
+                      </button>
+                    </div>
+                  )}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {[...groups.entries()].map(([group, perms]) => (
               <React.Fragment key={group}>
                 <tr className="bg-goblin-800">
-                  <td colSpan={roles.length + 1} className="p-2 font-semibold uppercase tracking-wide text-goblin-400">{group}</td>
+                  <td colSpan={roles.length + 1} className="p-2 font-semibold uppercase tracking-wide text-goblin-400">{tr(group)}</td>
                 </tr>
                 {perms.map((p) => (
-                  <tr key={p} className="border-t">
-                    <td className="p-2 font-mono">{p}</td>
+                  <tr key={p.id} className="border-t">
+                    <td className="p-2">
+                      <div className="text-goblin-100">{tr(p.label)}</div>
+                      <div className="font-mono text-[10px] text-goblin-500">{p.id}</div>
+                    </td>
                     {roles.map((r) => (
                       <td key={r.id} className="p-2 text-center">
-                        <input type="checkbox" checked={grants[r.id]?.has(p) ?? false}
+                        <input type="checkbox" className="h-4 w-4" checked={grants[r.id]?.has(p.id) ?? false}
                           disabled={r.name === 'Owner'}
-                          onChange={() => toggle(r.id, p)} />
+                          onChange={() => toggle(r.id, p.id)} />
                       </td>
                     ))}
                   </tr>
@@ -467,11 +526,77 @@ function PermissionMatrixModal({ roles, onClose, onSaved }: { roles: Role[]; onC
           </tbody>
         </table>
       </div>
-      <div className="mt-4 flex items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <Btn kind="primary" onClick={() => void save()} disabled={saving || !dirty.size}>
-          {saving ? tr('Saving…') : `${tr('Save')} ${dirty.size ? `(${dirty.size} role${dirty.size > 1 ? 's' : ''})` : ''}`}
+          {saving ? tr('Saving…') : `${tr('Save')} ${dirty.size ? `(${dirty.size})` : ''}`}
         </Btn>
         <p className="text-xs text-goblin-400">{tr('Owner permissions are locked to prevent locking yourself out.')}</p>
+      </div>
+
+      {newOpen && <NewRoleModal roles={roles} onClose={() => setNewOpen(false)} onDone={() => { setNewOpen(false); onSaved(); }} />}
+      {renaming && <RenameRoleModal role={renaming} onClose={() => setRenaming(null)} onDone={() => { setRenaming(null); onSaved(); }} />}
+    </Modal>
+  );
+}
+
+function NewRoleModal({ roles, onClose, onDone }: { roles: Role[]; onClose: () => void; onDone: () => void }) {
+  const [name, setName] = useState('');
+  const [from, setFrom] = useState('');
+  const [err, setErr] = useState('');
+  const options = [
+    ...ROLE_TEMPLATES.map((t) => ({ value: `t:${t}`, label: `${tr('Standard')}: ${tr(t)}` })),
+    ...roles.map((r) => ({ value: `r:${r.id}`, label: `${tr('Copy of')} ${tr(r.name)}` })),
+  ];
+  async function submit() {
+    setErr('');
+    try {
+      await api('/admin/roles', {
+        method: 'POST',
+        body: {
+          name: name.trim(),
+          ...(from.startsWith('t:') ? { template: from.slice(2) } : {}),
+          ...(from.startsWith('r:') ? { copyFromRoleId: from.slice(2) } : {}),
+        },
+      });
+      onDone();
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
+  }
+  return (
+    <Modal title={tr('New role')} onClose={onClose}>
+      <ErrorBanner message={err} />
+      <div className="space-y-3">
+        <Field label={tr('Name')}><TextInput value={name} onChange={setName} placeholder={tr('e.g. Supervisor')} /></Field>
+        <Field label={tr('Start with these permissions')}>
+          <Select value={from} onChange={setFrom} allowEmpty={tr('None (tick them yourself)')} options={options} />
+        </Field>
+        <div className="flex justify-end gap-2">
+          <Btn onClick={onClose}>{tr('Cancel')}</Btn>
+          <Btn kind="primary" disabled={name.trim().length < 2} onClick={() => void submit()}>{tr('Create role')}</Btn>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function RenameRoleModal({ role, onClose, onDone }: { role: Role; onClose: () => void; onDone: () => void }) {
+  const [name, setName] = useState(role.name);
+  const [err, setErr] = useState('');
+  async function submit() {
+    setErr('');
+    try {
+      await api(`/admin/roles/${role.id}`, { method: 'PATCH', body: { name: name.trim() } });
+      onDone();
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
+  }
+  return (
+    <Modal title={`${tr('Rename')} ${tr(role.name)}`} onClose={onClose}>
+      <ErrorBanner message={err} />
+      <div className="space-y-3">
+        <Field label={tr('Name')}><TextInput value={name} onChange={setName} /></Field>
+        <div className="flex justify-end gap-2">
+          <Btn onClick={onClose}>{tr('Cancel')}</Btn>
+          <Btn kind="primary" disabled={name.trim().length < 2} onClick={() => void submit()}>{tr('Save')}</Btn>
+        </div>
       </div>
     </Modal>
   );

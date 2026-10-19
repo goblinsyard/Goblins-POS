@@ -6,6 +6,7 @@ import { promisify } from 'util';
 import * as path from 'path';
 import * as fs from 'fs';
 import { backupsDir as backupsDir_ } from './backup-dir';
+import { appendMediaToSqlBackup } from '../media/media';
 
 const execAsync = promisify(exec);
 
@@ -93,6 +94,7 @@ export class AutoBackupService implements OnModuleInit {
 
     try {
       await execAsync(`pg_dump "${dbUrl}" --clean --if-exists -f "${file}"`);
+      appendMediaToSqlBackup(file);
       console.log(`[AutoBackupService] Auto backup created: goblins-auto-${stamp}.sql`);
 
       // Prune old auto backups (keep only up to keepCount)

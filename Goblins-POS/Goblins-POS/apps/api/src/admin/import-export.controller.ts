@@ -4,6 +4,7 @@ import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { CostingService } from '../costing/costing.service';
+import { deleteMenuImage, menuImageAsDataUrl, saveMenuImage } from '../media/media';
 
 interface ImportedModifier {
   name: string;
@@ -52,6 +53,7 @@ interface ImportedPriceSchedule {
 
 interface ImportedMenuItem {
   name: string;
+  image?: string | null;
   nameAr?: string;
   description?: string;
   sku?: string;
@@ -179,6 +181,8 @@ export class ImportExportController {
         isFavorite: item.isFavorite,
         department: item.department,
         stationName: (item as any).station?.name || null,
+        // the picture travels inside the file, so importing on another system restores it
+        image: menuImageAsDataUrl(item.imageUrl),
         recipe: item.recipe ? {
           name: item.recipe.name,
           yieldQty: Number(item.recipe.yieldQty),
@@ -465,6 +469,16 @@ export class ImportExportController {
             });
           }
           itemsImported++;
+
+          // picture from the export file (a bad picture never fails the whole import)
+          if (typeof itemData.image === 'string' && itemData.image.startsWith('data:image/')) {
+            try {
+              const url = saveMenuImage(menuItem.id, itemData.image);
+              const old = menuItem.imageUrl;
+              menuItem = await this.prisma.menuItem.update({ where: { id: menuItem.id }, data: { imageUrl: url } });
+              if (old && old !== url) deleteMenuImage(old);
+            } catch { /* skip this picture */ }
+          }
 
           // Import/update Recipe if specified
           if (itemData.recipe) {

@@ -11,7 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { AutoBackupService } from './auto-backup.service';
 import { backupsDir as backupsDir_ } from './backup-dir';
-import { deleteMenuImage, saveMenuImage } from '../media/media';
+import { allMenuMedia, appendMediaToSqlBackup, deleteMenuImage, restoreMediaFromSqlBackup, saveMenuImage } from '../media/media';
 
 const execAsync = promisify(exec);
 
@@ -841,9 +841,117 @@ export class AdminController {
     return { success: true };
   }
 
+  @Get('permissions')
+  @RequirePermissions('staff.manage')
+  permissions() {
+    return this.prisma.permission.findMany({ orderBy: [{ group: 'asc' }, { id: 'asc' }] });
+  }
+
+  /**
+   * Keeps role editing from becoming a way to gain power: only permissions that
+   * exist, and only ones the person editing already holds.
+   */
+  private async grantable(req: AuthedRequest, ids: unknown, alreadyHas: string[] = []): Promise<string[]> {
+    if (!Array.isArray(ids)) return [];
+    const valid = new Set((await this.prisma.permission.findMany({ select: { id: true } })).map((p) => p.id));
+    const mine = new Set(req.user.permissions ?? []);
+    const wanted = [...new Set(ids.filter((x): x is string => typeof x === 'string' && valid.has(x)))];
+    const kept = new Set(alreadyHas);
+    const denied = wanted.filter((p) => !mine.has(p) && !kept.has(p));
+    if (denied.length) throw new BadRequestException(`You can only give permissions you have yourself (${denied.slice(0, 3).join(', ')}${denied.length > 3 ? '…' : ''})`);
+    return wanted;
+  }
+
+  private async roleOr404(id: string) {
+    const role = await this.prisma.role.findUnique({ where: { id }, include: { _count: { select: { users: true } } } });
+    if (!role) throw new NotFoundException('Role not found');
+    return role;
+  }
+
+  /** New role: blank, from a standard template (Manager, Cashier…), or a copy of another role. */
+  @Post('roles')
+  @RequirePermissions('staff.manage')
+  async createRole(@Req() req: AuthedRequest, @Body() body: { name?: string; template?: string; copyFromRoleId?: string }) {
+    const name = (body.name ?? '').trim();
+    if (name.length < 2 || name.length > 40) throw new BadRequestException('Role name must be 2–40 characters');
+    if (await this.prisma.role.findUnique({ where: { name } })) throw new BadRequestException('A role with this name already exists');
+    let perms: string[] = [];
+    if (body.copyFromRoleId) {
+      const src = await this.prisma.role.findUnique({ where: { id: body.copyFromRoleId }, include: { permissions: true } });
+      if (!src) throw new BadRequestException('Role to copy not found');
+      perms = src.permissions.map((p) => p.permissionId);
+    } else if (body.template) {
+      const { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS } = await import('@goblins/shared');
+      const t = (DEFAULT_ROLE_PERMISSIONS as Record<string, string[] | 'ALL'>)[body.template];
+      if (!t || body.template === 'Owner') throw new BadRequestException('Unknown template');
+      perms = t === 'ALL' ? Object.keys(PERMISSIONS) : t;
+    }
+    const permissionIds = await this.grantable(req, perms);
+    const role = await this.prisma.role.create({
+      data: { name, isSystem: false, permissions: { create: permissionIds.map((p) => ({ permissionId: p })) } },
+      include: { permissions: true },
+    });
+    await this.audit.log({ userId: req.user.sub, action: 'staff.role_create', entity: 'Role', entityId: role.id, detail: { name, permissions: permissionIds.length } });
+    return role;
+  }
+
+  /** Creates any missing standard roles (Manager, Cashier, Waiter, Kitchen, Bar, Steward) with their usual permissions. */
+  @Post('roles/standard')
+  @RequirePermissions('staff.manage')
+  async createStandardRoles(@Req() req: AuthedRequest) {
+    const { DEFAULT_ROLE_PERMISSIONS } = await import('@goblins/shared');
+    const mine = new Set(req.user.permissions ?? []);
+    const valid = new Set((await this.prisma.permission.findMany({ select: { id: true } })).map((p) => p.id));
+    const created: string[] = [];
+    for (const [name, perms] of Object.entries(DEFAULT_ROLE_PERMISSIONS as Record<string, string[] | 'ALL'>)) {
+      if (name === 'Owner' || perms === 'ALL') continue;
+      if (await this.prisma.role.findUnique({ where: { name } })) continue;
+      const ids = perms.filter((p) => valid.has(p) && mine.has(p));
+      await this.prisma.role.create({
+        data: { name, isSystem: true, permissions: { create: ids.map((p) => ({ permissionId: p })) } },
+      });
+      created.push(name);
+    }
+    if (created.length) {
+      await this.audit.log({ userId: req.user.sub, action: 'staff.role_create', entity: 'Role', entityId: 'standard', detail: { created } });
+    }
+    return { created };
+  }
+
+  @Patch('roles/:id')
+  @RequirePermissions('staff.manage')
+  async renameRole(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { name?: string }) {
+    const role = await this.roleOr404(id);
+    if (role.name === 'Owner') throw new BadRequestException('The Owner role cannot be renamed');
+    const name = (body.name ?? '').trim();
+    if (name.length < 2 || name.length > 40) throw new BadRequestException('Role name must be 2–40 characters');
+    const clash = await this.prisma.role.findUnique({ where: { name } });
+    if (clash && clash.id !== id) throw new BadRequestException('A role with this name already exists');
+    const updated = await this.prisma.role.update({ where: { id }, data: { name } });
+    await this.audit.log({ userId: req.user.sub, action: 'staff.role_rename', entity: 'Role', entityId: id, detail: { from: role.name, to: name } });
+    return updated;
+  }
+
+  @Delete('roles/:id')
+  @RequirePermissions('staff.manage')
+  async deleteRole(@Req() req: AuthedRequest, @Param('id') id: string) {
+    const role = await this.roleOr404(id);
+    if (role.name === 'Owner') throw new BadRequestException('The Owner role cannot be deleted');
+    if (role._count.users > 0) {
+      throw new BadRequestException(`${role._count.users} staff member(s) still have this role. Give them another role first.`);
+    }
+    await this.prisma.role.delete({ where: { id } });
+    await this.audit.log({ userId: req.user.sub, action: 'staff.role_delete', entity: 'Role', entityId: id, detail: { name: role.name } });
+    return { ok: true };
+  }
+
   @Patch('roles/:id/permissions')
   @RequirePermissions('staff.manage')
   async setRolePermissions(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { permissionIds: string[] }) {
+    const role = await this.roleOr404(id);
+    if (role.name === 'Owner') throw new BadRequestException('Owner permissions are locked to prevent locking yourself out');
+    const current = (await this.prisma.rolePermission.findMany({ where: { roleId: id }, select: { permissionId: true } })).map((p) => p.permissionId);
+    body = { permissionIds: await this.grantable(req, body?.permissionIds, current) };
     await this.prisma.$transaction([
       this.prisma.rolePermission.deleteMany({ where: { roleId: id } }),
       this.prisma.rolePermission.createMany({
@@ -1187,6 +1295,7 @@ export class AdminController {
       config: { taxRates, printers, stations, settings },
       reservations,
       auditLogs,
+      media: { menu: allMenuMedia() },
     };
 
     const filePath = path.join(backupsDir, filename);
@@ -1211,7 +1320,10 @@ export class AdminController {
     
     try {
       await execAsync(`pg_dump "${dbUrl}" --clean --if-exists -f "${file}"`);
-      await this.audit.log({ userId: req.user.sub, action: 'db.backup', entity: 'Database', entityId: `backup-${stamp}` });
+      const pictures = appendMediaToSqlBackup(file);
+      await this.audit.log({
+        userId: req.user.sub, action: 'db.backup', entity: 'Database', entityId: `backup-${stamp}`, detail: { pictures },
+      });
       
       const files = fs.readdirSync(backupsDir)
         .filter((f) => f.startsWith('goblins-') && f.endsWith('.sql'))
@@ -1248,7 +1360,10 @@ export class AdminController {
 
     try {
       await execAsync(`psql "${dbUrl}" -f "${file}"`);
-      await this.audit.log({ userId: req.user.sub, action: 'db.restore', entity: 'Database', entityId: body.filename });
+      const pictures = await restoreMediaFromSqlBackup(file);
+      await this.audit.log({
+        userId: req.user.sub, action: 'db.restore', entity: 'Database', entityId: body.filename, detail: { pictures },
+      });
       this.realtime.emitTo('pos', 'menu.changed', {});
       this.realtime.emitTo('floor', 'floor.refresh', {});
       return { success: true };
