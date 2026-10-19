@@ -167,7 +167,7 @@ function Login({ onDone }: { onDone: (u: SessionUser) => void }) {
   return (
     <div className="flex h-screen items-center justify-center bg-goblin-950 text-white">
       <div className="w-full max-w-sm p-6">
-        <h1 className="mb-6 text-center text-2xl font-bold text-goblin-400">Goblins KDS</h1>
+        <h1 className="mb-6 text-center text-2xl font-bold text-goblin-400">{localStorage.getItem('kds.lang') === 'ar' ? 'شاشة المطبخ — جوبلينز' : 'Goblins KDS'}</h1>
         {!selected ? (
           <div className="grid grid-cols-2 gap-2">
             {users.map((u) => (
@@ -179,7 +179,7 @@ function Login({ onDone }: { onDone: (u: SessionUser) => void }) {
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2">
-            {err && <p className="col-span-3 text-center text-red-400">Wrong PIN</p>}
+            {err && <p className="col-span-3 text-center text-red-400">{localStorage.getItem('kds.lang') === 'ar' ? 'رقم سري خاطئ' : 'Wrong PIN'}</p>}
             {['1','2','3','4','5','6','7','8','9','⌫','0','✓'].map((k) => (
               <button key={k}
                 onClick={() => {

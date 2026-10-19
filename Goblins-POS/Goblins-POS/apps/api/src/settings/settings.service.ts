@@ -33,6 +33,11 @@ export const SETTING_DEFAULTS = {
   'expense.allocationManual.BILLIARDS': 2000,
   'expense.allocationManual.PLAYSTATION': 2000,
   'pos.autoLockMinutes': 3, // lock idle POS terminals back to the PIN screen (0 = never)
+  // one-tap kitchen notes on the POS, comma separated, each "English|عربي"
+  'pos.quickNotes': 'No sugar|بدون سكر, Less sugar|سكر خفيف, Extra sugar|سكر زيادة, No ice|بدون ثلج, Extra ice|ثلج زيادة, Extra hot|ساخن جدًا, Takeaway cup|كوب تيك أواي, Less spicy|حار خفيف, Extra spicy|حار زيادة, No onions|بدون بصل, Well done|مستوي جيدًا, Sauce on the side|الصوص على الجنب',
+  // optional message shown at the top of the POS order screen (offers, specials)
+  'pos.bannerText': '',
+  'pos.bannerTextAr': '',
   'session.prepaidAlertMinutes': 10, // alert when 10 min left on prepaid block
   'session.prepaidSmsAlertMinutes': 5, // SMS/WhatsApp alert minutes before expiry
   // delivery apps: commission in bps (2500 = 25%) and the API key each app's

@@ -1,11 +1,11 @@
 import { ReactNode, useEffect, useState, useRef, useMemo } from 'react';
 import { X } from 'lucide-react';
-import { t } from './i18n';
+import { t, tr } from './i18n';
 
 export function Card({ title, value }: { title: string; value: string }) {
   return (
     <div className="rounded-xl bg-goblin-900 p-4 shadow ring-1 ring-goblin-700">
-      <p className="text-xs uppercase tracking-wide text-goblin-400">{title}</p>
+      <p className="text-xs uppercase tracking-wide text-goblin-400">{tr(title)}</p>
       <p className="mt-1 text-xl font-bold text-goblin-50">{value}</p>
     </div>
   );
@@ -17,11 +17,11 @@ export function Table({ headers, rows }: { headers: string[]; rows: ReactNode[][
       <div className="overflow-x-auto">
         <table className="w-full min-w-max text-sm text-goblin-100">
           <thead className="bg-goblin-800 text-left text-goblin-300">
-            <tr>{headers.map((h) => <th key={h} className="p-3 capitalize">{h}</th>)}</tr>
+            <tr>{headers.map((h) => <th key={h} className="p-3 capitalize">{tr(h)}</th>)}</tr>
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={i} className="border-t border-goblin-700">{r.map((c, j) => <td key={j} className="p-3">{c}</td>)}</tr>
+              <tr key={i} className="border-t border-goblin-700">{r.map((c, j) => <td key={j} className="p-3">{typeof c === 'string' ? tr(c) : c}</td>)}</tr>
             ))}
           </tbody>
         </table>
@@ -37,7 +37,7 @@ export function Spinner() {
 
 export function ErrorBanner({ message }: { message: string }) {
   if (!message) return null;
-  return <p className="mb-3 rounded-lg bg-red-500/15 p-2 text-sm text-red-500">{message}</p>;
+  return <p className="mb-3 rounded-lg bg-red-500/15 p-2 text-sm text-red-500">{tr(message)}</p>;
 }
 
 export function Btn({ children, onClick, kind = 'default', disabled }: {
@@ -60,7 +60,7 @@ export function Btn({ children, onClick, kind = 'default', disabled }: {
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block text-sm">
-      <span className="mb-1 block text-xs uppercase tracking-wide text-goblin-400">{label}</span>
+      <span className="mb-1 block text-xs uppercase tracking-wide text-goblin-400">{tr(label)}</span>
       {children}
     </label>
   );
@@ -116,7 +116,7 @@ export function Select({ value, onChange, options, allowEmpty }: {
         className="flex w-full items-center justify-between rounded-lg border border-goblin-700 bg-goblin-900 p-2 text-left text-sm text-goblin-50 shadow-sm focus:border-goblin-500 focus:outline-none focus:ring-1 focus:ring-goblin-500"
       >
         <span className="truncate whitespace-pre">
-          {selectedOption ? selectedOption.label : (allowEmpty ?? t('selectOption'))}
+          {selectedOption ? tr(selectedOption.label) : (allowEmpty ? tr(allowEmpty) : t('selectOption'))}
         </span>
         <span className="pointer-events-none ml-2 flex items-center text-goblin-400">
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,7 +149,7 @@ export function Select({ value, onChange, options, allowEmpty }: {
                   value === '' ? 'bg-goblin-800 text-goblin-100' : ''
                 }`}
               >
-                {allowEmpty}
+                {tr(allowEmpty)}
               </button>
             )}
             {filteredOptions.map((o) => (
@@ -164,7 +164,7 @@ export function Select({ value, onChange, options, allowEmpty }: {
                   o.value === value ? 'bg-goblin-800 text-goblin-50 font-semibold' : ''
                 }`}
               >
-                {o.label}
+                {tr(o.label)}
               </button>
             ))}
             {filteredOptions.length === 0 && (
@@ -187,7 +187,7 @@ export function Modal({ title, children, onClose, wide }: {
       <div className={`max-h-[90vh] w-full ${wide ? 'max-w-3xl' : 'max-w-md'} overflow-auto rounded-2xl bg-goblin-900 p-6 shadow-xl ring-1 ring-goblin-700`}
         onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-goblin-50">{title}</h2>
+          <h2 className="text-lg font-bold text-goblin-50">{tr(title)}</h2>
           <button onClick={onClose} className="rounded-lg px-2 text-goblin-400 hover:bg-goblin-800"><X className="h-4 w-4" /></button>
         </div>
         {children}
@@ -209,7 +209,7 @@ export function Pills<T extends string>({ value, onChange, options }: {
       {opts.map((o) => (
         <button key={o.value} onClick={() => onChange(o.value)}
           className={`rounded-lg px-3 py-1.5 text-sm capitalize transition-colors ${o.value === value ? 'bg-goblin-600 text-white' : 'bg-goblin-800 text-goblin-100 hover:bg-goblin-700'}`}>
-          {o.label}
+          {tr(o.label)}
         </button>
       ))}
     </div>
@@ -226,7 +226,7 @@ export function useLoad<T>(fn: () => Promise<T>, deps: unknown[] = []): {
   useEffect(() => {
     let live = true;
     setError('');
-    fn().then((d) => live && setData(d)).catch((e) => live && setError(e instanceof Error ? e.message : 'Failed to load'));
+    fn().then((d) => live && setData(d)).catch((e) => live && setError(e instanceof Error ? e.message : tr('Failed to load')));
     return () => { live = false; };
   }, [...deps, tick]);
   return { data, error, reload: () => setTick((t) => t + 1) };

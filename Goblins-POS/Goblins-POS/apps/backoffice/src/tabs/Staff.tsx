@@ -83,7 +83,7 @@ export function StaffView() {
   const { data: transactions, reload: reloadTransactions } = useLoad(() => api<HrTx[]>(`/hr/transactions?from=${fromStr}&to=${toStr}`), [month]);
 
   async function deleteStaff(id: string) {
-    if (!confirm('Are you sure you want to delete this staff member?')) return;
+    if (!confirm(tr('Are you sure you want to delete this staff member?'))) return;
     try {
       await api(`/admin/staff/${id}`, { method: 'DELETE' });
       reloadStaff();
@@ -91,29 +91,29 @@ export function StaffView() {
       reloadAttendance();
       reloadTransactions();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Delete failed');
+      alert(e instanceof Error ? e.message : tr('Delete failed'));
     }
   }
 
   async function deleteAttendance(id: string) {
-    if (!confirm('Are you sure you want to delete this attendance record?')) return;
+    if (!confirm(tr('Are you sure you want to delete this attendance record?'))) return;
     try {
       await api(`/hr/attendance/${id}`, { method: 'DELETE' });
       reloadAttendance();
       reloadPayroll();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Delete failed');
+      alert(e instanceof Error ? e.message : tr('Delete failed'));
     }
   }
 
   async function voidTransaction(id: string) {
-    if (!confirm('Are you sure you want to void this HR transaction? This will also reverse any associated journal entries.')) return;
+    if (!confirm(tr('Are you sure you want to void this HR transaction? This will also reverse any associated journal entries.'))) return;
     try {
       await api(`/hr/transactions/${id}`, { method: 'DELETE' });
       reloadTransactions();
       reloadPayroll();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Void failed');
+      alert(e instanceof Error ? e.message : tr('Void failed'));
     }
   }
 
@@ -127,17 +127,17 @@ export function StaffView() {
           if (val === 'payroll') reloadPayroll();
           if (val === 'transactions') reloadTransactions();
         }} options={[
-          { value: 'directory', label: 'Staff Directory' },
-          { value: 'attendance', label: 'Attendance Log' },
-          { value: 'payroll', label: 'Payroll & Salaries' },
-          { value: 'transactions', label: 'Transactions Ledger' },
-          { value: 'tips', label: 'Tips Distribution' },
-          { value: 'bonus', label: 'Sales Bonus' }
+          { value: 'directory', label: tr('Staff Directory') },
+          { value: 'attendance', label: tr('Attendance Log') },
+          { value: 'payroll', label: tr('Payroll & Salaries') },
+          { value: 'transactions', label: tr('Transactions Ledger') },
+          { value: 'tips', label: tr('Tips Distribution') },
+          { value: 'bonus', label: tr('Sales Bonus') }
         ]} />
 
         {section !== 'directory' && (
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-goblin-400">Salary Month:</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-goblin-400">{tr('Salary Month:')}</span>
             <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
               className="rounded-lg border border-goblin-700 bg-goblin-900 p-1 text-sm text-goblin-100 focus:outline-none" />
           </div>
@@ -148,21 +148,21 @@ export function StaffView() {
       {section === 'directory' && staff && (
         <div className="space-y-6">
           <div className="flex gap-2">
-            <Btn kind="primary" onClick={() => { setEditingStaff(null); setCreateOpen(true); }}>+ New staff member</Btn>
-            <Btn onClick={() => setMatrixOpen(true)}>Role permissions</Btn>
+            <Btn kind="primary" onClick={() => { setEditingStaff(null); setCreateOpen(true); }}>{tr('+ New staff member')}</Btn>
+            <Btn onClick={() => setMatrixOpen(true)}>{tr('Role permissions')}</Btn>
           </div>
           <div>
-            <h2 className="mb-2 font-semibold text-goblin-100">Staff Directory</h2>
-            <Table headers={['Name', 'Role', 'Email', 'Salary Setup', 'Since', 'Actions']}
+            <h2 className="mb-2 font-semibold text-goblin-100">{tr('Staff Directory')}</h2>
+            <Table headers={[tr('Name'), tr('Role'), tr('Email'), tr('Salary Setup'), tr('Since'), tr('Actions')]}
               rows={staff.map((s) => [
                 s.name,
                 s.role.name,
                 s.email ?? '—',
-                s.salaryType === 'HOURLY' ? `${(s.hourlyRateCents / 100).toFixed(2)} EGP/hr` : `${(s.baseSalaryCents / 100).toFixed(2)} EGP/mo`,
+                s.salaryType === 'HOURLY' ? `${(s.hourlyRateCents / 100).toFixed(2)} ${tr('EGP/hr')}` : `${(s.baseSalaryCents / 100).toFixed(2)} ${tr('EGP/mo')}`,
                 new Date(s.createdAt).toLocaleDateString('en-EG'),
                 <div key={s.id} className="flex gap-2">
-                  <Btn onClick={() => { setEditingStaff(s); setCreateOpen(true); }}>Edit</Btn>
-                  <Btn kind="danger" onClick={() => void deleteStaff(s.id)}>Delete</Btn>
+                  <Btn onClick={() => { setEditingStaff(s); setCreateOpen(true); }}>{tr('Edit')}</Btn>
+                  <Btn kind="danger" onClick={() => void deleteStaff(s.id)}>{tr('Delete')}</Btn>
                 </div>,
               ])} />
           </div>
@@ -173,12 +173,12 @@ export function StaffView() {
       {section === 'attendance' && (
         <div className="space-y-6">
           <div className="flex gap-2">
-            <Btn kind="primary" onClick={() => { setEditingAttendance(null); setAttendanceOpen(true); }}>+ Add manual log</Btn>
+            <Btn kind="primary" onClick={() => { setEditingAttendance(null); setAttendanceOpen(true); }}>{tr('+ Add manual log')}</Btn>
           </div>
           <div>
-            <h2 className="mb-2 font-semibold text-goblin-100">Time Clock Logs</h2>
+            <h2 className="mb-2 font-semibold text-goblin-100">{tr('Time Clock Logs')}</h2>
             {attendance ? (
-              <Table headers={['Staff', 'Clock In', 'Clock Out', 'Hours', 'Notes', 'Actions']}
+              <Table headers={[tr('Staff'), tr('Clock In'), tr('Clock Out'), tr('Hours'), tr('Notes'), tr('Actions')]}
                 rows={attendance.map((a) => {
                   const cin = new Date(a.clockIn);
                   const cout = a.clockOut ? new Date(a.clockOut) : null;
@@ -186,12 +186,12 @@ export function StaffView() {
                   return [
                     a.user.name,
                     cin.toLocaleString('en-EG'),
-                    cout ? cout.toLocaleString('en-EG') : <span className="text-goblin-500 font-semibold">Clocked In</span>,
+                    cout ? cout.toLocaleString('en-EG') : <span className="text-goblin-500 font-semibold">{tr('Clocked In')}</span>,
                     cout ? hrs.toFixed(2) : '—',
                     a.note ?? '—',
                     <div key={a.id} className="flex gap-2">
-                      <Btn onClick={() => { setEditingAttendance(a); setAttendanceOpen(true); }}>Edit</Btn>
-                      <Btn kind="danger" onClick={() => void deleteAttendance(a.id)}>Delete</Btn>
+                      <Btn onClick={() => { setEditingAttendance(a); setAttendanceOpen(true); }}>{tr('Edit')}</Btn>
+                      <Btn kind="danger" onClick={() => void deleteAttendance(a.id)}>{tr('Delete')}</Btn>
                     </div>
                   ];
                 })} />
@@ -204,9 +204,9 @@ export function StaffView() {
       {section === 'payroll' && (
         <div className="space-y-6">
           <div>
-            <h2 className="mb-2 font-semibold text-goblin-100">Payroll Calculation ({month})</h2>
+            <h2 className="mb-2 font-semibold text-goblin-100">{tr('Payroll Calculation (')}{month})</h2>
             {payroll ? (
-              <Table headers={['Staff', 'Role', 'Salary Config', 'Hours', 'Gross Wages', 'Advances (Solfa)', 'Bonuses', 'Deductions', 'Paid', 'Net Due', 'Actions']}
+              <Table headers={[tr('Staff'), tr('Role'), tr('Salary Config'), tr('Hours'), tr('Gross Wages'), tr('Advances (Solfa)'), tr('Bonuses'), tr('Deductions'), tr('Paid'), tr('Net Due'), tr('Actions')]}
                 rows={payroll.map((p) => [
                   p.name,
                   p.role,
@@ -218,13 +218,13 @@ export function StaffView() {
                   p.deductionsCents > 0 ? <span className="text-red-700">-${(p.deductionsCents / 100).toFixed(2)}</span> : '—',
                   p.paymentsCents > 0 ? `${(p.paymentsCents / 100).toFixed(2)}` : '—',
                   <span key={p.id} className={`font-bold ${p.netDueCents > 0 ? 'text-goblin-500' : p.netDueCents < 0 ? 'text-red-700' : 'text-goblin-300'}`}>
-                    {(p.netDueCents / 100).toFixed(2)} EGP
+                    {(p.netDueCents / 100).toFixed(2)} {tr('EGP')}
                   </span>,
                   <div key={p.id} className="flex flex-wrap gap-1">
-                    <Btn onClick={() => { setTxTargetStaff(p); setTxType('ADVANCE'); }}>Solfah</Btn>
-                    <Btn onClick={() => { setTxTargetStaff(p); setTxType('BONUS'); }}>Bonus</Btn>
-                    <Btn onClick={() => { setTxTargetStaff(p); setTxType('DEDUCTION'); }}>Penalty</Btn>
-                    <Btn kind="primary" onClick={() => { setTxTargetStaff(p); setTxType('SALARY_PAYMENT'); }}>Payout</Btn>
+                    <Btn onClick={() => { setTxTargetStaff(p); setTxType('ADVANCE'); }}>{tr('Solfah')}</Btn>
+                    <Btn onClick={() => { setTxTargetStaff(p); setTxType('BONUS'); }}>{tr('Bonus')}</Btn>
+                    <Btn onClick={() => { setTxTargetStaff(p); setTxType('DEDUCTION'); }}>{tr('Penalty')}</Btn>
+                    <Btn kind="primary" onClick={() => { setTxTargetStaff(p); setTxType('SALARY_PAYMENT'); }}>{tr('Payout')}</Btn>
                   </div>
                 ])} />
             ) : <Spinner />}
@@ -236,9 +236,9 @@ export function StaffView() {
       {section === 'transactions' && (
         <div className="space-y-6">
           <div>
-            <h2 className="mb-2 font-semibold text-goblin-100">Wages & Solfah Ledger ({month})</h2>
+            <h2 className="mb-2 font-semibold text-goblin-100">{tr('Wages & Solfah Ledger (')}{month})</h2>
             {transactions ? (
-              <Table headers={['Date', 'Staff', 'Type', 'Amount', 'Notes', 'Bookkeeping', 'Actions']}
+              <Table headers={[tr('Date'), tr('Staff'), tr('Type'), tr('Amount'), tr('Notes'), tr('Bookkeeping'), tr('Actions')]}
                 rows={transactions.map((t) => [
                   new Date(t.date).toLocaleDateString('en-EG'),
                   t.user.name,
@@ -246,11 +246,11 @@ export function StaffView() {
                     t.type === 'ADVANCE' ? 'bg-amber-100 text-amber-800' :
                     t.type === 'BONUS' ? 'bg-goblin-700 text-goblin-500' :
                     t.type === 'DEDUCTION' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
-                  }`}>{t.type}</span>,
+                  }`}>{tr(t.type)}</span>,
                   `${(t.amountCents / 100).toFixed(2)} EGP`,
                   t.notes ?? '—',
-                  t.journalEntry ? <span className="font-mono text-xs text-goblin-300">Journaled</span> : <span className="text-goblin-400 italic text-xs">Memo only</span>,
-                  <Btn key={t.id} kind="danger" onClick={() => void voidTransaction(t.id)}>Void</Btn>
+                  t.journalEntry ? <span className="font-mono text-xs text-goblin-300">{tr('Journaled')}</span> : <span className="text-goblin-400 italic text-xs">{tr('Memo only')}</span>,
+                  <Btn key={t.id} kind="danger" onClick={() => void voidTransaction(t.id)}>{tr('Void')}</Btn>
                 ])} />
             ) : <Spinner />}
           </div>
@@ -313,9 +313,9 @@ function StaffFormModal({ roles, onClose, onDone, staff }: { roles: Role[]; onCl
   const [err, setErr] = useState('');
 
   async function submit() {
-    if (!name.trim() || !roleId) { setErr('Name and role are required'); return; }
-    if (pin && !/^\d{4,6}$/.test(pin)) { setErr('PIN must be 4–6 digits'); return; }
-    if (!staff && !pin && !password) { setErr('Set a PIN (for POS) or a password (for back office)'); return; }
+    if (!name.trim() || !roleId) { setErr(tr('Name and role are required')); return; }
+    if (pin && !/^\d{4,6}$/.test(pin)) { setErr(tr('PIN must be 4–6 digits')); return; }
+    if (!staff && !pin && !password) { setErr(tr('Set a PIN (for POS) or a password (for back office)')); return; }
     try {
       const body: any = {
         name: name.trim(),
@@ -343,53 +343,53 @@ function StaffFormModal({ roles, onClose, onDone, staff }: { roles: Role[]; onCl
       await api(`/hr/staff/${savedStaff.id}`, { method: 'PATCH', body: salaryBody });
 
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title={staff ? "Edit staff member" : "New staff member"} onClose={onClose}>
+    <Modal title={staff ? tr('Edit staff member') : tr('New staff member')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Name"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Role">
+        <Field label={tr('Name')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Role')}>
           <Select value={roleId} onChange={setRoleId} allowEmpty="— pick —"
             options={roles.map((r) => ({ value: r.id, label: r.name }))} />
         </Field>
-        <Field label="Email (for back-office login)"><TextInput value={email} onChange={setEmail} autoComplete="new-password" /></Field>
-        <Field label={staff ? "Password (leave blank to keep unchanged)" : "Password (back office)"}>
+        <Field label={tr('Email (for back-office login)')}><TextInput value={email} onChange={setEmail} autoComplete="new-password" /></Field>
+        <Field label={staff ? tr('Password (leave blank to keep unchanged)') : tr('Password (back office)')}>
           <TextInput value={password} onChange={setPassword} type="password" autoComplete="new-password" />
         </Field>
-        <Field label={staff ? "PIN (leave blank to keep unchanged)" : "PIN (POS/KDS, 4–6 digits)"}>
+        <Field label={staff ? tr('PIN (leave blank to keep unchanged)') : tr('PIN (POS/KDS, 4–6 digits)')}>
           <TextInput value={pin} onChange={setPin} autoComplete="new-password" />
         </Field>
 
         <div className="border-t pt-3 space-y-3">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-goblin-300">Salary Configuration</h3>
-          <Field label="Wage Structure">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-goblin-300">{tr('Salary Configuration')}</h3>
+          <Field label={tr('Wage Structure')}>
             <Select value={salaryType} onChange={(val: any) => setSalaryType(val)} options={[
-              { value: 'MONTHLY', label: 'Monthly Fixed Salary' },
-              { value: 'HOURLY', label: 'Hourly Rate' }
+              { value: 'MONTHLY', label: tr('Monthly Fixed Salary') },
+              { value: 'HOURLY', label: tr('Hourly Rate') }
             ]} />
           </Field>
 
           {salaryType === 'MONTHLY' ? (
-            <Field label="Base Monthly Salary (EGP)"><TextInput type="number" value={baseSalary} onChange={setBaseSalary} /></Field>
+            <Field label={tr('Base Monthly Salary (EGP)')}><TextInput type="number" value={baseSalary} onChange={setBaseSalary} /></Field>
           ) : (
-            <Field label="Hourly Wage Rate (EGP)"><TextInput type="number" value={hourlyRate} onChange={setHourlyRate} /></Field>
+            <Field label={tr('Hourly Wage Rate (EGP)')}><TextInput type="number" value={hourlyRate} onChange={setHourlyRate} /></Field>
           )}
 
-          <Field label="Tips Points Weight (0 to exclude)">
+          <Field label={tr('Tips Points Weight (0 to exclude)')}>
             <TextInput type="number" value={tipsPoints} onChange={setTipsPoints} />
           </Field>
 
           <div className="flex items-center gap-2 py-2">
             <input type="checkbox" id="deservesBonus" checked={deservesBonus} onChange={(e) => setDeservesBonus(e.target.checked)}
               className="rounded border-goblin-700 text-indigo-600 focus:ring-indigo-500" />
-            <label htmlFor="deservesBonus" className="text-sm font-medium text-goblin-100">Eligible for Sales Bonus</label>
+            <label htmlFor="deservesBonus" className="text-sm font-medium text-goblin-100">{tr('Eligible for Sales Bonus')}</label>
           </div>
         </div>
 
-        <Btn kind="primary" onClick={() => void submit()}>{staff ? "Save" : "Create"}</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{staff ? tr('Save') : tr('Create')}</Btn>
       </div>
     </Modal>
   );
@@ -423,7 +423,7 @@ function PermissionMatrixModal({ roles, onClose, onSaved }: { roles: Role[]; onC
       }
       onSaved();
       onClose();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
     finally { setSaving(false); }
   }
 
@@ -434,13 +434,13 @@ function PermissionMatrixModal({ roles, onClose, onSaved }: { roles: Role[]; onC
   }
 
   return (
-    <Modal title="Role permissions" onClose={onClose} wide>
+    <Modal title={tr('Role permissions')} onClose={onClose} wide>
       <ErrorBanner message={err} />
       <div className="overflow-auto">
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-goblin-900 text-left text-goblin-300">
             <tr>
-              <th className="p-2">Permission</th>
+              <th className="p-2">{tr('Permission')}</th>
               {roles.map((r) => <th key={r.id} className="p-2 text-center">{r.name}</th>)}
             </tr>
           </thead>
@@ -469,9 +469,9 @@ function PermissionMatrixModal({ roles, onClose, onSaved }: { roles: Role[]; onC
       </div>
       <div className="mt-4 flex items-center gap-2">
         <Btn kind="primary" onClick={() => void save()} disabled={saving || !dirty.size}>
-          {saving ? 'Saving…' : `Save ${dirty.size ? `(${dirty.size} role${dirty.size > 1 ? 's' : ''})` : ''}`}
+          {saving ? tr('Saving…') : `${tr('Save')} ${dirty.size ? `(${dirty.size} role${dirty.size > 1 ? 's' : ''})` : ''}`}
         </Btn>
-        <p className="text-xs text-goblin-400">Owner permissions are locked to prevent locking yourself out.</p>
+        <p className="text-xs text-goblin-400">{tr('Owner permissions are locked to prevent locking yourself out.')}</p>
       </div>
     </Modal>
   );
@@ -485,8 +485,8 @@ function AttendanceFormModal({ log, staffList, onClose, onDone }: { log?: Attend
   const [err, setErr] = useState('');
 
   async function submit() {
-    if (!staffId) { setErr('Staff member is required'); return; }
-    if (!clockIn) { setErr('Clock In time is required'); return; }
+    if (!staffId) { setErr(tr('Staff member is required')); return; }
+    if (!clockIn) { setErr(tr('Clock In time is required')); return; }
     try {
       const body = {
         staffId,
@@ -501,14 +501,14 @@ function AttendanceFormModal({ log, staffList, onClose, onDone }: { log?: Attend
         await api('/hr/attendance', { method: 'POST', body });
       }
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Save failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Save failed')); }
   }
 
   return (
-    <Modal title={log ? "Edit Attendance Log" : "Add Manual Attendance"} onClose={onClose}>
+    <Modal title={log ? tr('Edit Attendance Log') : tr('Add Manual Attendance')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Staff Member">
+        <Field label={tr('Staff Member')}>
           {log ? (
             <div className="p-2 bg-goblin-800 rounded-lg text-sm text-goblin-100 font-semibold">{log.user.name}</div>
           ) : (
@@ -517,19 +517,19 @@ function AttendanceFormModal({ log, staffList, onClose, onDone }: { log?: Attend
           )}
         </Field>
 
-        <Field label="Clock In Time">
+        <Field label={tr('Clock In Time')}>
           <input type="datetime-local" value={clockIn} onChange={(e) => setClockIn(e.target.value)}
             className="w-full rounded-lg border border-goblin-700 p-2 text-sm" />
         </Field>
 
-        <Field label="Clock Out Time (Optional)">
+        <Field label={tr('Clock Out Time (Optional)')}>
           <input type="datetime-local" value={clockOut} onChange={(e) => setClockOut(e.target.value)}
             className="w-full rounded-lg border border-goblin-700 p-2 text-sm" />
         </Field>
 
-        <Field label="Note / Reason"><TextInput value={note} onChange={setNote} placeholder="e.g. forgot card, manual correction" /></Field>
+        <Field label={tr('Note / Reason')}><TextInput value={note} onChange={setNote} placeholder={tr('e.g. forgot card, manual correction')} /></Field>
 
-        <Btn kind="primary" onClick={() => void submit()}>Save Record</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{tr('Save Record')}</Btn>
       </div>
     </Modal>
   );
@@ -567,15 +567,15 @@ function RecordTxModal({ staff, type, onClose, onDone }: { staff: any; type: 'AD
   async function submit() {
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setErr('Amount must be greater than zero');
+      setErr(tr('Amount must be greater than zero'));
       return;
     }
     if (isCashOut && !accountId) {
-      setErr('Payment source/account is required');
+      setErr(tr('Payment source/account is required'));
       return;
     }
     if (!date) {
-      setErr('Date is required');
+      setErr(tr('Date is required'));
       return;
     }
     try {
@@ -590,37 +590,37 @@ function RecordTxModal({ staff, type, onClose, onDone }: { staff: any; type: 'AD
 
       await api('/hr/transactions', { method: 'POST', body });
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed to record transaction'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed to record transaction')); }
   }
 
   return (
     <Modal title={modalTitles[type]} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Staff Member">
+        <Field label={tr('Staff Member')}>
           <div className="p-2 bg-goblin-800 rounded-lg text-sm text-goblin-100 font-semibold">{staff.name}</div>
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Amount (EGP)">
+          <Field label={tr('Amount (EGP)')}>
             <TextInput type="number" value={amount} onChange={setAmount} />
           </Field>
-          <Field label="Date">
+          <Field label={tr('Date')}>
             <TextInput type="date" value={date} onChange={setDate} />
           </Field>
         </div>
 
         {isCashOut && (
-          <Field label="Payment Source / Account">
+          <Field label={tr('Payment Source / Account')}>
             <Select value={accountId} onChange={setAccountId} allowEmpty="— pick account (e.g. Safe, Fawry, Bank) —" options={assetAccounts} />
           </Field>
         )}
 
-        <Field label="Notes / Details">
-          <TextInput value={notes} onChange={setNotes} placeholder="e.g. solfa for transit, broke equipment, june final payout" />
+        <Field label={tr('Notes / Details')}>
+          <TextInput value={notes} onChange={setNotes} placeholder={tr('e.g. solfa for transit, broke equipment, june final payout')} />
         </Field>
 
-        <Btn kind="primary" onClick={() => void submit()}>Confirm Transaction</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{tr('Confirm Transaction')}</Btn>
       </div>
     </Modal>
   );
@@ -631,7 +631,7 @@ function flattenAccounts(nodes: any[], prefix = ''): { value: string; label: str
   for (const n of nodes) {
     list.push({
       value: n.id,
-      label: `${prefix}${n.code} — ${n.name} (${(n.balanceCents / 100).toFixed(2)} EGP)`,
+      label: `${prefix}${n.code} — ${n.name} (${(n.balanceCents / 100).toFixed(2)} ${tr('EGP)')}`,
       isPaymentSource: !!n.isPaymentSource,
       code: n.code,
       balanceCents: n.balanceCents,
@@ -644,6 +644,7 @@ function flattenAccounts(nodes: any[], prefix = ''): { value: string; label: str
 }
 
 import * as React from 'react';
+import { tr } from '../lib/i18n';
 
 interface TipsPreviewStaff {
   userId: string;
@@ -714,11 +715,11 @@ function TipsDistributionView({ onDone }: { onDone: () => void }) {
   async function handleDistribute() {
     setErr('');
     if (distributeCents <= 0) {
-      setErr('Amount to distribute must be greater than 0');
+      setErr(tr('Amount to distribute must be greater than 0'));
       return;
     }
     const eligibleCount = preview?.eligibleStaff?.length ?? 0;
-    if (!confirm(`Are you sure you want to distribute ${amount} EGP to ${eligibleCount} employees?`)) {
+    if (!confirm(`${tr('Are you sure you want to distribute')} ${amount} ${tr('EGP to')} ${eligibleCount} ${tr('employees?')}`)) {
       return;
     }
     setSubmitting(true);
@@ -733,12 +734,12 @@ function TipsDistributionView({ onDone }: { onDone: () => void }) {
           notes: notes.trim(),
         },
       });
-      alert('Tips distributed successfully!');
+      alert(tr('Tips distributed successfully!'));
       setNotes('');
       reloadPreview();
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Distribution failed');
+      setErr(e instanceof Error ? e.message : tr('Distribution failed'));
     } finally {
       setSubmitting(false);
     }
@@ -747,54 +748,54 @@ function TipsDistributionView({ onDone }: { onDone: () => void }) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="lg:col-span-1 space-y-4 rounded-xl border border-goblin-700 bg-goblin-900 p-5 shadow-sm">
-        <h3 className="font-semibold text-goblin-50">Distribute Tips</h3>
+        <h3 className="font-semibold text-goblin-50">{tr('Distribute Tips')}</h3>
         <ErrorBanner message={err} />
         
         <div className="rounded-lg bg-indigo-50 p-4 text-indigo-900">
-          <div className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Undistributed Tips Balance</div>
-          <div className="mt-1 text-2xl font-bold">{(preview.totalTipsCents / 100).toFixed(2)} EGP</div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-indigo-700">{tr('Undistributed Tips Balance')}</div>
+          <div className="mt-1 text-2xl font-bold">{(preview.totalTipsCents / 100).toFixed(2)} {tr('EGP')}</div>
         </div>
 
-        <Field label="Amount to Distribute (EGP)">
+        <Field label={tr('Amount to Distribute (EGP)')}>
           <TextInput type="number" value={amount} onChange={setAmount} />
         </Field>
 
-        <Field label="Payment Source">
+        <Field label={tr('Payment Source')}>
           <Select value={accountId} onChange={setAccountId} options={assetAccounts} />
         </Field>
 
-        <Field label="Notes">
-          <TextInput value={notes} onChange={setNotes} placeholder="e.g. Tips for Week 24" disabled={submitting} />
+        <Field label={tr('Notes')}>
+          <TextInput value={notes} onChange={setNotes} placeholder={tr('e.g. Tips for Week 24')} disabled={submitting} />
         </Field>
 
         <div className="pt-2">
           <Btn kind="primary" onClick={() => void handleDistribute()} disabled={submitting}>
-            {submitting ? 'Processing Payout...' : `Distribute & Pay ${amount} EGP`}
+            {submitting ? tr('Processing Payout...') : `${tr('Distribute & Pay')} ${amount} ${tr('EGP')}`}
           </Btn>
         </div>
       </div>
 
       <div className="lg:col-span-2 rounded-xl border border-goblin-700 bg-goblin-900 p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-goblin-50 font-medium">Eligible Employees Preview</h3>
+          <h3 className="font-semibold text-goblin-50 font-medium">{tr('Eligible Employees Preview')}</h3>
           <div className="text-xs bg-goblin-800 text-goblin-200 px-2.5 py-1 rounded-full font-semibold">
-            Total Weight: {totalPoints} Point{totalPoints !== 1 ? 's' : ''}
+            {tr('Total Weight:')} {totalPoints} {tr('Point')}{totalPoints !== 1 ? 's' : ''}
           </div>
         </div>
 
         {liveShares.length > 0 ? (
           <Table 
-            headers={['Employee', 'Tips Weight', 'Payout Share', 'Percentage']} 
+            headers={[tr('Employee'), tr('Tips Weight'), tr('Payout Share'), tr('Percentage')]} 
             rows={liveShares.map((s) => [
               s.name,
-              <span key={s.userId} className="font-semibold text-goblin-100">{s.tipsPoints} Pt{s.tipsPoints !== 1 ? 's' : ''}</span>,
-              <span key={s.userId} className="font-bold text-goblin-500">{(s.liveShareCents / 100).toFixed(2)} EGP</span>,
+              <span key={s.userId} className="font-semibold text-goblin-100">{s.tipsPoints} {tr('Pt')}{s.tipsPoints !== 1 ? 's' : ''}</span>,
+              <span key={s.userId} className="font-bold text-goblin-500">{(s.liveShareCents / 100).toFixed(2)} {tr('EGP')}</span>,
               <span key={s.userId} className="text-goblin-300 font-mono text-xs">{totalPoints > 0 ? `${((s.tipsPoints / totalPoints) * 100).toFixed(1)}%` : '0.0%'}</span>
             ])} 
           />
         ) : (
           <div className="text-center text-goblin-400 py-8 text-sm">
-            No employees have been assigned tips points weight. Configure them in the Directory tab.
+            {tr('No employees have been assigned tips points weight. Configure them in the Directory tab.')}
           </div>
         )}
       </div>
@@ -848,14 +849,14 @@ function SalesBonusView({ onDone }: { onDone: () => void }) {
     try {
       const pct = parseFloat(bonusPercentage);
       if (isNaN(pct) || pct <= 0) {
-        throw new Error('Bonus percentage must be a positive number');
+        throw new Error(tr('Bonus percentage must be a positive number'));
       }
       const data = await api<BonusPreview>(
         `/hr/bonus/preview?startDate=${startDate}T00:00:00.000Z&endDate=${endDate}T23:59:59.999Z&bonusPercentage=${pct}`
       );
       setPreview(data);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Calculation failed');
+      setErr(e instanceof Error ? e.message : tr('Calculation failed'));
       setPreview(null);
     } finally {
       setLoading(false);
@@ -869,12 +870,12 @@ function SalesBonusView({ onDone }: { onDone: () => void }) {
   async function handleDistribute() {
     setErr('');
     if (!preview || preview.bonusPoolCents <= 0) {
-      setErr('No bonus amount to distribute');
+      setErr(tr('No bonus amount to distribute'));
       return;
     }
     const pct = parseFloat(bonusPercentage);
     const eligibleCount = preview?.eligibleStaff?.length ?? 0;
-    if (!confirm(`Are you sure you want to payout EGP ${(preview.bonusPoolCents / 100).toFixed(2)} to ${eligibleCount} employees immediately?`)) {
+    if (!confirm(`${tr('Are you sure you want to payout EGP')} ${(preview.bonusPoolCents / 100).toFixed(2)} ${tr('to')} ${eligibleCount} ${tr('employees immediately?')}`)) {
       return;
     }
     setSubmitting(true);
@@ -891,12 +892,12 @@ function SalesBonusView({ onDone }: { onDone: () => void }) {
           notes: notes.trim(),
         },
       });
-      alert('Bonus distributed and paid successfully!');
+      alert(tr('Bonus distributed and paid successfully!'));
       setNotes('');
       handleCalculate();
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Distribution failed');
+      setErr(e instanceof Error ? e.message : tr('Distribution failed'));
     } finally {
       setSubmitting(false);
     }
@@ -904,36 +905,36 @@ function SalesBonusView({ onDone }: { onDone: () => void }) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="lg:col-span-1 space-y-4 rounded-xl border border-goblin-700 bg-goblin-900 p-5 shadow-sm">
-        <h3 className="font-semibold text-goblin-50">Bonus Distribution Setup</h3>
+        <h3 className="font-semibold text-goblin-50">{tr('Bonus Distribution Setup')}</h3>
         <ErrorBanner message={err} />
 
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Start Date">
+          <Field label={tr('Start Date')}>
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
               className="rounded-lg border border-goblin-700 p-2 text-sm w-full text-goblin-100 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
           </Field>
-          <Field label="End Date">
+          <Field label={tr('End Date')}>
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
               className="rounded-lg border border-goblin-700 p-2 text-sm w-full text-goblin-100 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
           </Field>
         </div>
 
-        <Field label="Bonus % of Net Sales">
+        <Field label={tr('Bonus % of Net Sales')}>
           <TextInput type="number" value={bonusPercentage} onChange={setBonusPercentage} disabled={submitting} />
         </Field>
 
-        <Field label="Payment Source">
+        <Field label={tr('Payment Source')}>
           <Select value={accountId} onChange={setAccountId} options={assetAccounts} />
         </Field>
 
-        <Field label="Notes">
-          <TextInput value={notes} onChange={setNotes} placeholder="e.g. Sales Bonus Mid-June" disabled={submitting} />
+        <Field label={tr('Notes')}>
+          <TextInput value={notes} onChange={setNotes} placeholder={tr('e.g. Sales Bonus Mid-June')} disabled={submitting} />
         </Field>
 
         {preview && preview.bonusPoolCents > 0 && (
           <div className="pt-2 border-t mt-4">
             <Btn kind="primary" onClick={() => void handleDistribute()} disabled={submitting}>
-              {submitting ? 'Posting Distribution...' : `Pay Bonus pool (${(preview.bonusPoolCents / 100).toFixed(2)} EGP)`}
+              {submitting ? tr('Posting Distribution...') : `${tr('Pay Bonus pool (')}${(preview.bonusPoolCents / 100).toFixed(2)} ${tr('EGP)')}`}
             </Btn>
           </div>
         )}
@@ -948,40 +949,40 @@ function SalesBonusView({ onDone }: { onDone: () => void }) {
           <div className="space-y-6">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div className="rounded-xl border border-goblin-700 bg-goblin-900 p-4 shadow-sm">
-                <div className="text-xs font-semibold uppercase tracking-wider text-goblin-400">Net Sales in Period</div>
-                <div className="mt-1 text-xl font-bold text-goblin-50">{(preview.totalNetSalesCents / 100).toFixed(2)} EGP</div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-goblin-400">{tr('Net Sales in Period')}</div>
+                <div className="mt-1 text-xl font-bold text-goblin-50">{(preview.totalNetSalesCents / 100).toFixed(2)} {tr('EGP')}</div>
               </div>
               <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-4 shadow-sm">
-                <div className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Calculated Bonus Pool</div>
-                <div className="mt-1 text-xl font-bold text-indigo-900">{(preview.bonusPoolCents / 100).toFixed(2)} EGP</div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-indigo-700">{tr('Calculated Bonus Pool')}</div>
+                <div className="mt-1 text-xl font-bold text-indigo-900">{(preview.bonusPoolCents / 100).toFixed(2)} {tr('EGP')}</div>
               </div>
               <div className="rounded-xl border border-goblin-700 bg-goblin-900 p-4 shadow-sm col-span-2 sm:col-span-1">
-                <div className="text-xs font-semibold uppercase tracking-wider text-goblin-400">Deserving Staff</div>
-                <div className="mt-1 text-xl font-bold text-goblin-50">{preview.eligibleStaff.length} Employees</div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-goblin-400">{tr('Deserving Staff')}</div>
+                <div className="mt-1 text-xl font-bold text-goblin-50">{preview.eligibleStaff.length} {tr('Employees')}</div>
               </div>
             </div>
 
             <div className="rounded-xl border border-goblin-700 bg-goblin-900 p-5 shadow-sm space-y-4">
-              <h3 className="font-semibold text-goblin-50">Equal Distribution Preview</h3>
+              <h3 className="font-semibold text-goblin-50">{tr('Equal Distribution Preview')}</h3>
               {preview.eligibleStaff.length > 0 ? (
                 <Table 
-                  headers={['Employee', 'Wages setup', 'Equal Bonus Share']} 
+                  headers={[tr('Employee'), tr('Wages setup'), tr('Equal Bonus Share')]} 
                   rows={preview.eligibleStaff.map((s) => [
                     s.name,
-                    <span key={s.userId} className="text-goblin-300 text-xs">Eligible for Bonus</span>,
-                    <span key={s.userId} className="font-bold text-goblin-500">{(s.shareCents / 100).toFixed(2)} EGP</span>
+                    <span key={s.userId} className="text-goblin-300 text-xs">{tr('Eligible for Bonus')}</span>,
+                    <span key={s.userId} className="font-bold text-goblin-500">{(s.shareCents / 100).toFixed(2)} {tr('EGP')}</span>
                   ])} 
                 />
               ) : (
                 <div className="text-center text-goblin-400 py-8 text-sm">
-                  No staff members are currently marked as eligible for the sales bonus. Mark them in the Staff Directory.
+                  {tr('No staff members are currently marked as eligible for the sales bonus. Mark them in the Staff Directory.')}
                 </div>
               )}
             </div>
           </div>
         ) : (
           <div className="flex h-64 items-center justify-center rounded-xl border border-goblin-700 bg-goblin-900 text-goblin-400 text-sm">
-            Enter parameters to calculate bonus preview.
+            {tr('Enter parameters to calculate bonus preview.')}
           </div>
         )}
       </div>

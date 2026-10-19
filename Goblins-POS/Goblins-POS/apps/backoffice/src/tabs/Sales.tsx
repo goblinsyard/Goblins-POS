@@ -3,6 +3,7 @@ import { api, downloadCsv, egp, cairoTime } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Table, useLoad } from '../lib/ui';
 import { AlertTriangle } from 'lucide-react';
 import { CategoryBars, ChartCard, RevenueTrend } from '../lib/charts';
+import { tr } from '../lib/i18n';
 
 const SECTIONS = ['sales reports', 'receipts', 'shifts report'] as const;
 const GROUPS = ['hour', 'day', 'department', 'category', 'item', 'method', 'staff', 'channel'] as const;
@@ -35,17 +36,17 @@ function SalesReports() {
         <a href={`/api/reports/sales.csv?groupBy=${groupBy}`} target="_blank" rel="noreferrer"
           onClick={(e) => { e.preventDefault(); void downloadCsv(`/reports/sales.csv?groupBy=${groupBy}`, `sales-${groupBy}.csv`); }}
           className="ml-auto rounded-lg bg-goblin-900 px-3 py-1.5 text-sm text-white">
-          Export CSV
+          {tr('Export CSV')}
         </a>
       </div>
-      <ChartCard title="Revenue" subtitle={`Gross revenue by ${groupBy}`}>
+      <ChartCard title={tr('Revenue')} subtitle={`${tr('Gross revenue by')} ${tr(groupBy)}`}>
         {groupBy === 'day' || groupBy === 'hour'
           ? <RevenueTrend points={chartRows} />
           : <CategoryBars rows={chartRows} horizontal={groupBy === 'item' || groupBy === 'category'} />}
       </ChartCard>
       {groupBy === 'channel' ? (
         <Table
-          headers={['Channel', 'Orders', 'Revenue', 'App commission', 'You keep']}
+          headers={[tr('Channel'), tr('Orders'), tr('Revenue'), tr('App commission'), tr('You keep')]}
           rows={rows.map((r) => [
             r.key, String(r.orders), egp(r.revenueCents),
             r.commissionCents ? egp(r.commissionCents) : '—', egp(r.revenueCents - (r.commissionCents ?? 0)),
@@ -53,7 +54,7 @@ function SalesReports() {
         />
       ) : (
         <Table
-          headers={[groupBy, 'Orders', 'Qty', 'Revenue']}
+          headers={[tr(groupBy), tr('Orders'), tr('Qty'), tr('Revenue')]}
           rows={rows.map((r) => [r.key, String(r.orders), String(r.quantity), egp(r.revenueCents)])}
         />
       )}
@@ -123,16 +124,16 @@ function ReceiptsList() {
     <div className="space-y-4">
       <div className="flex flex-wrap gap-4 items-center bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
         <div className="w-48">
-          <Field label="Time Period">
+          <Field label={tr('Time Period')}>
             <Select
               value={timePeriod}
               onChange={setTimePeriod}
               options={[
-                { value: 'today', label: 'Today' },
-                { value: 'yesterday', label: 'Yesterday' },
-                { value: 'last7', label: 'Last 7 Days' },
-                { value: 'last30', label: 'Last 30 Days' },
-                { value: 'custom', label: 'Custom Range' },
+                { value: 'today', label: tr('Today') },
+                { value: 'yesterday', label: tr('Yesterday') },
+                { value: 'last7', label: tr('Last 7 Days') },
+                { value: 'last30', label: tr('Last 30 Days') },
+                { value: 'custom', label: tr('Custom Range') },
               ]}
             />
           </Field>
@@ -141,7 +142,7 @@ function ReceiptsList() {
         {timePeriod === 'custom' && (
           <>
             <div className="w-36">
-              <Field label="From Date">
+              <Field label={tr('From Date')}>
                 <input
                   type="date"
                   value={startDate}
@@ -151,7 +152,7 @@ function ReceiptsList() {
               </Field>
             </div>
             <div className="w-36">
-              <Field label="To Date">
+              <Field label={tr('To Date')}>
                 <input
                   type="date"
                   value={endDate}
@@ -164,11 +165,11 @@ function ReceiptsList() {
         )}
 
         <div className="flex-1 min-w-[200px]">
-          <Field label="Smart Filter">
+          <Field label={tr('Smart Filter')}>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search Order #, Customer, Server..."
+                placeholder={tr('Search Order #, Customer, Server...')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full rounded-lg border border-goblin-700 p-2 pr-8 text-sm"
@@ -186,13 +187,13 @@ function ReceiptsList() {
         </div>
 
         <div className="self-end pb-1">
-          <Btn onClick={reload}>Refresh</Btn>
+          <Btn onClick={reload}>{tr('Refresh')}</Btn>
         </div>
       </div>
 
       <div className="rounded-xl bg-goblin-900 p-4 shadow overflow-hidden">
         <Table
-          headers={['Date/Time', 'Order #', 'Type', 'Status', 'Customer', 'Total', 'Payments', 'Actions']}
+          headers={[tr('Date/Time'), tr('Order #'), tr('Type'), tr('Status'), tr('Customer'), tr('Total'), tr('Payments'), tr('Actions')]}
           rows={(receipts ?? []).map((r) => {
             const statusBadge = (
               <span className={`px-2 py-0.5 rounded text-xs font-bold ${
@@ -200,7 +201,7 @@ function ReceiptsList() {
                 r.status === 'VOIDED' ? 'bg-red-100 text-red-800' :
                 'bg-yellow-100 text-yellow-800'
               }`}>
-                {r.status}
+                {tr(r.status)}
               </span>
             );
             return [
@@ -211,11 +212,11 @@ function ReceiptsList() {
               r.customer?.name ?? '—',
               egp(r.totalCents),
               r.payments.map((p) => `${p.method.name} (${egp(p.amountCents)})`).join(', ') || '—',
-              <Btn key={r.id} onClick={() => setSelectedReceipt(r)}>Details & Edit</Btn>
+              <Btn key={r.id} onClick={() => setSelectedReceipt(r)}>{tr('Details & Edit')}</Btn>
             ];
           })}
         />
-        {!receipts?.length && <p className="p-4 text-goblin-400">No orders found.</p>}
+        {!receipts?.length && <p className="p-4 text-goblin-400">{tr('No orders found.')}</p>}
       </div>
 
       {selectedReceipt && (
@@ -252,51 +253,51 @@ function ReceiptDetailModal({ receipt, onClose, onDone }: {
       });
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to update payment method');
+      setErr(e instanceof Error ? e.message : tr('Failed to update payment method'));
     }
   }
 
   return (
-    <Modal title={`Receipt Details #${receipt.number}`} onClose={onClose} wide>
+    <Modal title={`${tr('Receipt Details #')}${receipt.number}`} onClose={onClose} wide>
       <ErrorBanner message={err} />
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4 text-sm border-b pb-3">
           <div>
-            <p className="text-goblin-400">Type</p>
-            <p className="font-semibold text-goblin-50">{receipt.type}</p>
+            <p className="text-goblin-400">{tr('Type')}</p>
+            <p className="font-semibold text-goblin-50">{tr(receipt.type)}</p>
           </div>
           <div>
-            <p className="text-goblin-400">Status</p>
+            <p className="text-goblin-400">{tr('Status')}</p>
             <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${
               receipt.status === 'PAID' ? 'bg-goblin-700 text-goblin-500' :
               receipt.status === 'VOIDED' ? 'bg-red-100 text-red-800' :
               'bg-yellow-100 text-yellow-800'
             }`}>
-              {receipt.status}
+              {tr(receipt.status)}
             </span>
           </div>
           <div>
-            <p className="text-goblin-400">Date/Time</p>
-            <p className="font-semibold text-goblin-50">{receipt.closedAt ? cairoTime(receipt.closedAt) : `${cairoTime(receipt.openedAt)} (Open)`}</p>
+            <p className="text-goblin-400">{tr('Date/Time')}</p>
+            <p className="font-semibold text-goblin-50">{receipt.closedAt ? cairoTime(receipt.closedAt) : `${cairoTime(receipt.openedAt)} ${tr('(Open)')}`}</p>
           </div>
           <div>
-            <p className="text-goblin-400">Opened By</p>
+            <p className="text-goblin-400">{tr('Opened By')}</p>
             <p className="font-semibold text-goblin-50">{receipt.openedBy.name}</p>
           </div>
           <div>
-            <p className="text-goblin-400">Customer</p>
-            <p className="font-semibold text-goblin-50">{receipt.customer ? `${receipt.customer.name} (${receipt.customer.phone})` : 'Walk-in'}</p>
+            <p className="text-goblin-400">{tr('Customer')}</p>
+            <p className="font-semibold text-goblin-50">{receipt.customer ? `${receipt.customer.name} (${receipt.customer.phone})` : tr('Walk-in')}</p>
           </div>
         </div>
 
         <div>
-          <h3 className="text-sm font-bold text-goblin-100 mb-2">Payments</h3>
+          <h3 className="text-sm font-bold text-goblin-100 mb-2">{tr('Payments')}</h3>
           <div className="space-y-3">
             {receipt.payments.map((p) => (
               <div key={p.id} className="flex justify-between items-center bg-goblin-800 p-3 rounded-lg border">
                 <div>
                   <span className="font-semibold text-goblin-50">{egp(p.amountCents)}</span>
-                  <span className="text-xs text-goblin-400 ml-2">via {p.method.name}</span>
+                  <span className="text-xs text-goblin-400 ml-2">{tr('via')} {p.method.name}</span>
                 </div>
                 {editingPaymentId === p.id ? (
                   <div className="flex gap-2 items-center">
@@ -305,12 +306,12 @@ function ReceiptDetailModal({ receipt, onClose, onDone }: {
                       onChange={setSelectedMethodId}
                       options={(methods ?? []).filter((m) => m.isActive).map((m) => ({ value: m.id, label: m.name }))}
                     />
-                    <Btn kind="primary" onClick={() => void handleUpdatePayment(p.id)}>Save</Btn>
-                    <Btn onClick={() => setEditingPaymentId(null)}>Cancel</Btn>
+                    <Btn kind="primary" onClick={() => void handleUpdatePayment(p.id)}>{tr('Save')}</Btn>
+                    <Btn onClick={() => setEditingPaymentId(null)}>{tr('Cancel')}</Btn>
                   </div>
                 ) : (
                   <Btn onClick={() => { setEditingPaymentId(p.id); setSelectedMethodId(p.method.id); }}>
-                    Edit Payment Method
+                    {tr('Edit Payment Method')}
                   </Btn>
                 )}
               </div>
@@ -319,7 +320,7 @@ function ReceiptDetailModal({ receipt, onClose, onDone }: {
         </div>
 
         <div className="flex justify-between items-center border-t pt-3 text-sm font-bold">
-          <span>Total Paid</span>
+          <span>{tr('Total Paid')}</span>
           <span className="text-goblin-50">{egp(receipt.totalCents)}</span>
         </div>
       </div>
@@ -350,23 +351,23 @@ function ShiftsReport() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-goblin-50">Shifts Report</h2>
-        <Btn onClick={reload}>Refresh</Btn>
+        <h2 className="text-lg font-bold text-goblin-50">{tr('Shifts Report')}</h2>
+        <Btn onClick={reload}>{tr('Refresh')}</Btn>
       </div>
 
       <div className="rounded-xl bg-goblin-900 p-4 shadow overflow-hidden">
         <Table
           headers={[
-            'Opened At',
-            'Closed At',
-            'Status',
-            'Operator',
-            'Opening Float',
-            'Tips',
-            'Expected Cash',
-            'Actual Counted',
-            'Difference',
-            'Actions'
+            tr('Opened At'),
+            tr('Closed At'),
+            tr('Status'),
+            tr('Operator'),
+            tr('Opening Float'),
+            tr('Tips'),
+            tr('Expected Cash'),
+            tr('Actual Counted'),
+            tr('Difference'),
+            tr('Actions')
           ]}
           rows={(shifts ?? []).map((s) => {
             const isClosed = s.status === 'CLOSED';
@@ -374,7 +375,7 @@ function ShiftsReport() {
               <span className={`px-2 py-1 rounded text-xs font-bold ${
                 isClosed ? 'bg-goblin-800 text-goblin-100' : 'bg-goblin-700 text-goblin-500'
               }`}>
-                {s.status}
+                {tr(s.status)}
               </span>
             );
 
@@ -394,11 +395,11 @@ function ShiftsReport() {
                   {s.varianceCents > 0 ? '+' : ''}{egp(s.varianceCents)}
                 </span>
               ) : '—',
-              <Btn key={s.id} onClick={() => setSelectedShiftId(s.id)}>View Report</Btn>
+              <Btn key={s.id} onClick={() => setSelectedShiftId(s.id)}>{tr('View Report')}</Btn>
             ];
           })}
         />
-        {!shifts?.length && <p className="p-4 text-goblin-400">No shifts found.</p>}
+        {!shifts?.length && <p className="p-4 text-goblin-400">{tr('No shifts found.')}</p>}
       </div>
 
       {selectedShiftId && (
@@ -472,7 +473,7 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
     try {
       const cents = Math.round(parseFloat(newCount) * 100);
       if (isNaN(cents) || cents < 0) {
-        throw new Error('Please enter a valid count amount');
+        throw new Error(tr('Please enter a valid count amount'));
       }
       await api(`/shifts/${shiftId}/reconcile`, {
         method: 'POST',
@@ -490,7 +491,7 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
 
   if (error) {
     return (
-      <Modal title="Shift Report Details" onClose={onClose} wide>
+      <Modal title={tr('Shift Report Details')} onClose={onClose} wide>
         <ErrorBanner message={error} />
       </Modal>
     );
@@ -498,8 +499,8 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
 
   if (!data) {
     return (
-      <Modal title="Shift Report Details" onClose={onClose} wide>
-        <p className="p-8 text-center text-goblin-400">Loading shift report details...</p>
+      <Modal title={tr('Shift Report Details')} onClose={onClose} wide>
+        <p className="p-8 text-center text-goblin-400">{tr('Loading shift report details...')}</p>
       </Modal>
     );
   }
@@ -508,96 +509,96 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
   const isClosed = shift.status === 'CLOSED';
 
   const formatMovementKind = (kind: string) => {
-    return kind.replace('_', ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+    return tr(kind.replace('_', ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()));
   };
 
   return (
-    <Modal title={`Shift Report Details - ${isClosed ? 'Z-Report' : 'X-Report (Live)'}`} onClose={onClose} wide>
+    <Modal title={`${tr('Shift Report Details -')} ${isClosed ? 'Z-Report' : 'X-Report (Live)'}`} onClose={onClose} wide>
       <div className="space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-goblin-800 p-4 rounded-xl border border-goblin-800 text-sm">
           <div>
-            <p className="text-xs uppercase tracking-wide text-goblin-400">Status</p>
+            <p className="text-xs uppercase tracking-wide text-goblin-400">{tr('Status')}</p>
             <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-bold ${
               isClosed ? 'bg-goblin-700 text-goblin-100' : 'bg-goblin-700 text-goblin-500'
             }`}>
-              {shift.status}
+              {tr(shift.status)}
             </span>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-goblin-400">Operator</p>
+            <p className="text-xs uppercase tracking-wide text-goblin-400">{tr('Operator')}</p>
             <p className="font-semibold text-goblin-50 mt-1">{shift.openedBy.name}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-goblin-400">Opened At</p>
+            <p className="text-xs uppercase tracking-wide text-goblin-400">{tr('Opened At')}</p>
             <p className="font-semibold text-goblin-50 mt-1">{cairoTime(shift.openedAt)}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wide text-goblin-400">Closed At</p>
-            <p className="font-semibold text-goblin-50 mt-1">{shift.closedAt ? cairoTime(shift.closedAt) : 'Still Open'}</p>
+            <p className="text-xs uppercase tracking-wide text-goblin-400">{tr('Closed At')}</p>
+            <p className="font-semibold text-goblin-50 mt-1">{shift.closedAt ? cairoTime(shift.closedAt) : tr('Still Open')}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-goblin-900 p-4 rounded-xl border border-goblin-700 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-goblin-100 border-b pb-2 mb-2">Sales Summary</h3>
+            <h3 className="text-sm font-bold text-goblin-100 border-b pb-2 mb-2">{tr('Sales Summary')}</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-goblin-300">Gross Sales</span>
+                <span className="text-goblin-300">{tr('Gross Sales')}</span>
                 <span className="font-semibold text-goblin-50">{egp(report.grossCents)}</span>
               </div>
               <div className="flex justify-between text-red-600">
-                <span>Discounts ({report.discountCount})</span>
+                <span>{tr('Discounts (')}{report.discountCount})</span>
                 <span>-{egp(report.discountCents)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-goblin-300">Tax</span>
+                <span className="text-goblin-300">{tr('Tax')}</span>
                 <span className="font-semibold text-goblin-50">{egp(report.taxCents)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-goblin-300">Service Charge</span>
+                <span className="text-goblin-300">{tr('Service Charge')}</span>
                 <span className="font-semibold text-goblin-50">{egp(report.serviceChargeCents)}</span>
               </div>
               <div className="flex justify-between text-goblin-500 font-semibold">
-                <span>Tips</span>
+                <span>{tr('Tips')}</span>
                 <span>{egp(report.tipsCents)}</span>
               </div>
               <div className="flex justify-between border-t pt-2 font-bold text-base text-goblin-50">
-                <span>Net Sales</span>
+                <span>{tr('Net Sales')}</span>
                 <span>{egp(report.subtotalCents)}</span>
               </div>
               <div className="flex justify-between text-xs text-goblin-400 pt-1">
-                <span>Paid Orders: {report.orderCount}</span>
-                <span>Voided Orders: {report.voidedCount}</span>
+                <span>{tr('Paid Orders:')} {report.orderCount}</span>
+                <span>{tr('Voided Orders:')} {report.voidedCount}</span>
               </div>
             </div>
           </div>
 
           <div className="bg-goblin-900 p-4 rounded-xl border border-goblin-700 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-goblin-100 border-b pb-2 mb-2">Cash Drawer Reconciliation</h3>
+            <h3 className="text-sm font-bold text-goblin-100 border-b pb-2 mb-2">{tr('Cash Drawer Reconciliation')}</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-goblin-300">Opening Float</span>
+                <span className="text-goblin-300">{tr('Opening Float')}</span>
                 <span className="font-semibold text-goblin-50">{egp(report.cash.floatCents)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-goblin-300">Cash Sales</span>
+                <span className="text-goblin-300">{tr('Cash Sales')}</span>
                 <span className="font-semibold text-goblin-50">{egp(report.cash.salesCents)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-goblin-300">Cash Movements</span>
+                <span className="text-goblin-300">{tr('Cash Movements')}</span>
                 <span className={`font-semibold ${report.cash.movementsCents < 0 ? 'text-red-600' : report.cash.movementsCents > 0 ? 'text-goblin-500' : 'text-goblin-50'}`}>
                   {report.cash.movementsCents > 0 ? '+' : ''}{egp(report.cash.movementsCents)}
                 </span>
               </div>
               <div className="flex justify-between border-t pt-2 font-semibold text-goblin-50">
-                <span>Expected Drawer Cash</span>
+                <span>{tr('Expected Drawer Cash')}</span>
                 <span>{egp(report.cash.expectedCents)}</span>
               </div>
 
               {isClosed ? (
                 <>
                   <div className="flex justify-between items-center">
-                    <span className="text-goblin-300 font-semibold">Actual Counted Cash</span>
+                    <span className="text-goblin-300 font-semibold">{tr('Actual Counted Cash')}</span>
                     {!isEditingCount ? (
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-goblin-50">{egp(report.countedCents ?? shift.countedCents ?? 0)}</span>
@@ -609,7 +610,7 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
                           }}
                           className="text-xs text-indigo-600 hover:text-indigo-800 underline font-semibold"
                         >
-                          Edit
+                          {tr('Edit')}
                         </button>
                       </div>
                     ) : (
@@ -626,21 +627,21 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
                           className="px-1.5 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-bold hover:bg-indigo-700"
                           disabled={reconcileLoading}
                         >
-                          Save
+                          {tr('Save')}
                         </button>
                         <button
                           onClick={() => setIsEditingCount(false)}
                           className="px-1.5 py-0.5 bg-goblin-700 text-goblin-100 rounded text-[10px] hover:bg-goblin-700"
                           disabled={reconcileLoading}
                         >
-                          Cancel
+                          {tr('Cancel')}
                         </button>
                       </div>
                     )}
                   </div>
                   {reconcileErr && <p className="text-[10px] text-red-600 text-right mt-1">{reconcileErr}</p>}
                   <div className="flex justify-between border-t pt-2 font-bold text-base">
-                    <span>Variance (Difference)</span>
+                    <span>{tr('Variance (Difference)')}</span>
                     <span className={(report.varianceCents ?? shift.varianceCents ?? 0) < 0 ? 'text-red-600' : (report.varianceCents ?? shift.varianceCents ?? 0) > 0 ? 'text-goblin-500' : 'text-goblin-50'}>
                       {(report.varianceCents ?? shift.varianceCents ?? 0) > 0 ? '+' : ''}{egp(report.varianceCents ?? shift.varianceCents ?? 0)}
                     </span>
@@ -648,7 +649,7 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
                 </>
               ) : (
                 <div className="inline-flex items-center gap-1 p-2 bg-yellow-50 text-yellow-800 rounded-lg text-xs border border-yellow-100 mt-2">
-                  <AlertTriangle className="h-4 w-4" /> This shift is still active. Final counted cash and variance will be determined upon shift closure.
+                  <AlertTriangle className="h-4 w-4" /> {tr('This shift is still active. Final counted cash and variance will be determined upon shift closure.')}
                 </div>
               )}
             </div>
@@ -657,22 +658,22 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-goblin-900 p-4 rounded-xl border border-goblin-700 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-goblin-100 border-b pb-2 mb-2">Payment Methods Breakdown</h3>
+            <h3 className="text-sm font-bold text-goblin-100 border-b pb-2 mb-2">{tr('Payment Methods Breakdown')}</h3>
             <div className="space-y-2 text-sm">
               {Object.entries(report.byMethod).map(([methodName, data]) => (
                 <div key={methodName} className="flex justify-between">
-                  <span className="text-goblin-300">{methodName} ({data.count} tx)</span>
+                  <span className="text-goblin-300">{methodName} ({data.count} {tr('tx)')}</span>
                   <span className="font-semibold text-goblin-50">{egp(data.amountCents)}</span>
                 </div>
               ))}
               {Object.keys(report.byMethod).length === 0 && (
-                <p className="text-xs text-goblin-400 py-2">No payments recorded in this shift.</p>
+                <p className="text-xs text-goblin-400 py-2">{tr('No payments recorded in this shift.')}</p>
               )}
             </div>
           </div>
 
           <div className="bg-goblin-900 p-4 rounded-xl border border-goblin-700 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-goblin-100 border-b pb-2 mb-2">Departments Breakdown</h3>
+            <h3 className="text-sm font-bold text-goblin-100 border-b pb-2 mb-2">{tr('Departments Breakdown')}</h3>
             <div className="space-y-2 text-sm">
               {Object.entries(report.byDepartment).map(([dept, amountCents]) => (
                 <div key={dept} className="flex justify-between">
@@ -681,23 +682,23 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
                 </div>
               ))}
               {Object.keys(report.byDepartment).length === 0 && (
-                <p className="text-xs text-goblin-400 py-2">No sales recorded in this shift.</p>
+                <p className="text-xs text-goblin-400 py-2">{tr('No sales recorded in this shift.')}</p>
               )}
             </div>
           </div>
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-sm font-bold text-goblin-100">Cash Movements History</h3>
+          <h3 className="text-sm font-bold text-goblin-100">{tr('Cash Movements History')}</h3>
           <div className="max-h-60 overflow-y-auto rounded-lg border">
             <table className="w-full text-left text-sm">
               <thead className="bg-goblin-800 text-goblin-300 text-xs uppercase sticky top-0">
                 <tr>
-                  <th className="p-3">Time</th>
-                  <th className="p-3">Kind</th>
-                  <th className="p-3">Cashier</th>
-                  <th className="p-3">Reason</th>
-                  <th className="p-3 text-right">Amount</th>
+                  <th className="p-3">{tr('Time')}</th>
+                  <th className="p-3">{tr('Kind')}</th>
+                  <th className="p-3">{tr('Cashier')}</th>
+                  <th className="p-3">{tr('Reason')}</th>
+                  <th className="p-3 text-right">{tr('Amount')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -722,7 +723,7 @@ function ShiftReportDetailModal({ shiftId, onClose, onDone }: { shiftId: string;
                 ))}
                 {shift.cashMovements.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="p-4 text-center text-goblin-400 text-sm">No cash movements recorded.</td>
+                    <td colSpan={5} className="p-4 text-center text-goblin-400 text-sm">{tr('No cash movements recorded.')}</td>
                   </tr>
                 )}
               </tbody>

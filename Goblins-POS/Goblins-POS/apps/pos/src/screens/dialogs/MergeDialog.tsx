@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
-import { fmtMoney, t } from '../../lib/i18n';
+import { fmtMoney, t, tx } from '../../lib/i18n';
 import { usePos } from '../../lib/store';
 import type { OpenOrderSummary } from '../../lib/types';
 
@@ -25,7 +25,7 @@ export function MergeDialog({ sourceOrderId, onMerged, onClose }: {
       await api(`/orders/${sourceOrderId}/merge`, { method: 'POST', body: { targetOrderId } });
       onMerged(targetOrderId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     } finally {
       setBusy(false);
     }

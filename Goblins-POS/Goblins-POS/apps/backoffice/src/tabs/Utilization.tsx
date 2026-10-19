@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react';
 import { api, egp, pct } from '../lib/api';
 import { Card, ErrorBanner, Pills, Spinner, Table, useLoad } from '../lib/ui';
 import { CategoryBars, ChartCard } from '../lib/charts';
+import { tr } from '../lib/i18n';
 
 interface ResourceRow {
   resourceId: string; name: string; type: string; sessions: number; minutes: number;
@@ -19,17 +20,17 @@ interface Utilization {
 type RangeV = '7' | '14' | '30' | '90';
 type TypeV = 'ALL' | 'BILLIARDS_TABLE' | 'PS_ROOM';
 const RANGES: { value: RangeV; label: string }[] = [
-  { value: '7', label: '7 days' },
-  { value: '14', label: '14 days' },
-  { value: '30', label: '30 days' },
-  { value: '90', label: '90 days' },
+  { value: '7', label: tr('7 days') },
+  { value: '14', label: tr('14 days') },
+  { value: '30', label: tr('30 days') },
+  { value: '90', label: tr('90 days') },
 ];
 const TYPES: { value: TypeV; label: string }[] = [
-  { value: 'ALL', label: 'All' },
-  { value: 'BILLIARDS_TABLE', label: 'Billiards' },
-  { value: 'PS_ROOM', label: 'PlayStation' },
+  { value: 'ALL', label: tr('All') },
+  { value: 'BILLIARDS_TABLE', label: tr('Billiards') },
+  { value: 'PS_ROOM', label: tr('PlayStation') },
 ];
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => tr(d));
 const hourLabel = (h: number) => `${String(h).padStart(2, '0')}:00`;
 const hours = (min: number) => `${(min / 60).toFixed(1)} h`;
 
@@ -68,21 +69,21 @@ function Report({ data, hover, setHover }: {
   return (
     <>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Card title="Occupancy" value={pct(totals.occupancyPctBps)} />
-        <Card title="Time revenue" value={egp(totals.revenueCents)} />
-        <Card title="Food & drink at tables" value={egp(totals.fnbRevenueCents)} />
-        <Card title="Sessions · avg length" value={`${totals.sessions} · ${totals.avgSessionMinutes} min`} />
+        <Card title={tr('Occupancy')} value={pct(totals.occupancyPctBps)} />
+        <Card title={tr('Time revenue')} value={egp(totals.revenueCents)} />
+        <Card title={tr('Food & drink at tables')} value={egp(totals.fnbRevenueCents)} />
+        <Card title={tr('Sessions · avg length')} value={`${totals.sessions} · ${totals.avgSessionMinutes} ${tr('min')}`} />
       </div>
 
       <p className="mt-3 text-sm text-goblin-300">
-        {peak ? <>Busiest hour: <strong className="text-goblin-100">{DAYS[peak.dayOfWeek]} {hourLabel(peak.hour)}</strong>. </> : null}
-        {idle.length > 0 && <>No sessions at all on <strong className="text-goblin-100">{idle.map((r) => r.name).join(', ')}</strong>. </>}
-        Occupancy is measured against {data.openHoursPerDay} open hours a day (setting <code>business.openHoursPerDay</code>).
+        {peak ? <>{tr('Busiest hour:')} <strong className="text-goblin-100">{DAYS[peak.dayOfWeek]} {hourLabel(peak.hour)}</strong>. </> : null}
+        {idle.length > 0 && <>{tr('No sessions at all on')} <strong className="text-goblin-100">{idle.map((r) => r.name).join(', ')}</strong>. </>}
+        {tr('Occupancy is measured against')} {data.openHoursPerDay} {tr('open hours a day (setting')} <code>{tr('business.openHoursPerDay')}</code>).
       </p>
 
       <div className="mt-4">
         <Table
-          headers={['Table / room', 'Type', 'Occupancy', 'Sessions', 'Hours', 'Avg session', 'Time revenue', 'Food & drink', 'Rev / open hour']}
+          headers={[tr('Table / room'), tr('Type'), tr('Occupancy'), tr('Sessions'), tr('Hours'), tr('Avg session'), tr('Time revenue'), tr('Food & drink'), tr('Rev / open hour')]}
           rows={data.resources.map((r) => [
             r.name,
             r.type === 'PS_ROOM' ? 'PlayStation' : 'Billiards',
@@ -94,7 +95,7 @@ function Report({ data, hover, setHover }: {
             </div>,
             String(r.sessions),
             hours(r.minutes),
-            r.sessions ? `${r.avgSessionMinutes} min` : '—',
+            r.sessions ? `${r.avgSessionMinutes} ${tr('min')}` : '—',
             egp(r.revenueCents),
             egp(r.fnbRevenueCents),
             egp(r.revenuePerAvailableHourCents),
@@ -103,18 +104,18 @@ function Report({ data, hover, setHover }: {
       </div>
 
       <div className="mt-6">
-        <ChartCard title="Time revenue per open hour" subtitle="By table / room">
+        <ChartCard title={tr('Time revenue per open hour')} subtitle={tr('By table / room')}>
           <CategoryBars horizontal rows={data.resources.map((r) => ({ label: r.name, value: r.revenuePerAvailableHourCents }))} />
         </ChartCard>
       </div>
 
       <div className="mt-6 rounded-xl bg-goblin-900 p-4 shadow">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-semibold text-goblin-100">When tables are busy</h2>
+          <h2 className="font-semibold text-goblin-100">{tr('When tables are busy')}</h2>
           <p className="text-sm text-goblin-300" aria-live="polite">
             {hover
-              ? <>{DAYS[hover.dow]} {hourLabel(hover.hour)}–{hourLabel((hover.hour + 1) % 24)}: <strong className="text-goblin-100">{hours(hover.minutes)}</strong> played</>
-              : 'Hover a cell for details'}
+              ? <>{DAYS[hover.dow]} {hourLabel(hover.hour)}–{hourLabel((hover.hour + 1) % 24)}: <strong className="text-goblin-100">{hours(hover.minutes)}</strong> {tr('played')}</>
+              : tr('Hover a cell for details')}
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -145,11 +146,11 @@ function Report({ data, hover, setHover }: {
           </div>
         </div>
         <div className="mt-3 flex items-center gap-2 text-xs text-goblin-400">
-          <span>Quiet</span>
+          <span>{tr('Quiet')}</span>
           {[0.2, 0.4, 0.6, 0.8, 1].map((a) => (
             <span key={a} className="h-3 w-5 rounded-sm" style={{ backgroundColor: `rgb(var(--goblin-500) / ${a})` }} />
           ))}
-          <span>Busy (up to {hours(maxHeat)} in one hour slot)</span>
+          <span>{tr('Busy (up to')} {hours(maxHeat)} {tr('in one hour slot)')}</span>
         </div>
       </div>
     </>

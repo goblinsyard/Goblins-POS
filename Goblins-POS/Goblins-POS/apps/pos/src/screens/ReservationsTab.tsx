@@ -4,7 +4,7 @@ import {
   Star, StickyNote, Timer, TriangleAlert, User, Users, UtensilsCrossed, X,
 } from 'lucide-react';
 import { api } from '../lib/api';
-import { fmtMoney, t } from '../lib/i18n';
+import { fmtMoney, t, tx } from '../lib/i18n';
 import { usePos } from '../lib/store';
 import type { FloorZone, Order } from '../lib/types';
 
@@ -93,7 +93,7 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
       const data = await api<Reservation[]>('/reservations/timeline');
       setReservations(data);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to load reservations');
+      setErr(e instanceof Error ? e.message : tx('Failed to load reservations'));
     } finally {
       setLoading(false);
     }
@@ -109,7 +109,7 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
       await api(`/reservations/${id}/status/${status.toLowerCase()}`, { method: 'POST' });
       await load();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to update status');
+      setErr(e instanceof Error ? e.message : tx('Failed to update status'));
     }
   }
 
@@ -146,7 +146,7 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
         openOrder(order.id);
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Check-in failed');
+      setErr(e instanceof Error ? e.message : tx('Check-in failed'));
     }
   }
 
@@ -156,7 +156,7 @@ export function ReservationsTab({ zones }: { zones: FloorZone[] }) {
       await api('/reservations/sweep', { method: 'POST' });
       await load();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Sweep failed');
+      setErr(e instanceof Error ? e.message : tx('Sweep failed'));
     }
   }
 
@@ -985,7 +985,7 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
       });
       onCreated();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Booking failed');
+      setErr(e instanceof Error ? e.message : tx('Booking failed'));
     } finally {
       setBusy(false);
     }

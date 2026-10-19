@@ -122,6 +122,30 @@
       people: 'أشخاص', saveCode: 'احتفظ بالكود ده — تقدر تستعلم بيه عن حجزك.', notFound: 'مفيش حجز بالكود ده.',
       weWillCall: (egp) => `هنكلمك على واتساب بطريقة دفع العربون (${egp} جنيه).`, tooMany: 'محاولات كتير — استنى دقيقة وجرّب تاني.' },
   };
+  // server messages a customer can see, in Arabic
+  const SRV_AR = {
+    'Online booking is closed right now': 'الحجز أونلاين مغلق حاليًا',
+    'Please enter a valid Egyptian mobile number (01XXXXXXXXX)': 'من فضلك أدخل رقم موبايل مصري صحيح (01XXXXXXXXX)',
+    'Please enter your name': 'من فضلك أدخل اسمك',
+    'Invalid date or time': 'تاريخ أو وقت غير صحيح',
+    'Invalid duration': 'مدة غير صحيحة',
+    'Invalid party size': 'عدد أشخاص غير صحيح',
+    'We are closed at that time': 'المكان مغلق في هذا الوقت',
+    'That booking would run past closing time': 'الحجز ده هيعدّي وقت الإغلاق',
+    'You already have 2 upcoming bookings — call us to book more': 'عندك حجزين قادمين بالفعل — كلمنا لو عايز تحجز أكتر',
+    'Nothing bookable matches that choice': 'مفيش حاجة متاحة للحجز بالاختيار ده',
+    'That time was just taken — please pick another slot': 'الموعد ده اتحجز حالًا — اختار موعد تاني',
+    'Booking not found': 'مفيش حجز بالكود ده',
+  };
+  const srvMsg = (m) => {
+    if (lang !== 'ar' || !m) return m;
+    if (SRV_AR[m]) return SRV_AR[m];
+    let x = /^Please book at least (\d+) minutes ahead$/.exec(m);
+    if (x) return `احجز قبلها بـ ${x[1]} دقيقة على الأقل`;
+    x = /^Bookings open (\d+) days ahead$/.exec(m);
+    if (x) return `الحجز متاح لحد ${x[1]} يوم قدام`;
+    return m;
+  };
   const qs = new URLSearchParams(location.search);
   let lang = qs.get('lang') === 'ar' || (!qs.get('lang') && (navigator.language || '').startsWith('ar')) ? 'ar' : 'en';
   const $ = (id) => document.getElementById(id);
@@ -138,7 +162,7 @@
   async function get(path) {
     const r = await fetch(API + path);
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(Array.isArray(j.message) ? j.message.join(', ') : j.message || 'Error');
+    if (!r.ok) throw new Error(srvMsg(Array.isArray(j.message) ? j.message.join(', ') : j.message || 'Error'));
     return j;
   }
 
@@ -261,7 +285,7 @@
       });
       const j = await r.json().catch(() => ({}));
       if (r.status === 429) throw new Error(T[lang].tooMany);
-      if (!r.ok) throw new Error(Array.isArray(j.message) ? j.message.join(', ') : j.message || 'Error');
+      if (!r.ok) throw new Error(srvMsg(Array.isArray(j.message) ? j.message.join(', ') : j.message || 'Error'));
       try { localStorage.setItem('gy.lastBooking', j.code); } catch { /* optional */ }
       $('form').classList.add('hidden');
       $('done').innerHTML = bookingCard(j, true) + `<button class="link" type="button" id="again">${esc(T[lang].back)}</button>`;

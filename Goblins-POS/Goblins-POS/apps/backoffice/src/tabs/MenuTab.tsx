@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { api, egp, parseEgp } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Table, TextInput, useLoad } from '../lib/ui';
-import { X, Star, ChevronDown, AlertTriangle } from 'lucide-react';
+import { X, Star, ChevronDown, AlertTriangle, ImagePlus, ImageIcon } from 'lucide-react';
+import { resizeToSquareDataUrl } from '../lib/image';
+import { tr } from '../lib/i18n';
 
 interface TaxRate { id: string; name: string; isDefault: boolean }
 interface MenuCat {
@@ -25,6 +27,7 @@ interface MenuCat {
     department?: string;
     taxRate?: TaxRate | null;
     isFavorite?: boolean;
+    imageUrl?: string | null;
   }[];
 }
 
@@ -130,7 +133,7 @@ export function MenuView() {
   }
   const [editItemOpen, setEditItemOpen] = useState<any | null>(null);
   async function deleteItem(itemId: string, itemName: string) {
-    if (!confirm(`Are you sure you want to delete or deactivate menu item "${itemName}"?`)) return;
+    if (!confirm(`${tr('Are you sure you want to delete or deactivate menu item "')}${itemName}"?`)) return;
     await run(() => api(`/admin/menu/items/${itemId}`, { method: 'DELETE' }));
   }
 
@@ -146,14 +149,14 @@ export function MenuView() {
           value={subTab}
           onChange={setSubTab as any}
           options={[
-            { value: 'items', label: 'Menu Items' },
-            { value: 'modifiers', label: 'Modifiers & Extras' },
-            { value: 'combos', label: 'Combo Meals' },
+            { value: 'items', label: tr('Menu Items') },
+            { value: 'modifiers', label: tr('Modifiers & Extras') },
+            { value: 'combos', label: tr('Combo Meals') },
           ]}
         />
-        {subTab === 'items' && <Btn kind="primary" onClick={() => setNewCatOpen(true)}>+ New category</Btn>}
-        {subTab === 'modifiers' && <Btn kind="primary" onClick={() => setGroupModalOpen({})}>+ New group</Btn>}
-        {subTab === 'combos' && <Btn kind="primary" onClick={() => setComboModalOpen({})}>+ New combo</Btn>}
+        {subTab === 'items' && <Btn kind="primary" onClick={() => setNewCatOpen(true)}>{tr('+ New category')}</Btn>}
+        {subTab === 'modifiers' && <Btn kind="primary" onClick={() => setGroupModalOpen({})}>{tr('+ New group')}</Btn>}
+        {subTab === 'combos' && <Btn kind="primary" onClick={() => setComboModalOpen({})}>{tr('+ New combo')}</Btn>}
       </div>
 
       <ErrorBanner message={actionErr} />
@@ -162,30 +165,30 @@ export function MenuView() {
         <>
           <div className="mb-4 flex flex-wrap items-end gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
             <div className="w-64">
-              <Field label="Search Menu Items">
-                <TextInput value={itemsSearch} onChange={setItemsSearch} placeholder="Search item, category, or Arabic name..." />
+              <Field label={tr('Search Menu Items')}>
+                <TextInput value={itemsSearch} onChange={setItemsSearch} placeholder={tr('Search item, category, or Arabic name...')} />
               </Field>
             </div>
             <div className="w-48">
-              <Field label="Kitchen/Bar Station">
+              <Field label={tr('Kitchen/Bar Station')}>
                 <Select value={itemsStation} onChange={setItemsStation} allowEmpty="All Stations"
                   options={(stations ?? []).map((s) => ({ value: s.id, label: s.name }))} />
               </Field>
             </div>
             <div className="w-48">
-              <Field label="Status / Flags">
+              <Field label={tr('Status / Flags')}>
                 <Select value={itemsStatus} onChange={setItemsStatus}
                   options={[
-                    { value: 'all', label: 'All Items' },
-                    { value: 'active', label: 'Active (Restored)' },
-                    { value: '86ed', label: "86'ed (Deactivated)" },
-                    { value: 'favorite', label: 'Favorites ★' },
-                    { value: 'no-station', label: '⚠ No Station Assigned' },
+                    { value: 'all', label: tr('All Items') },
+                    { value: 'active', label: tr('Active (Restored)') },
+                    { value: '86ed', label: tr('86\'ed (Deactivated)') },
+                    { value: 'favorite', label: tr('Favorites ★') },
+                    { value: 'no-station', label: tr('⚠ No Station Assigned') },
                   ]} />
               </Field>
             </div>
             {(itemsSearch || itemsStation || itemsStatus !== 'all') && (
-              <Btn kind="ghost" onClick={() => { setItemsSearch(''); setItemsStation(''); setItemsStatus('all'); }}>Clear</Btn>
+              <Btn kind="ghost" onClick={() => { setItemsSearch(''); setItemsStation(''); setItemsStatus('all'); }}>{tr('Clear')}</Btn>
             )}
           </div>
           {(() => {
@@ -324,7 +327,7 @@ export function MenuView() {
                   <div className="flex items-center gap-2">
                     <span
                       className="text-goblin-400 cursor-grab active:cursor-grabbing font-bold mr-1 select-none text-base"
-                      title="Drag to reorder siblings"
+                      title={tr('Drag to reorder siblings')}
                     >
                       ⋮⋮
                     </span>
@@ -343,7 +346,7 @@ export function MenuView() {
                       onClick={() => setCollapsedCats((prev) => ({ ...prev, [cat.id]: !prev[cat.id] }))}
                     >
                       {cat.name} {cat.nameAr ? `(${cat.nameAr})` : ''}
-                      {isSub && <span className="ml-2 text-xs text-goblin-400 font-normal">(Subcategory)</span>}
+                      {isSub && <span className="ml-2 text-xs text-goblin-400 font-normal">{tr('(Subcategory)')}</span>}
                     </h2>
                   </div>
                   <div className="flex items-center gap-2">
@@ -351,9 +354,9 @@ export function MenuView() {
                       onClick={() => setEditCatOpen(cat)}
                       className="text-xs font-medium text-goblin-300 hover:text-goblin-50 bg-goblin-900 border border-goblin-700 rounded px-2.5 py-1"
                     >
-                      Edit Category
+                      {tr('Edit Category')}
                     </button>
-                    <Btn onClick={() => setNewItemCat(cat)}>+ Add item</Btn>
+                    <Btn onClick={() => setNewItemCat(cat)}>{tr('+ Add item')}</Btn>
                   </div>
                 </div>
 
@@ -366,8 +369,11 @@ export function MenuView() {
                             <tr key={i.id} className="border-t first:border-0 hover:bg-goblin-800/50">
                               <td className={`p-3 ${i.is86ed ? 'text-red-400 line-through' : ''}`}>
                                 <div className="flex items-center gap-1.5">
+                                  {i.imageUrl
+                                    ? <img src={i.imageUrl} alt="" loading="lazy" className="h-8 w-8 shrink-0 rounded-md object-cover" />
+                                    : <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-goblin-800 text-goblin-500" title={tr('No picture')}><ImageIcon className="h-4 w-4" /></span>}
                                   {i.isFavorite && (
-                                    <span className="text-amber-500 text-base font-bold animate-pulse" title="Favorite Item">
+                                    <span className="text-amber-500 text-base font-bold animate-pulse" title={tr('Favorite Item')}>
                                       <Star className="h-4 w-4 fill-current" />
                                     </span>
                                   )}
@@ -377,17 +383,17 @@ export function MenuView() {
                                   {!i.stationId && !cat.stationId && (
                                     <span
                                       className="ms-2 inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700"
-                                      title="Without a station this item never appears on a kitchen/bar monitor"
+                                      title={tr('Without a station this item never appears on a kitchen/bar monitor')}
                                     >
-                                      <AlertTriangle className="h-3.5 w-3.5" /> no station
+                                      <AlertTriangle className="h-3.5 w-3.5" /> {tr('no station')}
                                     </span>
                                   )}
                                   {!i.stationId && cat.stationId && (
                                     <span
                                       className="ms-2 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-600"
-                                      title={`Inherits station from category: ${cat.station?.name ?? cat.stationId}`}
+                                      title={`${tr('Inherits station from category:')} ${cat.station?.name ?? cat.stationId}`}
                                     >
-                                      inherits {cat.station?.name ?? '…'}
+                                      {tr('inherits')} {cat.station?.name ?? '…'}
                                     </span>
                                   )}
                                 </div>
@@ -403,13 +409,13 @@ export function MenuView() {
                                   }`}
                                 >
                                   <Star className={`h-4 w-4 ${i.isFavorite ? 'fill-current' : ''}`} />
-                                  {i.isFavorite ? 'Unfav' : 'Fav'}
+                                  {i.isFavorite ? tr('Unfav') : tr('Fav')}
                                 </button>
                                 <button
                                   onClick={() => setEditItemOpen({ ...i, categoryId: cat.id })}
                                   className="mr-2 rounded border border-goblin-700 bg-goblin-900 px-2.5 py-1 text-xs text-goblin-200 hover:bg-goblin-800 font-medium"
                                 >
-                                  Edit
+                                  {tr('Edit')}
                                 </button>
                                 <button
                                   onClick={() => {
@@ -418,13 +424,13 @@ export function MenuView() {
                                   }}
                                   className="mr-2 rounded border border-goblin-700 bg-goblin-900 px-2.5 py-1 text-xs text-goblin-200 hover:bg-goblin-800"
                                 >
-                                  Duplicate
+                                  {tr('Duplicate')}
                                 </button>
                                 <button
                                   onClick={() => void deleteItem(i.id, i.name)}
                                   className="mr-2 rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs text-red-700 hover:bg-red-100"
                                 >
-                                  Delete
+                                  {tr('Delete')}
                                 </button>
                                 <button
                                   onClick={() => void toggle86(i.id, i.is86ed)}
@@ -434,7 +440,7 @@ export function MenuView() {
                                       : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
                                   }`}
                                 >
-                                  {i.is86ed ? 'Restore' : '86'}
+                                  {i.is86ed ? tr('Restore') : '86'}
                                 </button>
                               </td>
                             </tr>
@@ -442,7 +448,7 @@ export function MenuView() {
                           {!cat.items.length && (
                             <tr>
                               <td className="p-4 text-goblin-400 text-center italic" colSpan={3}>
-                                No items in this category
+                                {tr('No items in this category')}
                               </td>
                             </tr>
                           )}
@@ -461,7 +467,7 @@ export function MenuView() {
               renderedCards
             ) : (
               <p className="text-center text-sm text-goblin-400 py-8 bg-goblin-900 rounded-xl shadow-sm border border-goblin-800 italic">
-                No matching categories or items found.
+                {tr('No matching categories or items found.')}
               </p>
             );
           })()}
@@ -587,7 +593,7 @@ function CombosView({
     return true;
   });
   async function deleteCombo(id: string) {
-    if (!confirm('Are you sure you want to delete this combo?')) return;
+    if (!confirm(tr('Are you sure you want to delete this combo?'))) return;
     setActionErr('');
     try {
       await api(`/admin/menu/combos/${id}`, { method: 'DELETE' });
@@ -601,23 +607,23 @@ function CombosView({
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
         <div className="w-64">
-          <Field label="Search Combos">
-            <TextInput value={search} onChange={setSearch} placeholder="Search combo name or component..." />
+          <Field label={tr('Search Combos')}>
+            <TextInput value={search} onChange={setSearch} placeholder={tr('Search combo name or component...')} />
           </Field>
         </div>
         <div className="w-48">
-          <Field label="Component Item">
+          <Field label={tr('Component Item')}>
             <Select value={componentItemId} onChange={setComponentItemId} allowEmpty="All Components"
               options={allItems.map((i) => ({ value: i.id, label: i.name }))} />
           </Field>
         </div>
         {(search || componentItemId) && (
-          <Btn kind="ghost" onClick={() => { setSearch(''); setComponentItemId(''); }}>Clear</Btn>
+          <Btn kind="ghost" onClick={() => { setSearch(''); setComponentItemId(''); }}>{tr('Clear')}</Btn>
         )}
       </div>
 
       <Table
-        headers={['Name', 'Price', 'Components', 'Actions']}
+        headers={[tr('Name'), tr('Price'), tr('Components'), tr('Actions')]}
         rows={filteredCombos.map((c) => [
           <div key="name">
             <div className="font-semibold text-goblin-50">{c.name}</div>
@@ -626,14 +632,14 @@ function CombosView({
           egp(c.priceCents),
           c.lines.map((l) => `${l.quantity}× ${l.item?.name || 'Item'}`).join(', ') || '—',
           <div key={c.id} className="flex gap-2">
-            <Btn onClick={() => setComboModalOpen({ combo: c })}>Edit</Btn>
-            <Btn kind="danger" onClick={() => void deleteCombo(c.id)}>Delete</Btn>
+            <Btn onClick={() => setComboModalOpen({ combo: c })}>{tr('Edit')}</Btn>
+            <Btn kind="danger" onClick={() => void deleteCombo(c.id)}>{tr('Delete')}</Btn>
           </div>,
         ])}
       />
       {filteredCombos.length === 0 && (
         <p className="text-sm text-goblin-400 mt-2">
-          {combos.length === 0 ? 'No combos defined yet.' : 'No matching combos found.'}
+          {combos.length === 0 ? tr('No combos defined yet.') : tr('No matching combos found.')}
         </p>
       )}
     </div>
@@ -674,11 +680,11 @@ function ComboFormModal({
   }
 
   async function submit() {
-    if (!name.trim()) { setErr('Name is required'); return; }
+    if (!name.trim()) { setErr(tr('Name is required')); return; }
     const cents = parseEgp(price);
-    if (cents == null || cents < 0) { setErr('Invalid price'); return; }
+    if (cents == null || cents < 0) { setErr(tr('Invalid price')); return; }
     const validLines = lines.filter((l) => l.itemId && l.quantity > 0);
-    if (validLines.length === 0) { setErr('At least one component item is required'); return; }
+    if (validLines.length === 0) { setErr(tr('At least one component item is required')); return; }
 
     const body = {
       name: name.trim(),
@@ -695,22 +701,22 @@ function ComboFormModal({
       }
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to save combo');
+      setErr(e instanceof Error ? e.message : tr('Failed to save combo'));
     }
   }
 
   return (
-    <Modal title={combo ? `Edit Combo: ${combo.name}` : 'New Combo Meal'} onClose={onClose}>
+    <Modal title={combo ? `${tr('Edit Combo:')} ${combo.name}` : tr('New Combo Meal')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
-        <Field label="Combo Name"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Combo Name (Arabic)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
-        <Field label="Price (EGP)"><TextInput type="number" value={price} onChange={setPrice} /></Field>
+        <Field label={tr('Combo Name')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Combo Name (Arabic)')}><TextInput value={nameAr} onChange={setNameAr} /></Field>
+        <Field label={tr('Price (EGP)')}><TextInput type="number" value={price} onChange={setPrice} /></Field>
         
         <div className="border-t border-goblin-800 pt-3">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-sm font-semibold text-goblin-100">Components</h3>
-            <Btn onClick={addLine}>+ Add Item</Btn>
+            <h3 className="text-sm font-semibold text-goblin-100">{tr('Components')}</h3>
+            <Btn onClick={addLine}>{tr('+ Add Item')}</Btn>
           </div>
           
           <div className="space-y-2">
@@ -740,7 +746,7 @@ function ComboFormModal({
         </div>
 
         <div className="border-t border-goblin-800 pt-3 flex justify-end">
-          <Btn kind="primary" onClick={() => void submit()}>{combo ? 'Save Combo' : 'Create Combo'}</Btn>
+          <Btn kind="primary" onClick={() => void submit()}>{combo ? tr('Save Combo') : tr('Create Combo')}</Btn>
         </div>
       </div>
     </Modal>
@@ -808,7 +814,7 @@ function ModifiersView({
   }
 
   async function deleteOption(id: string) {
-    if (!window.confirm('Are you sure you want to delete this option?')) return;
+    if (!window.confirm(tr('Are you sure you want to delete this option?'))) return;
     setActionErr('');
     try {
       await api(`/admin/modifiers/${id}`, { method: 'DELETE' });
@@ -835,33 +841,33 @@ function ModifiersView({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
         <div className="w-64">
-          <Field label="Search Modifiers">
-            <TextInput value={search} onChange={setSearch} placeholder="Search group, option, or linked item..." />
+          <Field label={tr('Search Modifiers')}>
+            <TextInput value={search} onChange={setSearch} placeholder={tr('Search group, option, or linked item...')} />
           </Field>
         </div>
         <div className="w-48">
-          <Field label="Linked Menu Item">
+          <Field label={tr('Linked Menu Item')}>
             <Select value={linkedItemId} onChange={setLinkedItemId} allowEmpty="All Linked Items"
               options={allItems.map((i) => ({ value: i.id, label: i.name }))} />
           </Field>
         </div>
         <div className="w-48">
-          <Field label="Status">
+          <Field label={tr('Status')}>
             <Select value={statusFilter} onChange={setStatusFilter}
               options={[
-                { value: 'all', label: 'All Statuses' },
-                { value: 'active', label: 'Active' },
-                { value: 'inactive', label: 'Inactive' },
+                { value: 'all', label: tr('All Statuses') },
+                { value: 'active', label: tr('Active') },
+                { value: 'inactive', label: tr('Inactive') },
               ]} />
           </Field>
         </div>
         {(search || linkedItemId || statusFilter !== 'all') && (
-          <Btn kind="ghost" onClick={() => { setSearch(''); setLinkedItemId(''); setStatusFilter('all'); }}>Clear</Btn>
+          <Btn kind="ghost" onClick={() => { setSearch(''); setLinkedItemId(''); setStatusFilter('all'); }}>{tr('Clear')}</Btn>
         )}
       </div>
 
       <Table
-        headers={['Group', 'Limits', 'Linked Items', 'Options / Variants', 'Status', '']}
+        headers={[tr('Group'), tr('Limits'), tr('Linked Items'), tr('Options / Variants'), tr('Status'), '']}
         rows={filteredGroups.map((g) => {
           const linkedItemNames = g.items.map((i) => i.item?.name).join(', ') || '—';
           return [
@@ -870,7 +876,7 @@ function ModifiersView({
               {g.nameAr && <div className="text-xs text-goblin-400">{g.nameAr}</div>}
             </div>,
             <span key="limits" className="text-xs text-goblin-300 font-mono">
-              Min: {g.minSelect} / Max: {g.maxSelect}
+              {tr('Min:')} {g.minSelect} {tr('/ Max:')} {g.maxSelect}
             </span>,
             <div key="items" className="max-w-[150px] text-xs truncate" title={linkedItemNames}>
               {linkedItemNames}
@@ -879,30 +885,30 @@ function ModifiersView({
               {g.modifiers.map((m) => (
                 <div key={m.id} className="flex items-center justify-between gap-4 text-xs bg-goblin-800 border border-goblin-800 rounded px-2 py-1">
                   <span className={m.isActive ? 'text-goblin-100 font-medium' : 'text-goblin-400 line-through'}>
-                    {m.name} {m.nameAr ? `(${m.nameAr})` : ''} — <span className="font-semibold">{m.priceDeltaCents >= 0 ? '+' : ''}{egp(m.priceDeltaCents)}</span>{m.exclusionGroup && <span className="ml-2 text-xs bg-amber-100 text-amber-700 rounded px-1">group: {m.exclusionGroup}</span>}
+                    {m.name} {m.nameAr ? `(${m.nameAr})` : ''} — <span className="font-semibold">{m.priceDeltaCents >= 0 ? '+' : ''}{egp(m.priceDeltaCents)}</span>{m.exclusionGroup && <span className="ml-2 text-xs bg-amber-100 text-amber-700 rounded px-1">{tr('group:')} {m.exclusionGroup}</span>}
                   </span>
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => setOptionModalOpen({ groupId: g.id, modifier: m })} className="text-blue-600 hover:text-blue-800 font-semibold">Edit</button>
+                    <button onClick={() => setOptionModalOpen({ groupId: g.id, modifier: m })} className="text-blue-600 hover:text-blue-800 font-semibold">{tr('Edit')}</button>
                     <span className="text-goblin-400">|</span>
                     <button onClick={() => void toggleOptionActive(m)} className={m.isActive ? 'text-amber-600 hover:text-amber-800' : 'text-goblin-500 hover:text-goblin-500'}>
-                      {m.isActive ? 'Disable' : 'Enable'}
+                      {m.isActive ? tr('Disable') : tr('Enable')}
                     </button>
                     <span className="text-goblin-400">|</span>
-                    <button onClick={() => void deleteOption(m.id)} className="text-red-600 hover:text-red-800">Delete</button>
+                    <button onClick={() => void deleteOption(m.id)} className="text-red-600 hover:text-red-800">{tr('Delete')}</button>
                   </div>
                 </div>
               ))}
-              {!g.modifiers.length && <span className="text-xs text-goblin-400 italic">No options defined</span>}
+              {!g.modifiers.length && <span className="text-xs text-goblin-400 italic">{tr('No options defined')}</span>}
             </div>,
             <span key="status" className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${g.isActive ? 'bg-goblin-700 text-goblin-500' : 'bg-goblin-800 text-goblin-200'}`}>
-              {g.isActive ? 'active' : 'inactive'}
+              {g.isActive ? tr('active') : tr('inactive')}
             </span>,
             <div key="actions" className="flex flex-col gap-1 w-28">
-              <Btn onClick={() => setGroupModalOpen({ group: g })}>Edit Group</Btn>
-              <Btn onClick={() => setLinkModalOpen(g)}>Link Items</Btn>
-              <Btn kind="primary" onClick={() => setOptionModalOpen({ groupId: g.id })}>+ Add Option</Btn>
+              <Btn onClick={() => setGroupModalOpen({ group: g })}>{tr('Edit Group')}</Btn>
+              <Btn onClick={() => setLinkModalOpen(g)}>{tr('Link Items')}</Btn>
+              <Btn kind="primary" onClick={() => setOptionModalOpen({ groupId: g.id })}>{tr('+ Add Option')}</Btn>
               <Btn kind={g.isActive ? 'danger' : 'default'} onClick={() => void toggleGroupActive(g)}>
-                {g.isActive ? 'Disable' : 'Enable'}
+                {g.isActive ? tr('Disable') : tr('Enable')}
               </Btn>
             </div>
           ];
@@ -964,13 +970,13 @@ function GroupFormModal({
 
   async function submit() {
     if (!name.trim()) {
-      setErr('Name is required');
+      setErr(tr('Name is required'));
       return;
     }
     const min = parseInt(minSelect, 10);
     const max = parseInt(maxSelect, 10);
     if (isNaN(min) || isNaN(max) || min < 0 || max < min) {
-      setErr('Invalid select limits');
+      setErr(tr('Invalid select limits'));
       return;
     }
 
@@ -989,21 +995,21 @@ function GroupFormModal({
       }
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to save group');
+      setErr(e instanceof Error ? e.message : tr('Failed to save group'));
     }
   }
 
   return (
-    <Modal title={group ? `Edit Group: ${group.name}` : 'New Modifier Group'} onClose={onClose}>
+    <Modal title={group ? `${tr('Edit Group:')} ${group.name}` : tr('New Modifier Group')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Group Name (e.g. Size, Extras)"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Group Name (Arabic)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
+        <Field label={tr('Group Name (e.g. Size, Extras)')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Group Name (Arabic)')}><TextInput value={nameAr} onChange={setNameAr} /></Field>
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Min Choices"><TextInput type="number" value={minSelect} onChange={setMinSelect} /></Field>
-          <Field label="Max Choices"><TextInput type="number" value={maxSelect} onChange={setMaxSelect} /></Field>
+          <Field label={tr('Min Choices')}><TextInput type="number" value={minSelect} onChange={setMinSelect} /></Field>
+          <Field label={tr('Max Choices')}><TextInput type="number" value={maxSelect} onChange={setMaxSelect} /></Field>
         </div>
-        <Btn kind="primary" onClick={() => void submit()}>{group ? 'Save' : 'Create'}</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{group ? tr('Save') : tr('Create')}</Btn>
       </div>
     </Modal>
   );
@@ -1029,17 +1035,17 @@ function OptionFormModal({
 
   async function submit() {
     if (!name.trim()) {
-      setErr('Name is required');
+      setErr(tr('Name is required'));
       return;
     }
     const cents = parseEgp(priceDelta);
     if (cents == null) {
-      setErr('Invalid price');
+      setErr(tr('Invalid price'));
       return;
     }
     const sort = parseInt(sortOrder, 10);
     if (isNaN(sort)) {
-      setErr('Invalid sort order');
+      setErr(tr('Invalid sort order'));
       return;
     }
 
@@ -1059,27 +1065,25 @@ function OptionFormModal({
       }
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to save option');
+      setErr(e instanceof Error ? e.message : tr('Failed to save option'));
     }
   }
 
   return (
-    <Modal title={modifier ? `Edit Option: ${modifier.name}` : 'New Option / Variant'} onClose={onClose}>
+    <Modal title={modifier ? `${tr('Edit Option:')} ${modifier.name}` : tr('New Option / Variant')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Option Name (e.g. Large, Extra Cheese)"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Option Name (Arabic)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
-        <Field label="Price Delta (EGP, e.g. +15 or -5)"><TextInput type="number" value={priceDelta} onChange={setPriceDelta} /></Field>
-        <Field label="Sort Order"><TextInput type="number" value={sortOrder} onChange={setSortOrder} /></Field>
-        <Field label="Exclusion Group (optional)">
+        <Field label={tr('Option Name (e.g. Large, Extra Cheese)')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Option Name (Arabic)')}><TextInput value={nameAr} onChange={setNameAr} /></Field>
+        <Field label={tr('Price Delta (EGP, e.g. +15 or -5)')}><TextInput type="number" value={priceDelta} onChange={setPriceDelta} /></Field>
+        <Field label={tr('Sort Order')}><TextInput type="number" value={sortOrder} onChange={setSortOrder} /></Field>
+        <Field label={tr('Exclusion Group (optional)')}>
           <TextInput value={exclusionGroup} onChange={setExclusionGroup} />
           <p className="mt-1 text-xs text-goblin-300">
-            Tag options with a group name (e.g. <strong>pasta</strong> or <strong>sides</strong>).
-            When a customer picks from one group, the other group is dimmed out.
-            Leave empty for normal behaviour.
+            {tr('Tag options with a group name (e.g.')} <strong>{tr('pasta')}</strong> {tr('or')} <strong>{tr('sides')}</strong>{tr('). When a customer picks from one group, the other group is dimmed out. Leave empty for normal behaviour.')}
           </p>
         </Field>
-        <Btn kind="primary" onClick={() => void submit()}>{modifier ? 'Save' : 'Create'}</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{modifier ? tr('Save') : tr('Create')}</Btn>
       </div>
     </Modal>
   );
@@ -1119,15 +1123,15 @@ function LinkItemsModal({
       });
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to link items');
+      setErr(e instanceof Error ? e.message : tr('Failed to link items'));
     }
   }
 
   return (
-    <Modal title={`Link Menu Items to Group: ${group.name}`} onClose={onClose} wide>
+    <Modal title={`${tr('Link Menu Items to Group:')} ${group.name}`} onClose={onClose} wide>
       <ErrorBanner message={err} />
       <div className="space-y-4">
-        <TextInput value={search} onChange={setSearch} placeholder="Search menu items…" />
+        <TextInput value={search} onChange={setSearch} placeholder={tr('Search menu items…')} />
         
         <div className="max-h-[50vh] overflow-y-auto border border-goblin-800 rounded-xl p-3 grid grid-cols-2 md:grid-cols-3 gap-2">
           {filteredItems.map((item) => {
@@ -1144,15 +1148,15 @@ function LinkItemsModal({
               </label>
             );
           })}
-          {!filteredItems.length && <p className="col-span-full text-goblin-400 text-center py-4">No matching items</p>}
+          {!filteredItems.length && <p className="col-span-full text-goblin-400 text-center py-4">{tr('No matching items')}</p>}
         </div>
 
         <div className="flex justify-between items-center pt-2">
-          <span className="text-xs text-goblin-300 font-medium">{selected.length} items selected</span>
+          <span className="text-xs text-goblin-300 font-medium">{selected.length} {tr('items selected')}</span>
           <div className="flex gap-2">
-            <Btn onClick={() => setSelected([])} kind="ghost">Select None</Btn>
-            <Btn onClick={() => setSelected(allItems.map((i) => i.id))} kind="ghost">Select All</Btn>
-            <Btn kind="primary" onClick={() => void submit()}>Save Changes</Btn>
+            <Btn onClick={() => setSelected([])} kind="ghost">{tr('Select None')}</Btn>
+            <Btn onClick={() => setSelected(allItems.map((i) => i.id))} kind="ghost">{tr('Select All')}</Btn>
+            <Btn kind="primary" onClick={() => void submit()}>{tr('Save Changes')}</Btn>
           </div>
         </div>
       </div>
@@ -1199,7 +1203,7 @@ function CategoryFormModal({
       );
       setApplyResult(`✅ Updated ${res.updated} item${res.updated !== 1 ? 's' : ''} across ${res.categories} category${res.categories !== 1 ? '/sub-categories' : ''}`);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to apply station');
+      setErr(e instanceof Error ? e.message : tr('Failed to apply station'));
     } finally {
       setApplyLoading(false);
     }
@@ -1207,7 +1211,7 @@ function CategoryFormModal({
 
   async function submit() {
     if (!name.trim()) {
-      setErr('Name is required');
+      setErr(tr('Name is required'));
       return;
     }
     const body = {
@@ -1227,7 +1231,7 @@ function CategoryFormModal({
       }
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed');
+      setErr(e instanceof Error ? e.message : tr('Failed'));
     }
   }
 
@@ -1238,12 +1242,12 @@ function CategoryFormModal({
   ];
 
   return (
-    <Modal title={category ? `Edit Category: ${category.name}` : 'New Category'} onClose={onClose}>
+    <Modal title={category ? `${tr('Edit Category:')} ${category.name}` : tr('New Category')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Name"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Name (Arabic)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
-        <Field label="Color Selection">
+        <Field label={tr('Name')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Name (Arabic)')}><TextInput value={nameAr} onChange={setNameAr} /></Field>
+        <Field label={tr('Color Selection')}>
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2">
               {COLOR_PRESETS.map((c) => (
@@ -1262,9 +1266,9 @@ function CategoryFormModal({
                   value={color && color.startsWith('#') && color.length === 7 ? color : '#3b82f6'}
                   onChange={(e) => setColor(e.target.value)}
                   className="h-8 w-8 cursor-pointer rounded border border-goblin-700 p-0"
-                  title="Custom color"
+                  title={tr('Custom color')}
                 />
-                <span className="text-xs text-goblin-300 font-mono">{color || 'No color'}</span>
+                <span className="text-xs text-goblin-300 font-mono">{color || tr('No color')}</span>
               </div>
             </div>
             {color && (
@@ -1273,16 +1277,16 @@ function CategoryFormModal({
                 onClick={() => setColor('')}
                 className="text-xs text-red-600 hover:text-red-800 underline font-medium"
               >
-                Clear Color (No Color)
+                {tr('Clear Color (No Color)')}
               </button>
             )}
           </div>
         </Field>
-        <Field label="Parent Category">
+        <Field label={tr('Parent Category')}>
           <Select
             value={parentCategoryId}
             onChange={setParentCategoryId}
-            options={[{ value: '', label: 'None (Root Category)' }, ...parentOptions]}
+            options={[{ value: '', label: tr('None (Root Category)') }, ...parentOptions]}
           />
         </Field>
         {category && (
@@ -1293,18 +1297,18 @@ function CategoryFormModal({
               onChange={(e) => setIsActive(e.target.checked)}
               className="rounded border-goblin-700 text-goblin-500 focus:ring-goblin-500"
             />
-            <span>Active Category</span>
+            <span>{tr('Active Category')}</span>
           </label>
         )}
         {(stations ?? []).length > 0 && (
           <div className="rounded-xl border border-goblin-700 bg-goblin-800 p-3 space-y-2">
-            <Field label="Default Routing Station (inherited by items)">
+            <Field label={tr('Default Routing Station (inherited by items)')}>
               <select
                 value={stationId}
                 onChange={(e) => { setStationId(e.target.value); setApplyResult(null); }}
                 className="w-full rounded-lg border border-goblin-700 bg-goblin-900 p-2.5 text-sm"
               >
-                <option value="">— None (items must set own station) —</option>
+                <option value="">{tr('— None (items must set own station) —')}</option>
                 {(stations ?? []).map((st) => (
                   <option key={st.id} value={st.id}>{st.name}</option>
                 ))}
@@ -1313,8 +1317,7 @@ function CategoryFormModal({
             {category && stationId && (
               <div className="space-y-1.5">
                 <p className="text-xs text-goblin-300">
-                  Items with no own station will <strong>inherit</strong> this automatically.
-                  To also overwrite items that already have a station, use the button below.
+                  {tr('Items with no own station will')} <strong>{tr('inherit')}</strong> {tr('this automatically. To also overwrite items that already have a station, use the button below.')}
                 </p>
                 <button
                   type="button"
@@ -1322,7 +1325,7 @@ function CategoryFormModal({
                   onClick={() => void applyToAllItems()}
                   className="w-full rounded-lg border border-goblin-600 bg-goblin-800 px-3 py-2 text-sm font-medium text-goblin-500 hover:bg-goblin-700 disabled:opacity-50 transition"
                 >
-                  {applyLoading ? '⏳ Applying…' : `📍 Apply station to ALL items in this category`}
+                  {applyLoading ? tr('⏳ Applying…') : tr('📍 Apply station to ALL items in this category')}
                 </button>
                 {applyResult && (
                   <p className="text-xs font-medium text-goblin-500 bg-goblin-800 rounded px-2 py-1 border border-goblin-600">{applyResult}</p>
@@ -1331,7 +1334,7 @@ function CategoryFormModal({
             )}
           </div>
         )}
-        <Btn kind="primary" onClick={() => void submit()}>{category ? 'Save' : 'Create'}</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{category ? tr('Save') : tr('Create')}</Btn>
       </div>
     </Modal>
   );
@@ -1367,11 +1370,13 @@ function ItemFormModal({
   const [err, setErr] = useState('');
 
   const prepStations = stations.filter((s) => s.kind !== 'EXPO');
+  const [pictureChanged, setPictureChanged] = useState(false);
+  const onPictureChanged = () => setPictureChanged(true);
 
   async function submit() {
-    if (!name.trim()) { setErr('Name is required'); return; }
+    if (!name.trim()) { setErr(tr('Name is required')); return; }
     const priceCents = parseEgp(price);
-    if (priceCents == null) { setErr('Invalid price'); return; }
+    if (priceCents == null) { setErr(tr('Invalid price')); return; }
 
     const body: Record<string, unknown> = {
       name: name.trim(),
@@ -1393,7 +1398,7 @@ function ItemFormModal({
         });
       }
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   const title = isEdit
@@ -1403,43 +1408,93 @@ function ItemFormModal({
     : `New item in ${category?.name}`;
 
   return (
-    <Modal title={title} onClose={onClose}>
+    <Modal title={title} onClose={pictureChanged ? onDone : onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Name">
-          <TextInput value={name} onChange={setName} placeholder="English name" />
+        <Field label={tr('Name')}>
+          <TextInput value={name} onChange={setName} placeholder={tr('English name')} />
         </Field>
-        <Field label="Name (Arabic)">
+        <Field label={tr('Name (Arabic)')}>
           <TextInput value={nameAr} onChange={setNameAr} placeholder="اسم عربي" />
         </Field>
-        <Field label="Price (EGP)">
+        <Field label={tr('Price (EGP)')}>
           <TextInput value={price} onChange={setPrice} type="number" placeholder="0.00" />
         </Field>
-        <Field label="Department">
+        <Field label={tr('Department')}>
           <select value={department} onChange={(e) => setDepartment(e.target.value)}
             className="w-full rounded-lg border border-goblin-700 bg-goblin-900 p-2.5 text-sm">
             {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </Field>
-        <Field label="Station (Kitchen Routing — required to reach KDS / Printer)">
+        <Field label={tr('Station (Kitchen Routing — required to reach KDS / Printer)')}>
           <select value={stationId} onChange={(e) => setStationId(e.target.value)}
             className="w-full rounded-lg border border-goblin-700 bg-goblin-900 p-2.5 text-sm">
-            <option value="">— none (inherit from category or unrouted) —</option>
+            <option value="">{tr('— none (inherit from category or unrouted) —')}</option>
             {prepStations.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </Field>
         <label className="flex items-center gap-2 text-sm text-goblin-100 cursor-pointer py-1">
           <input type="checkbox" checked={isFavorite} onChange={(e) => setIsFavorite(e.target.checked)}
             className="rounded border-goblin-700 text-goblin-500 focus:ring-goblin-500" />
-          <span>Add to Favorites (POS Quick Access)</span>
+          <span>{tr('Add to Favorites (POS Quick Access)')}</span>
         </label>
+        {isEdit
+          ? <ItemPicture itemId={item.id} initialUrl={item.imageUrl ?? null} onChanged={onPictureChanged} />
+          : <p className="text-xs text-goblin-400">{tr('You can add a picture after the item is created (Edit → Picture).')}</p>}
         <div className="flex gap-2 pt-1">
-          <Btn kind="ghost" onClick={onClose}>Cancel</Btn>
+          <Btn kind="ghost" onClick={onClose}>{tr('Cancel')}</Btn>
           <Btn kind="primary" onClick={() => void submit()}>
-            {isEdit ? 'Save Changes' : isDupe ? 'Create Copy' : 'Create Item'}
+            {isEdit ? tr('Save Changes') : isDupe ? tr('Create Copy') : tr('Create Item')}
           </Btn>
         </div>
       </div>
     </Modal>
+  );
+}
+
+/** Picture for one menu item: pick a photo, it's cropped square and compressed here, then uploaded. */
+function ItemPicture({ itemId, initialUrl, onChanged }: { itemId: string; initialUrl: string | null; onChanged: () => void }) {
+  const [url, setUrl] = useState<string | null>(initialUrl);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  async function pick(file: File | undefined) {
+    if (!file) return;
+    setErr(''); setBusy(true);
+    try {
+      const dataUrl = await resizeToSquareDataUrl(file, 600);
+      const updated = await api<{ imageUrl: string | null }>(`/admin/menu/items/${itemId}/image`, { method: 'POST', body: { dataUrl } });
+      setUrl(updated.imageUrl);
+      onChanged();
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Upload failed')); }
+    finally { setBusy(false); }
+  }
+
+  async function remove() {
+    setErr(''); setBusy(true);
+    try {
+      await api(`/admin/menu/items/${itemId}/image`, { method: 'DELETE' });
+      setUrl(null);
+      onChanged();
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <Field label={tr('Picture (shown on the website / QR menu, and on the POS when pictures are switched on)')}>
+      <div className="flex items-center gap-3">
+        {url
+          ? <img src={url} alt="" className="h-20 w-20 rounded-lg object-cover ring-1 ring-goblin-700" />
+          : <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-goblin-800 text-goblin-500"><ImageIcon className="h-6 w-6" /></div>}
+        <div className="flex flex-col gap-2">
+          <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-goblin-700 px-3 py-1.5 text-sm text-white hover:bg-goblin-600 ${busy ? 'pointer-events-none opacity-50' : ''}`}>
+            <ImagePlus className="h-4 w-4" /> {busy ? tr('Uploading…') : url ? tr('Replace') : tr('Add picture')}
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ''; }} />
+          </label>
+          {url && <button type="button" onClick={() => void remove()} disabled={busy} className="text-start text-xs text-red-400 hover:underline">{tr('Remove picture')}</button>}
+        </div>
+      </div>
+      {err && <p className="mt-1 text-xs text-red-400">{err}</p>}
+    </Field>
   );
 }

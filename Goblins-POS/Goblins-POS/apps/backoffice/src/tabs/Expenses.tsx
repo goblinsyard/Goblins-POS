@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, egp, parseEgp } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Table, TextInput, useLoad } from '../lib/ui';
+import { tr } from '../lib/i18n';
 
 interface ExpenseCategory {
   id: string;
@@ -50,12 +51,12 @@ function ExpenseList() {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+    if (!confirm(tr('Are you sure you want to delete this expense?'))) return;
     try {
       await api(`/expenses/${id}`, { method: 'DELETE' });
       reload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Delete failed');
+      alert(e instanceof Error ? e.message : tr('Delete failed'));
     }
   }
 
@@ -67,19 +68,19 @@ function ExpenseList() {
           <Select value={categoryId} onChange={setCategoryId} allowEmpty="All categories"
             options={(categories ?? []).map((c) => ({ value: c.id, label: c.name }))} />
         </div>
-        <span className="text-sm text-goblin-300">Last 30 days · total <b>{egp(total)}</b></span>
-        <span className="ml-auto"><Btn kind="primary" onClick={() => setCreateOpen(true)}>+ New expense</Btn></span>
+        <span className="text-sm text-goblin-300">{tr('Last 30 days · total')} <b>{egp(total)}</b></span>
+        <span className="ml-auto"><Btn kind="primary" onClick={() => setCreateOpen(true)}>{tr('+ New expense')}</Btn></span>
       </div>
-      <Table headers={['Date', 'Category', 'Description', 'Allocation', 'Amount', 'Method / Source', 'By', 'Actions']}
+      <Table headers={[tr('Date'), tr('Category'), tr('Description'), tr('Allocation'), tr('Amount'), tr('Method / Source'), tr('By'), tr('Actions')]}
         rows={(expenses ?? []).map((e) => [
           new Date(e.expenseDate).toLocaleDateString('en-EG'),
           e.category.name,
-          <span key="d">{e.description}{e.isRecurring && <span className="ml-1 rounded bg-blue-50 px-1 text-xs text-blue-600">monthly</span>}</span>,
+          <span key="d">{e.description}{e.isRecurring && <span className="ml-1 rounded bg-blue-50 px-1 text-xs text-blue-600">{tr('monthly')}</span>}</span>,
           e.department ? String(e.department).replace('_', ' ') : 'Overhead',
           egp(e.amountCents), e.account ? e.account.name : e.paymentMethod, e.enteredBy?.name ?? '—',
           <div key={e.id} className="flex gap-2">
-            <Btn onClick={() => setEditingExpense(e)}>Edit</Btn>
-            <Btn kind="danger" onClick={() => void handleDelete(e.id)}>Delete</Btn>
+            <Btn onClick={() => setEditingExpense(e)}>{tr('Edit')}</Btn>
+            <Btn kind="danger" onClick={() => void handleDelete(e.id)}>{tr('Delete')}</Btn>
           </div>
         ])} />
       {createOpen && (
@@ -114,7 +115,7 @@ function ExpenseFormModal({ categories, expense, onClose, onDone }: {
   async function submit() {
     const amountCents = parseEgp(amount);
     if (!categoryId || !description.trim() || amountCents == null || amountCents <= 0) {
-      setErr('Category, description and a positive amount are required'); return;
+      setErr(tr('Category, description and a positive amount are required')); return;
     }
     try {
       const body = {
@@ -131,40 +132,40 @@ function ExpenseFormModal({ categories, expense, onClose, onDone }: {
         await api('/expenses', { method: 'POST', body });
       }
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title={expense ? "Edit expense" : "New expense"} onClose={onClose}>
+    <Modal title={expense ? tr('Edit expense') : tr('New expense')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Category">
+        <Field label={tr('Category')}>
           <Select value={categoryId} onChange={setCategoryId} allowEmpty="— pick —"
             options={categories.map((c) => ({ value: c.id, label: c.name }))} />
         </Field>
-        <Field label="Description"><TextInput value={description} onChange={setDescription} /></Field>
-        <Field label="Allocation">
+        <Field label={tr('Description')}><TextInput value={description} onChange={setDescription} /></Field>
+        <Field label={tr('Allocation')}>
           <Select value={department} onChange={setDepartment} allowEmpty="Overhead / Shared"
             options={[
-              { value: 'RESTAURANT', label: 'Restaurant' },
-              { value: 'BAR', label: 'Bar' },
-              { value: 'BILLIARDS', label: 'Billiards' },
-              { value: 'PLAYSTATION', label: 'PlayStation' }
+              { value: 'RESTAURANT', label: tr('Restaurant') },
+              { value: 'BAR', label: tr('Bar') },
+              { value: 'BILLIARDS', label: tr('Billiards') },
+              { value: 'PLAYSTATION', label: tr('PlayStation') }
             ]} />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Amount (EGP)"><TextInput value={amount} onChange={setAmount} type="number" /></Field>
-          <Field label="Date"><TextInput value={date} onChange={setDate} type="date" /></Field>
+          <Field label={tr('Amount (EGP)')}><TextInput value={amount} onChange={setAmount} type="number" /></Field>
+          <Field label={tr('Date')}><TextInput value={date} onChange={setDate} type="date" /></Field>
         </div>
-        <Field label="Payment Account / Source">
+        <Field label={tr('Payment Account / Source')}>
           <Select value={accountId} onChange={setAccountId} allowEmpty="— pick account (e.g. Safe, Fawry, Bank) —"
             options={assetAccounts} />
         </Field>
         <label className="flex items-center gap-2 text-sm text-goblin-200">
           <input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} />
-          Recurring monthly (auto-created on the 1st)
+          {tr('Recurring monthly (auto-created on the 1st)')}
         </label>
-        <Btn kind="primary" onClick={() => void submit()}>{expense ? "Save changes" : "Record expense"}</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{expense ? tr('Save changes') : tr('Record expense')}</Btn>
       </div>
     </Modal>
   );
@@ -180,9 +181,9 @@ function VatReport() {
   return (
     <div>
       <p className="mb-2 text-sm text-goblin-300">
-        This month · net <b>{egp(totalNet)}</b> · output VAT <b>{egp(totalVat)}</b>
+        {tr('This month · net')} <b>{egp(totalNet)}</b> {tr('· output VAT')} <b>{egp(totalVat)}</b>
       </p>
-      <Table headers={['Day', 'Orders', 'Net (subtotal+service)', 'VAT collected']}
+      <Table headers={[tr('Day'), tr('Orders'), tr('Net (subtotal+service)'), tr('VAT collected')]}
         rows={rows.map((r) => [r.day, String(r.count), egp(r.netCents), egp(r.vatCents)])} />
     </div>
   );
@@ -197,30 +198,30 @@ function ExpenseCategories() {
   const flatAccounts = accounts ? flattenAccounts(accounts) : [];
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this category?')) return;
+    if (!confirm(tr('Are you sure you want to delete this category?'))) return;
     try {
       await api(`/expenses/categories/${id}`, { method: 'DELETE' });
       reload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Delete failed');
+      alert(e instanceof Error ? e.message : tr('Delete failed'));
     }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-goblin-100">Expense Categories</h2>
-        <Btn kind="primary" onClick={() => { setEditingCategory(null); setCreateOpen(true); }}>+ New category</Btn>
+        <h2 className="text-lg font-bold text-goblin-100">{tr('Expense Categories')}</h2>
+        <Btn kind="primary" onClick={() => { setEditingCategory(null); setCreateOpen(true); }}>{tr('+ New category')}</Btn>
       </div>
       <Table
-        headers={['Name', 'Arabic Name', 'Linked Account', 'Actions']}
+        headers={[tr('Name'), tr('Arabic Name'), tr('Linked Account'), tr('Actions')]}
         rows={(categories ?? []).map((c) => [
           c.name,
           c.nameAr ?? '—',
-          c.account ? `${c.account.code} — ${c.account.name}` : <span className="text-goblin-400">Not linked (no ledger tracking)</span>,
+          c.account ? `${c.account.code} — ${c.account.name}` : <span className="text-goblin-400">{tr('Not linked (no ledger tracking)')}</span>,
           <div key={c.id} className="flex gap-2">
-            <Btn onClick={() => { setEditingCategory(c); setCreateOpen(true); }}>Edit</Btn>
-            <Btn kind="danger" onClick={() => void handleDelete(c.id)}>Delete</Btn>
+            <Btn onClick={() => { setEditingCategory(c); setCreateOpen(true); }}>{tr('Edit')}</Btn>
+            <Btn kind="danger" onClick={() => void handleDelete(c.id)}>{tr('Delete')}</Btn>
           </div>,
         ])}
       />
@@ -245,7 +246,7 @@ function CategoryFormModal({ category, flatAccounts, onClose, onDone }: {
   const [err, setErr] = useState('');
 
   async function submit() {
-    if (!name.trim()) { setErr('Name is required'); return; }
+    if (!name.trim()) { setErr(tr('Name is required')); return; }
     try {
       const body = {
         name: name.trim(),
@@ -259,20 +260,20 @@ function CategoryFormModal({ category, flatAccounts, onClose, onDone }: {
       }
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Submit failed');
+      setErr(e instanceof Error ? e.message : tr('Submit failed'));
     }
   }
 
   return (
-    <Modal title={category ? `Edit Category: ${category.name}` : 'New Category'} onClose={onClose}>
+    <Modal title={category ? `${tr('Edit Category:')} ${category.name}` : tr('New Category')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Category Name (English)"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Category Name (Arabic)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
-        <Field label="Linked Ledger Account (Chart of Accounts)">
+        <Field label={tr('Category Name (English)')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Category Name (Arabic)')}><TextInput value={nameAr} onChange={setNameAr} /></Field>
+        <Field label={tr('Linked Ledger Account (Chart of Accounts)')}>
           <Select value={accountId} onChange={setAccountId} allowEmpty="— No tracking account —" options={flatAccounts} />
         </Field>
-        <Btn kind="primary" onClick={() => void submit()}>{category ? 'Save changes' : 'Create category'}</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{category ? tr('Save changes') : tr('Create category')}</Btn>
       </div>
     </Modal>
   );
@@ -283,7 +284,7 @@ function flattenAccounts(nodes: any[], prefix = ''): { value: string; label: str
   for (const n of nodes) {
     list.push({
       value: n.id,
-      label: `${prefix}${n.code} — ${n.name} (${(n.balanceCents / 100).toFixed(2)} EGP)`,
+      label: `${prefix}${n.code} — ${n.name} (${(n.balanceCents / 100).toFixed(2)} ${tr('EGP)')}`,
       isPaymentSource: !!n.isPaymentSource,
       code: n.code,
       balanceCents: n.balanceCents,

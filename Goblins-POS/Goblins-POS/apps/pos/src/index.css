@@ -11,6 +11,46 @@ html, body, #root {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
+/* ---- iPad / touch ---------------------------------------------------- */
+html {
+  /* no double-tap zoom delay on buttons */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  overscroll-behavior: none;
+  /* keep content clear of the home indicator and rounded corners when opened from the Home Screen */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  box-sizing: border-box;
+}
+/* Safari's 100vh includes the hidden toolbar; use the real visible height */
+.h-screen { height: 100vh; height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+.max-h-screen { max-height: 100vh; max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+.min-h-screen { min-height: 100vh; min-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+
+/* long-press on a tile must not open the iOS copy / image menu */
+button, a, img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+img { -webkit-user-drag: none; }
+input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
+
+/* smooth momentum scrolling inside panels, without dragging the whole page */
+.overflow-auto, .overflow-y-auto, .overflow-x-auto { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+
+/* dialogs never run off the bottom of an iPad screen (or behind the on-screen keyboard) */
+.fixed.inset-0.items-center > div { max-height: calc(100dvh - 2rem); overflow-y: auto; }
+
+/* pressed feedback, since touch has no hover */
+button:not(:disabled):active { filter: brightness(1.15); }
+
+@media (pointer: coarse) {
+  /* iOS zooms into any field under 16px when it is focused */
+  input, select, textarea { font-size: 16px !important; }
+  /* keyboard-only hints are noise on a tablet */
+  .pointer-fine-only { display: none !important; }
+  /* comfortable scrollbars are useless on touch; hide them but keep scrolling */
+  .overflow-auto::-webkit-scrollbar, .overflow-y-auto::-webkit-scrollbar, .overflow-x-auto::-webkit-scrollbar { display: none; }
+}
+
 @media print {
   body * { visibility: hidden; }
   #print-area, #print-area * { visibility: visible; }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, cairoTime, downloadCsv, egp, pct } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Table, TextInput, useLoad } from '../lib/ui';
 import { Cake } from 'lucide-react';
+import { tr } from '../lib/i18n';
 
 interface CustomerGroup {
   id: string; name: string; nameAr?: string | null; discountBps: number; isActive: boolean;
@@ -24,10 +25,10 @@ interface CustomerDetail extends Customer {
 interface SegmentRow { id?: string; name: string; phone: string; pointsBalance?: number; lifetimeCents?: number; birthday?: string | null }
 
 const SEGMENTS = [
-  { value: 'all', label: 'all customers' },
-  { value: 'inactive30', label: 'inactive 30d' },
-  { value: 'top10pct', label: 'top 10%' },
-  { value: 'birthdayThisWeek', label: 'birthday this week' },
+  { value: 'all', label: tr('all customers') },
+  { value: 'inactive30', label: tr('inactive 30d') },
+  { value: 'top10pct', label: tr('top 10%') },
+  { value: 'birthdayThisWeek', label: tr('birthday this week') },
 ] as const;
 
 export function CrmView() {
@@ -44,7 +45,7 @@ export function CrmView() {
   const [campaignResult, setCampaignResult] = useState<{ total: number; successCount: number; failCount: number; results?: any[] } | null>(null);
 
   async function sendCampaign() {
-    if (!window.confirm(`Are you sure you want to send this campaign to ${segmentRows?.length ?? 0} customers?`)) return;
+    if (!window.confirm(`${tr('Are you sure you want to send this campaign to')} ${segmentRows?.length ?? 0} ${tr('customers?')}`)) return;
     setSending(true);
     setCampaignResult(null);
     setErr('');
@@ -55,7 +56,7 @@ export function CrmView() {
       });
       setCampaignResult(res);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Campaign failed');
+      setErr(e instanceof Error ? e.message : tr('Campaign failed'));
     } finally {
       setSending(false);
     }
@@ -68,7 +69,7 @@ export function CrmView() {
   async function search() {
     setErr('');
     try { setResults(await api<Customer[]>(`/crm/customers/lookup?q=${encodeURIComponent(phone)}`)); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Search failed'); }
+    catch (e) { setErr(e instanceof Error ? e.message : tr('Search failed')); }
   }
 
   // saved customers show immediately; typing filters by name or phone
@@ -81,30 +82,30 @@ export function CrmView() {
     <div className="space-y-6">
       <ErrorBanner message={err} />
       <div>
-        <h2 className="mb-2 font-semibold text-goblin-100">Find customer</h2>
+        <h2 className="mb-2 font-semibold text-goblin-100">{tr('Find customer')}</h2>
         <div className="flex gap-2">
           <div className="w-64">
-            <TextInput value={phone} onChange={setPhone} placeholder="Search by name or phone…" />
+            <TextInput value={phone} onChange={setPhone} placeholder={tr('Search by name or phone…')} />
           </div>
-          <Btn onClick={() => setCreateOpen(true)}>+ New customer</Btn>
+          <Btn onClick={() => setCreateOpen(true)}>{tr('+ New customer')}</Btn>
         </div>
         {results && (
           <div className="mt-3">
-            <Table headers={['Name', 'Phone', 'Group', 'Tier', 'Points', 'Wallet', 'Visits', 'Lifetime', 'Status', '']}
+            <Table headers={[tr('Name'), tr('Phone'), tr('Group'), tr('Tier'), tr('Points'), tr('Wallet'), tr('Visits'), tr('Lifetime'), tr('Status'), '']}
               rows={results.map((c) => [
                 c.name, c.phone,
                 c.group ? `${c.group.name} (−${pct(c.group.discountBps)})` : '—',
                 c.tier?.name ?? '—', String(c.pointsBalance), egp(c.walletBalanceCents), String(c.visitCount), egp(c.lifetimeCents),
                 c.isActive ? (
                   <span key="status" className="rounded bg-goblin-700 px-2 py-0.5 text-xs font-semibold text-goblin-500">
-                    Active
+                    {tr('Active')}
                   </span>
                 ) : (
                   <span key="status" className="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
-                    Disabled
+                    {tr('Disabled')}
                   </span>
                 ),
-                <Btn key="v" onClick={() => setDetailId(c.id)}>View</Btn>,
+                <Btn key="v" onClick={() => setDetailId(c.id)}>{tr('View')}</Btn>,
               ])} />
           </div>
         )}
@@ -112,81 +113,81 @@ export function CrmView() {
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-semibold text-goblin-100">Customer groups (auto discount)</h2>
-          <Btn kind="primary" onClick={() => setGroupModal('new')}>+ New group</Btn>
+          <h2 className="font-semibold text-goblin-100">{tr('Customer groups (auto discount)')}</h2>
+          <Btn kind="primary" onClick={() => setGroupModal('new')}>{tr('+ New group')}</Btn>
         </div>
-        <Table headers={['Group', 'Discount', 'Members', 'Status', '']}
+        <Table headers={[tr('Group'), tr('Discount'), tr('Members'), tr('Status'), '']}
           rows={(groups ?? []).map((g) => [
             g.name + (g.nameAr ? ` · ${g.nameAr}` : ''),
             `−${pct(g.discountBps)}`,
             String(g._count?.customers ?? 0),
             g.isActive ? 'active' : 'inactive',
             <span key="a" className="flex gap-1">
-              <Btn onClick={() => setGroupModal(g)}>Edit</Btn>
+              <Btn onClick={() => setGroupModal(g)}>{tr('Edit')}</Btn>
               <Btn kind={g.isActive ? 'danger' : 'default'}
                 onClick={() => void api(`/crm/groups/${g.id}`, { method: 'PATCH', body: { isActive: !g.isActive } }).then(reloadGroups)}>
-                {g.isActive ? 'Disable' : 'Enable'}
+                {g.isActive ? tr('Disable') : tr('Enable')}
               </Btn>
             </span>,
           ])} />
-        <p className="mt-1 text-xs text-goblin-400">The discount applies automatically on any order the customer is attached to at the POS.</p>
+        <p className="mt-1 text-xs text-goblin-400">{tr('The discount applies automatically on any order the customer is attached to at the POS.')}</p>
       </div>
 
       <div>
-        <h2 className="mb-2 font-semibold text-goblin-100">Segments & campaigns</h2>
+        <h2 className="mb-2 font-semibold text-goblin-100">{tr('Segments & campaigns')}</h2>
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Pills value={segment} onChange={setSegment} options={SEGMENTS as unknown as { value: typeof segment; label: string }[]} />
           <button
             onClick={() => void downloadCsv(`/crm/segments/${segment}/export?template=${encodeURIComponent(template)}`, `segment-${segment}.csv`)}
             className="ml-auto rounded-lg bg-goblin-900 px-3 py-1.5 text-sm text-white">
-            Export CSV
+            {tr('Export CSV')}
           </button>
         </div>
-        <Field label="Message template ({name} is replaced)">
+        <Field label={tr('Message template ({name} is replaced)')}>
           <TextInput value={template} onChange={setTemplate} />
         </Field>
 
         <div className="mt-4 rounded-xl border border-goblin-700 bg-goblin-800 p-4">
           <h3 className="mb-3 font-medium text-goblin-50 font-semibold flex items-center gap-2">
-            <span>🚀</span> Send Marketing Campaign
+            <span>🚀</span> {tr('Send Marketing Campaign')}
           </h3>
           <div className="grid gap-4 md:grid-cols-3">
-            <Field label="Gateway Channel">
+            <Field label={tr('Gateway Channel')}>
               <Select
                 value={gateway}
                 onChange={(v) => setGateway(v as any)}
                 options={[
-                  { value: 'twilio_sms', label: 'Twilio SMS' },
-                  { value: 'twilio_whatsapp', label: 'Twilio WhatsApp' },
-                  { value: 'mock_sms', label: 'Mock SMS (Logs)' },
-                  { value: 'mock_whatsapp', label: 'Mock WhatsApp (Logs)' },
+                  { value: 'twilio_sms', label: tr('Twilio SMS') },
+                  { value: 'twilio_whatsapp', label: tr('Twilio WhatsApp') },
+                  { value: 'mock_sms', label: tr('Mock SMS (Logs)') },
+                  { value: 'mock_whatsapp', label: tr('Mock WhatsApp (Logs)') },
                 ]}
               />
             </Field>
             <div className="md:col-span-2 flex items-end justify-between gap-4">
               <div className="flex-1">
                 <p className="text-xs text-goblin-300 mb-1">
-                  Replaces <code className="bg-goblin-700 px-1 rounded font-mono">{`{name}`}</code> and <code className="bg-goblin-700 px-1 rounded font-mono">{`{points}`}</code> dynamically.
+                  {tr('Replaces')} <code className="bg-goblin-700 px-1 rounded font-mono">{tr('{name}')}</code> {tr('and')} <code className="bg-goblin-700 px-1 rounded font-mono">{tr('{points}')}</code> {tr('dynamically.')}
                 </p>
               </div>
               <Btn kind="primary" onClick={() => void sendCampaign()} disabled={sending || !segmentRows?.length}>
-                {sending ? 'Sending…' : `Send to ${segmentRows?.length ?? 0} customers`}
+                {sending ? tr('Sending…') : `${tr('Send to')} ${segmentRows?.length ?? 0} ${tr('customers')}`}
               </Btn>
             </div>
           </div>
           
           {campaignResult && (
             <div className="mt-4 rounded-lg bg-goblin-900 p-3 text-sm border border-goblin-700">
-              <div className="font-semibold text-goblin-50 mb-1">Campaign Report:</div>
+              <div className="font-semibold text-goblin-50 mb-1">{tr('Campaign Report:')}</div>
               <div className="flex gap-4 text-goblin-200">
-                <div>Total Selected: <span className="font-bold text-goblin-50">{campaignResult.total}</span></div>
-                <div className="text-goblin-500">Success: <span className="font-bold">{campaignResult.successCount}</span></div>
-                <div className="text-red-600">Failed: <span className="font-bold">{campaignResult.failCount}</span></div>
+                <div>{tr('Total Selected:')} <span className="font-bold text-goblin-50">{campaignResult.total}</span></div>
+                <div className="text-goblin-500">{tr('Success:')} <span className="font-bold">{campaignResult.successCount}</span></div>
+                <div className="text-red-600">{tr('Failed:')} <span className="font-bold">{campaignResult.failCount}</span></div>
               </div>
               {campaignResult.results && campaignResult.results.some((r: any) => !r.success) && (
                 <div className="mt-2 text-xs text-red-500 max-h-24 overflow-y-auto border-t border-goblin-800 pt-2">
                   {campaignResult.results.filter((r: any) => !r.success).map((r: any, i: number) => (
-                    <div key={i}>Customer: {r.customerId} — {r.error}</div>
+                    <div key={i}>{tr('Customer:')} {r.customerId} — {r.error}</div>
                   ))}
                 </div>
               )}
@@ -195,10 +196,10 @@ export function CrmView() {
         </div>
 
         <div className="mt-6">
-          <Table headers={['Name', 'Phone', 'Points', 'Lifetime', '']}
+          <Table headers={[tr('Name'), tr('Phone'), tr('Points'), tr('Lifetime'), '']}
             rows={(segmentRows ?? []).map((r) => [
               r.name, r.phone, String(r.pointsBalance ?? '—'), r.lifetimeCents != null ? egp(r.lifetimeCents) : '—',
-              r.id ? <Btn key="v" onClick={() => setDetailId(r.id!)}>View / Edit</Btn> : '',
+              r.id ? <Btn key="v" onClick={() => setDetailId(r.id!)}>{tr('View / Edit')}</Btn> : '',
             ])} />
         </div>
       </div>
@@ -235,24 +236,24 @@ function GroupModal({ group, onClose, onDone }: { group?: CustomerGroup; onClose
   async function submit() {
     const discountBps = Math.round(Number(discount) * 100);
     if (!name.trim() || !Number.isFinite(discountBps) || discountBps < 0 || discountBps > 10000) {
-      setErr('Name and a discount between 0 and 100% are required'); return;
+      setErr(tr('Name and a discount between 0 and 100% are required')); return;
     }
     const body = { name: name.trim(), nameAr: nameAr.trim() || undefined, discountBps };
     try {
       if (group) await api(`/crm/groups/${group.id}`, { method: 'PATCH', body });
       else await api('/crm/groups', { method: 'POST', body });
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title={group ? `Edit ${group.name}` : 'New customer group'} onClose={onClose}>
+    <Modal title={group ? `${tr('Edit')} ${group.name}` : tr('New customer group')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Name (e.g. Staff, VIP, Corporate)"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Name (Arabic)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
-        <Field label="Discount % (auto-applied)"><TextInput value={discount} onChange={setDiscount} type="number" /></Field>
-        <Btn kind="primary" onClick={() => void submit()}>{group ? 'Save' : 'Create group'}</Btn>
+        <Field label={tr('Name (e.g. Staff, VIP, Corporate)')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Name (Arabic)')}><TextInput value={nameAr} onChange={setNameAr} /></Field>
+        <Field label={tr('Discount % (auto-applied)')}><TextInput value={discount} onChange={setDiscount} type="number" /></Field>
+        <Btn kind="primary" onClick={() => void submit()}>{group ? tr('Save') : tr('Create group')}</Btn>
       </div>
     </Modal>
   );
@@ -261,63 +262,63 @@ function GroupModal({ group, onClose, onDone }: { group?: CustomerGroup; onClose
 function CustomerModal({ id, groups, onClose }: { id: string; groups: CustomerGroup[]; onClose: () => void }) {
   const { data: c, error, reload } = useLoad(() => api<CustomerDetail>(`/crm/customers/${id}`), [id]);
   const [editOpen, setEditOpen] = useState(false);
-  if (error) return <Modal title="Customer" onClose={onClose}><ErrorBanner message={error} /></Modal>;
-  if (!c) return <Modal title="Customer" onClose={onClose}><p className="text-goblin-400">Loading…</p></Modal>;
+  if (error) return <Modal title={tr('Customer')} onClose={onClose}><ErrorBanner message={error} /></Modal>;
+  if (!c) return <Modal title={tr('Customer')} onClose={onClose}><p className="text-goblin-400">{tr('Loading…')}</p></Modal>;
   return (
     <Modal title={c.name} onClose={onClose} wide>
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
         <span className="rounded-lg bg-goblin-800 px-3 py-1.5">{c.phone}</span>
         {c.group && <span className="rounded-lg bg-goblin-700 px-3 py-1.5 text-goblin-500">{c.group.name} −{pct(c.group.discountBps)}</span>}
         {c.tier && <span className="rounded-lg bg-amber-100 px-3 py-1.5 text-amber-800">{c.tier.name}</span>}
-        <span className="rounded-lg bg-goblin-700 px-3 py-1.5 text-goblin-500">{c.pointsBalance} pts</span>
-        <span className="rounded-lg bg-indigo-100 px-3 py-1.5 text-indigo-800">Wallet: {egp(c.walletBalanceCents)}</span>
-        <span className="rounded-lg bg-goblin-800 px-3 py-1.5">{c.visitCount} visits</span>
-        <span className="rounded-lg bg-goblin-800 px-3 py-1.5">lifetime {egp(c.lifetimeCents)}</span>
+        <span className="rounded-lg bg-goblin-700 px-3 py-1.5 text-goblin-500">{c.pointsBalance} {tr('pts')}</span>
+        <span className="rounded-lg bg-indigo-100 px-3 py-1.5 text-indigo-800">{tr('Wallet:')} {egp(c.walletBalanceCents)}</span>
+        <span className="rounded-lg bg-goblin-800 px-3 py-1.5">{c.visitCount} {tr('visits')}</span>
+        <span className="rounded-lg bg-goblin-800 px-3 py-1.5">{tr('lifetime')} {egp(c.lifetimeCents)}</span>
         {c.birthday && <span className="inline-flex items-center gap-1 rounded-lg bg-goblin-800 px-3 py-1.5"><Cake className="h-4 w-4" /> {new Date(c.birthday).toLocaleDateString('en-EG', { month: 'short', day: 'numeric' })}</span>}
         <span className={`rounded-lg px-3 py-1.5 font-semibold ${c.isActive ? 'bg-goblin-700 text-goblin-500' : 'bg-red-100 text-red-800'}`}>
-          {c.isActive ? 'Active' : 'Disabled'}
+          {c.isActive ? tr('Active') : tr('Disabled')}
         </span>
         <span className="ml-auto flex gap-2">
           <Btn kind={c.isActive ? 'danger' : 'primary'} onClick={() => void api(`/crm/customers/${c.id}`, { method: 'PATCH', body: { isActive: !c.isActive } }).then(reload)}>
-            {c.isActive ? 'Disable' : 'Enable'}
+            {c.isActive ? tr('Disable') : tr('Enable')}
           </Btn>
-          <Btn onClick={() => setEditOpen(true)}>Edit</Btn>
+          <Btn onClick={() => setEditOpen(true)}>{tr('Edit')}</Btn>
         </span>
       </div>
-      {c.tags.length > 0 && <p className="mb-3 text-xs text-goblin-300">Tags: {c.tags.join(', ')}</p>}
+      {c.tags.length > 0 && <p className="mb-3 text-xs text-goblin-300">{tr('Tags:')} {c.tags.join(', ')}</p>}
       {c.notes && <p className="mb-3 rounded-lg bg-goblin-800 p-2 text-sm text-goblin-200">{c.notes}</p>}
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <h3 className="mb-1 text-sm font-semibold text-goblin-200">Favorites</h3>
+          <h3 className="mb-1 text-sm font-semibold text-goblin-200">{tr('Favorites')}</h3>
           <ul className="text-sm text-goblin-200">
             {c.favorites.map((f) => <li key={f.name}>{f.name} ×{f.count}</li>)}
-            {!c.favorites.length && <li className="text-goblin-400">No history yet</li>}
+            {!c.favorites.length && <li className="text-goblin-400">{tr('No history yet')}</li>}
           </ul>
-          <h3 className="mb-1 mt-4 text-sm font-semibold text-goblin-200">Recent visits</h3>
+          <h3 className="mb-1 mt-4 text-sm font-semibold text-goblin-200">{tr('Recent visits')}</h3>
           <ul className="text-sm text-goblin-200">
             {c.orders.map((o) => (
               <li key={o.id}>#{o.number} — {egp(o.totalCents)}{o.closedAt ? ` — ${cairoTime(o.closedAt)}` : ''}</li>
             ))}
-            {!c.orders.length && <li className="text-goblin-400">None</li>}
+            {!c.orders.length && <li className="text-goblin-400">{tr('None')}</li>}
           </ul>
         </div>
         <div>
-          <h3 className="mb-1 text-sm font-semibold text-goblin-200">Points history</h3>
+          <h3 className="mb-1 text-sm font-semibold text-goblin-200">{tr('Points history')}</h3>
           <ul className="text-sm text-goblin-200">
             {c.pointsTransactions.map((t) => (
               <li key={t.id}>
                 <span className={t.points < 0 ? 'text-red-600' : 'text-goblin-500'}>{t.points > 0 ? '+' : ''}{t.points}</span>
-                {' '}{t.kind.toLowerCase()} — {cairoTime(t.createdAt)}
+                {' '}{tr(t.kind.toLowerCase())} — {cairoTime(t.createdAt)}
               </li>
             ))}
-            {!c.pointsTransactions.length && <li className="text-goblin-400">None</li>}
+            {!c.pointsTransactions.length && <li className="text-goblin-400">{tr('None')}</li>}
           </ul>
-          <h3 className="mb-1 mt-4 text-sm font-semibold text-goblin-200">Reservations</h3>
+          <h3 className="mb-1 mt-4 text-sm font-semibold text-goblin-200">{tr('Reservations')}</h3>
           <ul className="text-sm text-goblin-200">
             {c.reservations.map((r) => (
-              <li key={r.id}>{r.resource.name} — {cairoTime(r.startAt)} — {r.status}</li>
+              <li key={r.id}>{r.resource.name} — {cairoTime(r.startAt)} — {tr(r.status)}</li>
             ))}
-            {!c.reservations.length && <li className="text-goblin-400">None</li>}
+            {!c.reservations.length && <li className="text-goblin-400">{tr('None')}</li>}
           </ul>
         </div>
       </div>
@@ -342,10 +343,10 @@ export function CustomerFormModal({ existing, groups, onClose, onDone }: {
   const [err, setErr] = useState('');
 
   async function submit() {
-    if (!name.trim() || (!existing && !phone.trim())) { setErr('Name and phone are required'); return; }
+    if (!name.trim() || (!existing && !phone.trim())) { setErr(tr('Name and phone are required')); return; }
     const walletBalanceCents = walletCreditEgp ? Math.round(Number(walletCreditEgp) * 100) : 0;
     if (!Number.isFinite(walletBalanceCents) || walletBalanceCents < 0) {
-      setErr('Wallet credit must be a non-negative number'); return;
+      setErr(tr('Wallet credit must be a non-negative number')); return;
     }
     const body = {
       name: name.trim(), email: email.trim() || undefined,
@@ -358,24 +359,24 @@ export function CustomerFormModal({ existing, groups, onClose, onDone }: {
         ? await api<Customer>(`/crm/customers/${existing.id}`, { method: 'PATCH', body })
         : await api<Customer>('/crm/customers', { method: 'POST', body: { ...body, phone: phone.trim() } });
       onDone(c);
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title={existing ? `Edit ${existing.name}` : 'New customer'} onClose={onClose}>
+    <Modal title={existing ? `${tr('Edit')} ${existing.name}` : tr('New customer')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Name"><TextInput value={name} onChange={setName} /></Field>
-        {!existing && <Field label="Phone"><TextInput value={phone} onChange={setPhone} /></Field>}
-        <Field label="Email"><TextInput value={email} onChange={setEmail} /></Field>
-        <Field label="Birthday"><TextInput value={birthday} onChange={setBirthday} type="date" /></Field>
-        <Field label="Group (auto discount)">
+        <Field label={tr('Name')}><TextInput value={name} onChange={setName} /></Field>
+        {!existing && <Field label={tr('Phone')}><TextInput value={phone} onChange={setPhone} /></Field>}
+        <Field label={tr('Email')}><TextInput value={email} onChange={setEmail} /></Field>
+        <Field label={tr('Birthday')}><TextInput value={birthday} onChange={setBirthday} type="date" /></Field>
+        <Field label={tr('Group (auto discount)')}>
           <Select value={groupId} onChange={setGroupId} allowEmpty="— none —"
             options={groups.filter((g) => g.isActive).map((g) => ({ value: g.id, label: `${g.name} (−${pct(g.discountBps)})` }))} />
         </Field>
-        <Field label="Notes"><TextInput value={notes} onChange={setNotes} /></Field>
-        <Field label="Wallet Credit (EGP)"><TextInput value={walletCreditEgp} onChange={setWalletCreditEgp} type="number" /></Field>
-        <Btn kind="primary" onClick={() => void submit()}>{existing ? 'Save' : 'Create'}</Btn>
+        <Field label={tr('Notes')}><TextInput value={notes} onChange={setNotes} /></Field>
+        <Field label={tr('Wallet Credit (EGP)')}><TextInput value={walletCreditEgp} onChange={setWalletCreditEgp} type="number" /></Field>
+        <Btn kind="primary" onClick={() => void submit()}>{existing ? tr('Save') : tr('Create')}</Btn>
       </div>
     </Modal>
   );

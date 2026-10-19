@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, egp, parseEgp } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Select, Spinner, TextInput, useLoad } from '../lib/ui';
+import { tr } from '../lib/i18n';
 
 interface Reservation {
   id: string; startAt: string; endAt: string; partySize: number; status: string;
@@ -36,7 +37,7 @@ export function ReservationsView() {
     try {
       await api(`/reservations/${id}/status/${status.toLowerCase()}`, { method: 'POST' });
       reload();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   const [depositFor, setDepositFor] = useState<Reservation | null>(null);
@@ -48,13 +49,13 @@ export function ReservationsView() {
       await api(`/reservations/${depositFor.id}/deposit-received`, { method: 'POST', body: { reference: depositRef.trim() } });
       setDepositFor(null); setDepositRef('');
       reload();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   async function sweep() {
     setErr('');
     try { await api('/reservations/sweep', { method: 'POST' }); reload(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   if (error) return <p className="p-8 text-red-600">{error}</p>;
@@ -86,7 +87,7 @@ export function ReservationsView() {
               : 'border-transparent text-goblin-300 hover:text-goblin-100'
           }`}
         >
-          🎮 Rental Assets (Billiards & PS)
+          {tr('🎮 Rental Assets (Billiards & PS)')}
         </button>
         <button
           onClick={() => setActiveCategory('DINING')}
@@ -96,13 +97,13 @@ export function ReservationsView() {
               : 'border-transparent text-goblin-300 hover:text-goblin-100'
           }`}
         >
-          🍽️ Dining Tables
+          {tr('🍽️ Dining Tables')}
         </button>
       </div>
 
       <div className="flex items-center gap-2">
-        <Btn kind="primary" onClick={() => setCreateOpen(true)}>+ New reservation</Btn>
-        <Btn onClick={() => void sweep()}>Run no-show sweep</Btn>
+        <Btn kind="primary" onClick={() => setCreateOpen(true)}>{tr('+ New reservation')}</Btn>
+        <Btn onClick={() => void sweep()}>{tr('Run no-show sweep')}</Btn>
       </div>
       <ErrorBanner message={err} />
       {[...byDay.entries()].map(([day, rows]) => (
@@ -114,31 +115,31 @@ export function ReservationsView() {
                 <span className="w-28 font-mono text-sm">{time(r.startAt)}–{time(r.endAt)}</span>
                 <span className="font-semibold text-goblin-100">{r.resource.name}</span>
                 {r.source === 'ONLINE' && (
-                  <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-semibold text-blue-400" title="Booked on the website">
-                    Online · {r.bookingCode}
+                  <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-semibold text-blue-400" title={tr('Booked on the website')}>
+                    {tr('Online ·')} {r.bookingCode}
                   </span>
                 )}
                 <span className="text-sm text-goblin-200">
                   {r.customer?.name ?? r.guestName ?? '—'}
                   {(r.customer?.phone ?? r.guestPhone) && <span className="text-goblin-400"> · {r.customer?.phone ?? r.guestPhone}</span>}
-                  {' '}· {r.partySize} pax
+                  {' '}· {r.partySize} {tr('pax')}
                   {r.depositCents > 0 && (
                     <span className={r.depositStatus === 'AWAITING' ? 'text-amber-500' : 'text-goblin-500'}>
-                      {' '}· deposit {egp(r.depositCents)}
-                      {r.depositStatus === 'AWAITING' && ' — awaiting transfer'}
-                      {r.depositStatus === 'RECEIVED' && ` — received${r.depositReference ? ` (${r.depositReference})` : ''}`}
+                      {' '}{tr('· deposit')} {egp(r.depositCents)}
+                      {r.depositStatus === 'AWAITING' && tr(' — awaiting transfer')}
+                      {r.depositStatus === 'RECEIVED' && ` ${tr('— received')}${r.depositReference ? ` (${r.depositReference})` : ''}`}
                     </span>
                   )}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[r.status] ?? ''}`}>{r.status.replace('_', ' ')}</span>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[r.status] ?? ''}`}>{tr(r.status.replace('_', ' '))}</span>
                 <span className="ml-auto flex gap-1">
                   {r.depositStatus === 'AWAITING' && (r.status === 'PENDING' || r.status === 'CONFIRMED') && (
-                    <Btn kind="primary" onClick={() => { setDepositFor(r); setDepositRef(''); }}>Deposit received</Btn>
+                    <Btn kind="primary" onClick={() => { setDepositFor(r); setDepositRef(''); }}>{tr('Deposit received')}</Btn>
                   )}
                   {(NEXT[r.status] ?? []).map((s) => (
                     <Btn key={s} kind={s === 'CANCELLED' || s === 'NO_SHOW' ? 'danger' : 'default'}
                       onClick={() => void setStatus(r.id, s)}>
-                      {s === 'SEATED' ? 'Check in' : s.replace('_', ' ').toLowerCase()}
+                      {s === 'SEATED' ? tr('Check in') : tr(s.replace('_', ' ').toLowerCase())}
                     </Btn>
                   ))}
                 </span>
@@ -147,20 +148,19 @@ export function ReservationsView() {
           </div>
         </div>
       ))}
-      {!filtered.length && <p className="text-sm text-goblin-400">No reservations in the next 7 days for this category</p>}
+      {!filtered.length && <p className="text-sm text-goblin-400">{tr('No reservations in the next 7 days for this category')}</p>}
       {depositFor && (
-        <Modal title={`Deposit for ${depositFor.bookingCode ?? depositFor.resource.name}`} onClose={() => setDepositFor(null)}>
+        <Modal title={`${tr('Deposit for')} ${depositFor.bookingCode ?? depositFor.resource.name}`} onClose={() => setDepositFor(null)}>
           <p className="mb-3 text-sm text-goblin-300">
-            Confirm that {egp(depositFor.depositCents)} arrived by InstaPay / wallet from {depositFor.guestName ?? 'the guest'}
-            {depositFor.guestPhone ? ` (${depositFor.guestPhone})` : ''}. The booking becomes confirmed and the guest gets a message.
-            At check-out, take this amount with the “Booking deposit” payment method.
+            {tr('Confirm that')} {egp(depositFor.depositCents)} {tr('arrived by InstaPay / wallet from')} {depositFor.guestName ?? tr('the guest')}
+            {depositFor.guestPhone ? ` (${depositFor.guestPhone})` : ''}{tr('. The booking becomes confirmed and the guest gets a message. At check-out, take this amount with the “Booking deposit” payment method.')}
           </p>
-          <Field label="Transfer reference (from the InstaPay / wallet message)">
+          <Field label={tr('Transfer reference (from the InstaPay / wallet message)')}>
             <TextInput value={depositRef} onChange={setDepositRef} />
           </Field>
           <div className="mt-3 flex justify-end gap-2">
-            <Btn onClick={() => setDepositFor(null)}>Cancel</Btn>
-            <Btn kind="primary" onClick={() => void confirmDeposit()}>Confirm deposit</Btn>
+            <Btn onClick={() => setDepositFor(null)}>{tr('Cancel')}</Btn>
+            <Btn kind="primary" onClick={() => void confirmDeposit()}>{tr('Confirm deposit')}</Btn>
           </div>
         </Modal>
       )}
@@ -188,10 +188,10 @@ function NewReservationModal({ zones, onClose, onDone }: {
   const [err, setErr] = useState('');
 
   async function submit() {
-    if (!resourceId || !guestName.trim()) { setErr('Resource and guest name are required'); return; }
+    if (!resourceId || !guestName.trim()) { setErr(tr('Resource and guest name are required')); return; }
     const startAt = new Date(`${date}T${start}:00`);
     const endAt = new Date(startAt.getTime() + Number(durationMin) * 60_000);
-    if (!(Number(durationMin) > 0) || Number.isNaN(startAt.getTime())) { setErr('Invalid time'); return; }
+    if (!(Number(durationMin) > 0) || Number.isNaN(startAt.getTime())) { setErr(tr('Invalid time')); return; }
     const depositCents = deposit ? parseEgp(deposit) : undefined;
     try {
       await api('/reservations', { method: 'POST', body: {
@@ -201,32 +201,32 @@ function NewReservationModal({ zones, onClose, onDone }: {
         depositCents: depositCents ?? undefined, notes: notes.trim() || undefined,
       } });
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title="New reservation" onClose={onClose}>
+    <Modal title={tr('New reservation')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Table / room">
+        <Field label={tr('Table / room')}>
           <Select value={resourceId} onChange={setResourceId} allowEmpty="— pick —"
             options={resources.map((r) => ({ value: r.id, label: `${r.zone} · ${r.name}` }))} />
         </Field>
         <div className="grid grid-cols-3 gap-3">
-          <Field label="Date"><TextInput value={date} onChange={setDate} type="date" /></Field>
-          <Field label="Start"><TextInput value={start} onChange={setStart} type="time" /></Field>
-          <Field label="Minutes"><TextInput value={durationMin} onChange={setDurationMin} type="number" /></Field>
+          <Field label={tr('Date')}><TextInput value={date} onChange={setDate} type="date" /></Field>
+          <Field label={tr('Start')}><TextInput value={start} onChange={setStart} type="time" /></Field>
+          <Field label={tr('Minutes')}><TextInput value={durationMin} onChange={setDurationMin} type="number" /></Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Guest name"><TextInput value={guestName} onChange={setGuestName} /></Field>
-          <Field label="Phone"><TextInput value={guestPhone} onChange={setGuestPhone} /></Field>
+          <Field label={tr('Guest name')}><TextInput value={guestName} onChange={setGuestName} /></Field>
+          <Field label={tr('Phone')}><TextInput value={guestPhone} onChange={setGuestPhone} /></Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Party size"><TextInput value={partySize} onChange={setPartySize} type="number" /></Field>
-          <Field label="Deposit (EGP, optional)"><TextInput value={deposit} onChange={setDeposit} type="number" /></Field>
+          <Field label={tr('Party size')}><TextInput value={partySize} onChange={setPartySize} type="number" /></Field>
+          <Field label={tr('Deposit (EGP, optional)')}><TextInput value={deposit} onChange={setDeposit} type="number" /></Field>
         </div>
-        <Field label="Notes"><TextInput value={notes} onChange={setNotes} /></Field>
-        <Btn kind="primary" onClick={() => void submit()}>Book</Btn>
+        <Field label={tr('Notes')}><TextInput value={notes} onChange={setNotes} /></Field>
+        <Btn kind="primary" onClick={() => void submit()}>{tr('Book')}</Btn>
       </div>
     </Modal>
   );

@@ -36,10 +36,24 @@ export interface MenuItem {
   name: string;
   nameAr?: string | null;
   sku?: string | null;
+  imageUrl?: string | null;
   priceCents: number;
   is86ed: boolean;
   modifierGroups: { group: ModifierGroup }[];
   isFavorite?: boolean;
+  /** recipe-based stock warning from the server */
+  stock?: 'OUT' | 'LOW' | null;
+  priceSchedules?: PriceScheduleInfo[];
+}
+
+export interface PriceScheduleInfo {
+  id: string;
+  name: string;
+  priceCents: number;
+  daysOfWeek: number[];
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
 }
 
 export interface Category {

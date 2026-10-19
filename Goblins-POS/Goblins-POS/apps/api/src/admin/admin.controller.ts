@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Req } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { AutoBackupService } from './auto-backup.service';
 import { backupsDir as backupsDir_ } from './backup-dir';
+import { deleteMenuImage, saveMenuImage } from '../media/media';
 
 const execAsync = promisify(exec);
 
@@ -60,6 +61,30 @@ export class AdminController {
       });
     }
     await this.audit.log({ userId: req.user.sub, action: 'menu.item_update', entity: 'MenuItem', entityId: id, detail: data as never });
+    this.realtime.emitTo('pos', 'menu.changed', {});
+    return item;
+  }
+
+  /** Upload / replace an item's picture (data URL, already resized in the browser). */
+  @Post('menu/items/:id/image')
+  @RequirePermissions('menu.manage')
+  async setItemImage(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: { dataUrl: string }) {
+    const before = await this.prisma.menuItem.findUniqueOrThrow({ where: { id } });
+    const imageUrl = saveMenuImage(id, body?.dataUrl);
+    const item = await this.prisma.menuItem.update({ where: { id }, data: { imageUrl } });
+    deleteMenuImage(before.imageUrl);
+    await this.audit.log({ userId: req.user.sub, action: 'menu.item_image', entity: 'MenuItem', entityId: id });
+    this.realtime.emitTo('pos', 'menu.changed', {});
+    return item;
+  }
+
+  @Delete('menu/items/:id/image')
+  @RequirePermissions('menu.manage')
+  async removeItemImage(@Req() req: AuthedRequest, @Param('id') id: string) {
+    const before = await this.prisma.menuItem.findUniqueOrThrow({ where: { id } });
+    const item = await this.prisma.menuItem.update({ where: { id }, data: { imageUrl: null } });
+    deleteMenuImage(before.imageUrl);
+    await this.audit.log({ userId: req.user.sub, action: 'menu.item_image_remove', entity: 'MenuItem', entityId: id });
     this.realtime.emitTo('pos', 'menu.changed', {});
     return item;
   }
@@ -589,11 +614,15 @@ export class AdminController {
   @Delete('zones/:id')
   @RequirePermissions('settings.manage')
   async deleteZone(@Req() req: AuthedRequest, @Param('id') id: string) {
-    const associatedResources = await this.prisma.resource.count({ where: { zoneId: id } });
-    if (associatedResources > 0) {
-      throw new BadRequestException('Cannot delete zone because it contains tables or rooms');
+    // active tables block it; inactive ones are detached (kept for sales history)
+    const active = await this.prisma.resource.count({ where: { zoneId: id, isActive: true } });
+    if (active > 0) {
+      throw new BadRequestException('This zone still has active tables. Delete them or move them to another zone first.');
     }
-    await this.prisma.floorZone.delete({ where: { id } });
+    await this.prisma.$transaction([
+      this.prisma.resource.updateMany({ where: { zoneId: id }, data: { zoneId: null } }),
+      this.prisma.floorZone.delete({ where: { id } }),
+    ]);
     await this.audit.log({ userId: req.user.sub, action: 'floor.zone_delete', entity: 'FloorZone', entityId: id });
     this.realtime.emitTo('floor', 'floor.refresh', {});
     return { ok: true };
@@ -624,6 +653,40 @@ export class AdminController {
     await this.audit.log({ userId: req.user.sub, action: 'floor.resource_update', entity: 'Resource', entityId: id, detail: data as never });
     this.realtime.emitTo('floor', 'floor.refresh', {});
     return resource;
+  }
+
+  /**
+   * Remove a table/room. One that was never used is deleted outright; one with
+   * orders, sessions or bookings is archived instead (hidden everywhere, history kept).
+   */
+  @Delete('resources/:id')
+  @RequirePermissions('settings.manage')
+  async deleteResource(@Req() req: AuthedRequest, @Param('id') id: string) {
+    const res = await this.prisma.resource.findUnique({
+      where: { id },
+      select: {
+        id: true, name: true,
+        _count: { select: { orders: true, sessions: true, reservations: true } },
+        orders: { where: { status: 'OPEN' }, select: { id: true }, take: 1 },
+        sessions: { where: { status: { in: ['RUNNING', 'PAUSED'] } }, select: { id: true }, take: 1 },
+      },
+    });
+    if (!res) throw new NotFoundException('Table not found');
+    if (res.orders.length || res.sessions.length) {
+      throw new BadRequestException('This table has an open bill or a running timer. Close it first.');
+    }
+    const used = res._count.orders + res._count.sessions + res._count.reservations > 0;
+    if (used) {
+      await this.prisma.resource.update({ where: { id }, data: { isActive: false, zoneId: null } });
+    } else {
+      await this.prisma.resource.delete({ where: { id } });
+    }
+    await this.audit.log({
+      userId: req.user.sub, action: used ? 'floor.resource_archive' : 'floor.resource_delete',
+      entity: 'Resource', entityId: id, detail: { name: res.name } as never,
+    });
+    this.realtime.emitTo('floor', 'floor.refresh', {});
+    return { ok: true, archived: used };
   }
 
   // ---------- staff & roles ----------

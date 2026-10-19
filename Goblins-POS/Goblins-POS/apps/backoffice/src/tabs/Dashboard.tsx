@@ -6,6 +6,7 @@ import {
 import { api, egp, pct } from '../lib/api';
 import { Spinner, useLoad } from '../lib/ui';
 import { ChartCard, RevenueTrend, SharePie } from '../lib/charts';
+import { tr } from '../lib/i18n';
 
 interface Dashboard {
   revenueCents: number;
@@ -56,7 +57,7 @@ function StatCard({
           <span className="text-goblin-300">{icon}</span>
           {badge && (
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${badgeColor}`}>
-              {badge}
+              {tr(badge)}
             </span>
           )}
         </div>
@@ -81,7 +82,7 @@ export function DashboardView() {
   const { data, error } = useLoad(() => api<Dashboard>('/reports/dashboard'));
   const { data: sales, error: salesError } = useLoad(() => api<SalesPoint[]>('/reports/sales?groupBy=day'));
 
-  if (error) return <p className="p-8 text-red-600 font-semibold">Couldn’t load dashboard: {error}</p>;
+  if (error) return <p className="p-8 text-red-600 font-semibold">{tr('Couldn’t load dashboard:')} {error}</p>;
   if (!data) return <Spinner />;
 
   // Calculate maximum sold count for Top Sellers relative progress calculation
@@ -113,20 +114,20 @@ export function DashboardView() {
     });
 
   // Department revenue share slices
-  const deptSlices = Object.entries(data.revenueByDepartment).map(([label, value]) => ({ label, value }));
+  const deptSlices = Object.entries(data.revenueByDepartment).map(([label, value]) => ({ label: tr(label), value }));
 
   return (
     <div className="space-y-6">
       {/* 1. Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-goblin-800 pb-4">
         <div>
-          <h1 className="text-2xl font-black text-goblin-50">Yard Performance</h1>
-          <p className="text-xs text-goblin-300 font-medium">Real-time metrics & financial analytics dashboard</p>
+          <h1 className="text-2xl font-black text-goblin-50">{tr('Yard Performance')}</h1>
+          <p className="text-xs text-goblin-300 font-medium">{tr('Real-time metrics & financial analytics dashboard')}</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 rounded-full bg-goblin-500 animate-pulse" />
           <span className="text-xs font-bold text-goblin-500 uppercase tracking-wide bg-goblin-800 border border-goblin-600 px-2.5 py-1 rounded-full">
-            Live Feed
+            {tr('Live Feed')}
           </span>
         </div>
       </div>
@@ -134,30 +135,30 @@ export function DashboardView() {
       {/* 2. KPI Cards Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Revenue Today"
+          title={tr('Revenue Today')}
           value={egp(data.revenueCents)}
           icon={<Wallet className="h-4 w-4" />}
           badge="Daily Gross"
           badgeColor="bg-goblin-800 text-goblin-100 border border-goblin-700"
         />
         <StatCard
-          title="Transactions"
+          title={tr('Transactions')}
           value={String(data.orderCount)}
           icon={<Receipt className="h-4 w-4" />}
           badge="Paid Orders"
           badgeColor="bg-goblin-800 text-goblin-100 border border-goblin-700"
         />
         <StatCard
-          title="Asset Occupancy"
+          title={tr('Asset Occupancy')}
           value={`${data.occupancy.occupied} / ${data.occupancy.total}`}
           icon={<MapPin className="h-4 w-4" />}
-          badge={`${Math.round(occupancyPercent)}% capacity`}
+          badge={`${Math.round(occupancyPercent)}% ${tr('capacity')}`}
           badgeColor="bg-goblin-800 text-goblin-100 border border-goblin-700"
           progress={occupancyPercent}
           progressColor="bg-goblin-600"
         />
         <StatCard
-          title="Food Cost Share"
+          title={tr('Food Cost Share')}
           value={pct(data.foodCostPctBps)}
           icon={<Percent className="h-4 w-4" />}
           badge={foodCostBadge}
@@ -166,22 +167,22 @@ export function DashboardView() {
           progressColor={foodCostProgressColor}
         />
         <StatCard
-          title="Restaurant Sales"
+          title={tr('Restaurant Sales')}
           value={egp(data.revenueByDepartment.Restaurant ?? 0)}
           icon={<UtensilsCrossed className="h-4 w-4" />}
         />
         <StatCard
-          title="Billiards Sales"
+          title={tr('Billiards Sales')}
           value={egp(data.revenueByDepartment.Billiards ?? 0)}
           icon={<Target className="h-4 w-4" />}
         />
         <StatCard
-          title="PlayStation Sales"
+          title={tr('PlayStation Sales')}
           value={egp(data.revenueByDepartment.PlayStation ?? 0)}
           icon={<Gamepad2 className="h-4 w-4" />}
         />
         <StatCard
-          title="Expenses Today"
+          title={tr('Expenses Today')}
           value={egp(data.expensesTodayCents)}
           icon={<Banknote className="h-4 w-4" />}
           badge={data.expensesTodayCents > 0 ? 'Cash Outflow' : 'No Expenses'}
@@ -195,16 +196,16 @@ export function DashboardView() {
         <ChartCard
           className="lg:col-span-2"
           icon={<TrendingUp className="h-5 w-5" />}
-          title="Sales Trend"
-          subtitle="Daily gross revenue comparison over the last 7 days"
+          title={tr('Sales Trend')}
+          subtitle={tr('Daily gross revenue comparison over the last 7 days')}
           right={
             <span className="text-[10px] font-bold text-goblin-400 bg-goblin-800 border border-goblin-700 px-2 py-0.5 rounded">
-              7D Interval
+              {tr('7D Interval')}
             </span>
           }
         >
           {salesError ? (
-            <p className="text-xs text-red-500 py-10 text-center">Failed to load weekly trends: {salesError}</p>
+            <p className="text-xs text-red-500 py-10 text-center">{tr('Failed to load weekly trends:')} {salesError}</p>
           ) : !sales ? (
             <div className="flex h-52 items-center justify-center">
               <span className="animate-spin inline-block w-6 h-6 border-2 border-goblin-600 border-t-transparent rounded-full" />
@@ -217,8 +218,8 @@ export function DashboardView() {
         {/* Department Revenue Share */}
         <ChartCard
           icon={<PieChart className="h-5 w-5" />}
-          title="Department Revenue"
-          subtitle="Distribution share of sales channels today"
+          title={tr('Department Revenue')}
+          subtitle={tr('Distribution share of sales channels today')}
         >
           <SharePie slices={deptSlices} />
         </ChartCard>
@@ -229,8 +230,8 @@ export function DashboardView() {
         {/* Top Sellers Popularity List */}
         <div className="rounded-2xl border border-goblin-800 bg-goblin-900 p-5 shadow-sm lg:col-span-2">
           <div className="mb-4">
-            <h2 className="flex items-center gap-2 text-base font-bold text-goblin-50"><Flame className="h-5 w-5" />Top Sellers Today</h2>
-            <p className="text-[11px] text-goblin-300 font-medium">Most popular inventory items by quantity sold</p>
+            <h2 className="flex items-center gap-2 text-base font-bold text-goblin-50"><Flame className="h-5 w-5" />{tr('Top Sellers Today')}</h2>
+            <p className="text-[11px] text-goblin-300 font-medium">{tr('Most popular inventory items by quantity sold')}</p>
           </div>
           <div className="space-y-4">
             {data.topSellers.map((item, idx) => {
@@ -245,7 +246,7 @@ export function DashboardView() {
                       <span>{item.name}</span>
                     </div>
                     <span className="text-goblin-300 font-mono text-[11px]">
-                      <span className="font-extrabold text-goblin-50">{item.qty}</span> sold ·{' '}
+                      <span className="font-extrabold text-goblin-50">{item.qty}</span> {tr('sold ·')}{' '}
                       <span className="font-semibold text-goblin-100">{egp(item.revenue)}</span>
                     </span>
                   </div>
@@ -259,7 +260,7 @@ export function DashboardView() {
               );
             })}
             {!data.topSellers.length && (
-              <div className="py-8 text-center text-xs text-goblin-400">No products sold today yet.</div>
+              <div className="py-8 text-center text-xs text-goblin-400">{tr('No products sold today yet.')}</div>
             )}
           </div>
         </div>
@@ -267,16 +268,16 @@ export function DashboardView() {
         {/* Operations & Staff Quick Info */}
         <div className="rounded-2xl border border-goblin-800 bg-goblin-900 p-5 shadow-sm flex flex-col justify-between">
           <div>
-            <h2 className="flex items-center gap-2 text-base font-bold text-goblin-50"><Users className="h-5 w-5" />Today's Operations</h2>
-            <p className="text-[11px] text-goblin-300 font-medium">Quick snapshot of staff activity and attendance</p>
+            <h2 className="flex items-center gap-2 text-base font-bold text-goblin-50"><Users className="h-5 w-5" />{tr('Today\'s Operations')}</h2>
+            <p className="text-[11px] text-goblin-300 font-medium">{tr('Quick snapshot of staff activity and attendance')}</p>
           </div>
           <div className="my-4 space-y-4 flex-1 flex flex-col justify-center">
             <div className="flex items-center justify-between rounded-xl bg-goblin-800 border p-3.5">
               <div className="flex items-center gap-3">
                 <HardHat className="h-5 w-5 text-goblin-300" />
                 <div>
-                  <h4 className="text-xs font-bold text-goblin-100">Clocked-in Staff</h4>
-                  <p className="text-[10px] text-goblin-400">Currently active on shift</p>
+                  <h4 className="text-xs font-bold text-goblin-100">{tr('Clocked-in Staff')}</h4>
+                  <p className="text-[10px] text-goblin-400">{tr('Currently active on shift')}</p>
                 </div>
               </div>
               <span className="text-xl font-extrabold text-goblin-100 font-mono bg-goblin-800 border border-goblin-700 px-3 py-1 rounded-lg">
@@ -288,8 +289,8 @@ export function DashboardView() {
               <div className="flex items-center gap-3">
                 <Coffee className="h-5 w-5 text-goblin-300" />
                 <div>
-                  <h4 className="text-xs font-bold text-goblin-100">Food Cost Status</h4>
-                  <p className="text-[10px] text-goblin-400">COGS to Sales relation</p>
+                  <h4 className="text-xs font-bold text-goblin-100">{tr('Food Cost Status')}</h4>
+                  <p className="text-[10px] text-goblin-400">{tr('COGS to Sales relation')}</p>
                 </div>
               </div>
               <span
@@ -299,13 +300,13 @@ export function DashboardView() {
                     : 'bg-amber-500/15 text-amber-500'
                 }`}
               >
-                {isFoodCostLow ? 'Healthy' : 'Investigate'}
+                {isFoodCostLow ? tr('Healthy') : tr('Investigate')}
               </span>
             </div>
           </div>
           <div className="border-t border-goblin-800 pt-3 text-center">
             <span className="text-[10px] font-semibold text-goblin-400 uppercase tracking-widest">
-              Goblins POS Platform
+              {tr('Goblins POS Platform')}
             </span>
           </div>
         </div>

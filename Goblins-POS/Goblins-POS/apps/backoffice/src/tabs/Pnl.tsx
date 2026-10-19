@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, egp, pct } from '../lib/api';
 import { Btn, Card, ErrorBanner, Field, Select, Spinner, Table, TextInput } from '../lib/ui';
 import { CategoryBars, ChartCard } from '../lib/charts';
+import { tr } from '../lib/i18n';
 
 interface DeptData {
   revenueCents: number;
@@ -88,7 +89,7 @@ export function PnlView() {
       const psBps = Math.round(Number(ratioPs) * 100);
 
       if (allocMethod === 'manual' && (isNaN(restBps) || isNaN(barBps) || isNaN(billBps) || isNaN(psBps))) {
-        throw new Error('All allocation percentages must be valid numbers');
+        throw new Error(tr('All allocation percentages must be valid numbers'));
       }
 
       await api('/settings', {
@@ -103,7 +104,7 @@ export function PnlView() {
       });
       reloadPnl();
     } catch (e: any) {
-      setErr(e.message || 'Failed to save settings');
+      setErr(e.message || tr('Failed to save settings'));
     } finally {
       setSavingSettings(false);
     }
@@ -126,17 +127,17 @@ export function PnlView() {
       {/* Date Range Picker */}
       <div className="flex flex-wrap items-center gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm">
         <div className="w-44">
-          <Field label="From Date">
+          <Field label={tr('From Date')}>
             <TextInput value={from} onChange={setFrom} type="date" />
           </Field>
         </div>
         <div className="w-44">
-          <Field label="To Date">
+          <Field label={tr('To Date')}>
             <TextInput value={to} onChange={setTo} type="date" />
           </Field>
         </div>
         <div className="ml-auto self-end pb-1">
-          <Btn onClick={reloadPnl} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Btn>
+          <Btn onClick={reloadPnl} disabled={loading}>{loading ? tr('Loading…') : tr('Refresh')}</Btn>
         </div>
       </div>
 
@@ -145,62 +146,62 @@ export function PnlView() {
       {pnl && (
         <>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Card title="Revenue" value={cents(pnl.revenueCents)} />
-            <Card title="COGS" value={cents(pnl.cogsCents)} />
-            <Card title="Gross profit" value={cents(pnl.grossProfitCents)} />
-            <Card title="Net Profit" value={cents(pnl.netCents)} />
+            <Card title={tr('Revenue')} value={cents(pnl.revenueCents)} />
+            <Card title={tr('COGS')} value={cents(pnl.cogsCents)} />
+            <Card title={tr('Gross profit')} value={cents(pnl.grossProfitCents)} />
+            <Card title={tr('Net Profit')} value={cents(pnl.netCents)} />
           </div>
 
           {/* P&L composition chart */}
-          <ChartCard title="P&L breakdown" subtitle="Revenue, cost of goods, expenses and net profit for the selected period">
+          <ChartCard title={tr('P&L breakdown')} subtitle={tr('Revenue, cost of goods, expenses and net profit for the selected period')}>
             <CategoryBars
               rows={[
-                { label: 'Revenue', value: pnl.revenueCents },
-                { label: 'COGS', value: pnl.cogsCents },
-                { label: 'Gross Profit', value: pnl.grossProfitCents },
-                { label: 'Expenses', value: pnl.expensesCents },
-                { label: 'Net Profit', value: pnl.netCents },
+                { label: tr('Revenue'), value: pnl.revenueCents },
+                { label: tr('COGS'), value: pnl.cogsCents },
+                { label: tr('Gross Profit'), value: pnl.grossProfitCents },
+                { label: tr('Expenses'), value: pnl.expensesCents },
+                { label: tr('Net Profit'), value: pnl.netCents },
               ]}
             />
           </ChartCard>
 
           {/* Departmental Allocation spreadsheet */}
           <div className="rounded-xl bg-goblin-900 p-5 shadow-sm overflow-x-auto">
-            <h2 className="mb-3 font-semibold text-goblin-100 text-base">Departmental Performance Spreadsheet</h2>
+            <h2 className="mb-3 font-semibold text-goblin-100 text-base">{tr('Departmental Performance Spreadsheet')}</h2>
             <table className="w-full text-sm border-collapse text-left">
               <thead>
                 <tr className="border-b bg-goblin-800 text-goblin-300 font-semibold">
-                  <th className="p-3">Metrics</th>
+                  <th className="p-3">{tr('Metrics')}</th>
                   {depts.map((d) => (
-                    <th key={d} className="p-3 text-right">{d}</th>
+                    <th key={d} className="p-3 text-right">{tr(d)}</th>
                   ))}
-                  <th className="p-3 text-right font-bold text-goblin-50 bg-goblin-800 font-mono">Total</th>
+                  <th className="p-3 text-right font-bold text-goblin-50 bg-goblin-800 font-mono">{tr('Total')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y text-goblin-200 font-mono">
                 <tr>
-                  <td className="p-3 font-medium text-goblin-100 font-sans">Revenue</td>
+                  <td className="p-3 font-medium text-goblin-100 font-sans">{tr('Revenue')}</td>
                   {depts.map((d) => (
                     <td key={d} className="p-3 text-right">{cents(pnl.departmentalBreakdown[d]?.revenueCents)}</td>
                   ))}
                   <td className="p-3 text-right font-bold text-goblin-50 bg-goblin-800">{cents(pnl.revenueCents)}</td>
                 </tr>
                 <tr>
-                  <td className="p-3 font-medium text-goblin-100 font-sans">Cost of Goods (COGS)</td>
+                  <td className="p-3 font-medium text-goblin-100 font-sans">{tr('Cost of Goods (COGS)')}</td>
                   {depts.map((d) => (
                     <td key={d} className="p-3 text-right text-red-600">-{cents(pnl.departmentalBreakdown[d]?.cogsCents)}</td>
                   ))}
                   <td className="p-3 text-right font-bold text-red-600 bg-goblin-800">-{cents(pnl.cogsCents)}</td>
                 </tr>
                 <tr className="bg-goblin-800/50 font-medium">
-                  <td className="p-3 text-goblin-500 font-semibold font-sans">Gross Profit</td>
+                  <td className="p-3 text-goblin-500 font-semibold font-sans">{tr('Gross Profit')}</td>
                   {depts.map((d) => (
                     <td key={d} className="p-3 text-right text-goblin-500">{cents(pnl.departmentalBreakdown[d]?.grossProfitCents)}</td>
                   ))}
                   <td className="p-3 text-right font-bold text-goblin-500 bg-goblin-700/80">{cents(pnl.grossProfitCents)}</td>
                 </tr>
                 <tr>
-                  <td className="p-3 font-medium text-goblin-100 font-sans">Direct Expenses</td>
+                  <td className="p-3 font-medium text-goblin-100 font-sans">{tr('Direct Expenses')}</td>
                   {depts.map((d) => (
                     <td key={d} className="p-3 text-right text-red-600">-{cents(pnl.departmentalBreakdown[d]?.directExpensesCents)}</td>
                   ))}
@@ -208,7 +209,7 @@ export function PnlView() {
                 </tr>
                 <tr>
                   <td className="p-3 font-medium text-goblin-100 font-sans">
-                    Allocated Overhead ({pnl.allocationMethod === 'revenue' ? 'Rev Share' : 'Manual'})
+                    {tr('Allocated Overhead (')}{pnl.allocationMethod === 'revenue' ? tr('Rev Share') : tr('Manual')})
                   </td>
                   {depts.map((d) => (
                     <td key={d} className="p-3 text-right text-red-600">
@@ -219,14 +220,14 @@ export function PnlView() {
                   <td className="p-3 text-right font-bold text-red-600 bg-goblin-800">-{cents(Object.values(pnl.departmentalBreakdown).reduce((a, b) => a + b.allocatedOverheadCents, 0))}</td>
                 </tr>
                 <tr className="bg-[#fafafa] font-medium">
-                  <td className="p-3 font-semibold text-goblin-100 font-sans">Total Expenses</td>
+                  <td className="p-3 font-semibold text-goblin-100 font-sans">{tr('Total Expenses')}</td>
                   {depts.map((d) => (
                     <td key={d} className="p-3 text-right text-red-600">-{cents(pnl.departmentalBreakdown[d]?.totalExpensesCents)}</td>
                   ))}
                   <td className="p-3 text-right font-bold text-red-600 bg-goblin-800">-{cents(pnl.expensesCents)}</td>
                 </tr>
                 <tr className="bg-blue-50 font-bold border-t-2 border-blue-200">
-                  <td className="p-3 text-blue-800 font-sans">Net Profit / Section</td>
+                  <td className="p-3 text-blue-800 font-sans">{tr('Net Profit / Section')}</td>
                   {depts.map((d) => (
                     <td key={d} className={`p-3 text-right ${(pnl.departmentalBreakdown[d]?.netCents ?? 0) < 0 ? 'text-red-700' : 'text-blue-700'}`}>
                       {cents(pnl.departmentalBreakdown[d]?.netCents)}
@@ -243,48 +244,48 @@ export function PnlView() {
 
       {/* Expense Allocation Configuration Panel */}
       <div className="rounded-xl bg-goblin-900 p-5 shadow-sm max-w-xl">
-        <h2 className="mb-3 font-semibold text-goblin-100 text-sm uppercase tracking-wider">Overhead Allocation Settings</h2>
+        <h2 className="mb-3 font-semibold text-goblin-100 text-sm uppercase tracking-wider">{tr('Overhead Allocation Settings')}</h2>
         <div className="space-y-4">
-          <Field label="Overhead Allocation Method">
+          <Field label={tr('Overhead Allocation Method')}>
             <Select value={allocMethod} onChange={setAllocMethod}
-              options={[{ value: 'revenue', label: 'Revenue Share (Dynamic percentage of sales)' }, { value: 'manual', label: 'Manual Percentage (Fixed Square Footage)' }]} />
+              options={[{ value: 'revenue', label: tr('Revenue Share (Dynamic percentage of sales)') }, { value: 'manual', label: tr('Manual Percentage (Fixed Square Footage)') }]} />
           </Field>
           
           {allocMethod === 'manual' && (
             <div className="grid grid-cols-4 gap-3 bg-goblin-800 p-3 rounded-lg border">
-              <Field label="Rest. %">
+              <Field label={tr('Rest. %')}>
                 <TextInput value={ratioRest} onChange={setRatioRest} type="number" />
               </Field>
-              <Field label="Bar %">
+              <Field label={tr('Bar %')}>
                 <TextInput value={ratioBar} onChange={setRatioBar} type="number" />
               </Field>
-              <Field label="Bill. %">
+              <Field label={tr('Bill. %')}>
                 <TextInput value={ratioBill} onChange={setRatioBill} type="number" />
               </Field>
-              <Field label="PS %">
+              <Field label={tr('PS %')}>
                 <TextInput value={ratioPs} onChange={setRatioPs} type="number" />
               </Field>
             </div>
           )}
           
           <Btn kind="primary" onClick={saveAllocationSettings} disabled={savingSettings}>
-            {savingSettings ? 'Saving…' : 'Save Ratios'}
+            {savingSettings ? tr('Saving…') : tr('Save Ratios')}
           </Btn>
         </div>
       </div>
 
       <div>
-        <h2 className="mb-2 font-semibold text-goblin-100">Menu engineering (30d)</h2>
-        <Table headers={['Item', 'Class', 'Sold', 'Revenue', 'Unit margin']}
+        <h2 className="mb-2 font-semibold text-goblin-100">{tr('Menu engineering (30d)')}</h2>
+        <Table headers={[tr('Item'), tr('Class'), tr('Sold'), tr('Revenue'), tr('Unit margin')]}
           rows={me.map((r) => [
             r.name,
-            <span key="c" className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badge[r.class]}`}>{r.class}</span>,
+            <span key="c" className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badge[r.class]}`}>{tr(r.class)}</span>,
             String(r.quantitySold), egp(r.revenueCents), egp(r.unitMarginCents),
           ])} />
       </div>
       <div>
-        <h2 className="mb-2 font-semibold text-goblin-100">Theoretical item costs</h2>
-        <Table headers={['Item', 'Category', 'Price', 'Cost', 'Cost %']}
+        <h2 className="mb-2 font-semibold text-goblin-100">{tr('Theoretical item costs')}</h2>
+        <Table headers={[tr('Item'), tr('Category'), tr('Price'), tr('Cost'), tr('Cost %')]}
           rows={costs.map((c) => [c.name, c.category, egp(c.priceCents), egp(c.costCents), pct(c.costPctBps)])} />
       </div>
     </div>

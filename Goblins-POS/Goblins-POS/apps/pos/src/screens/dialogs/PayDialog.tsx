@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Delete, X } from 'lucide-react';
 import { api } from '../../lib/api';
-import { fmtMoney, t } from '../../lib/i18n';
+import { fmtMoney, t, tx } from '../../lib/i18n';
 import { usePos } from '../../lib/store';
 import type { Order, PaymentMethod } from '../../lib/types';
 
@@ -64,11 +64,11 @@ export function PayDialog({
     const line: Line = { methodId: activeMethod.id, amountCents: cents };
     if (activeMethod.kind === 'CASH' && tendered) {
       const tCents = Math.round(Number(tendered) * 100);
-      if (tCents < entered) { setError('Tendered < amount'); return; }
+      if (tCents < entered) { setError(tx('Tendered < amount')); return; }
       line.tenderedCents = tCents - overpayTip; // change is computed on the bill portion only
     }
     const explicitTip = tip ? Math.round(Number(tip) * 100) : 0;
-    if (explicitTip < 0) { setError('Invalid tip'); return; }
+    if (explicitTip < 0) { setError(tx('Invalid tip')); return; }
     const totalTip = explicitTip + overpayTip;
     if (totalTip > 0) line.tipCents = totalTip;
     setLines([...lines, line]);
@@ -89,7 +89,7 @@ export function PayDialog({
       if (res.fullyPaid) setResult({ changeCents: res.changeCents });
       else onPaid();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     }
   }
 

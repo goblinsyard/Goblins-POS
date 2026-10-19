@@ -1,3 +1,4 @@
+import { tx } from './i18n';
 /** Tiny API client with JWT handling + auto-refresh. */
 
 let accessToken: string | null = sessionStorage.getItem('pos.accessToken');
@@ -81,7 +82,7 @@ export async function api<T = unknown>(
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const msg = Array.isArray(body.message) ? body.message.join(', ') : (body.message ?? res.statusText);
-    throw new ApiError(res.status, msg);
+    throw new ApiError(res.status, tx(String(msg)));
   }
   const text = await res.text();
   return (text ? JSON.parse(text) : null) as T;

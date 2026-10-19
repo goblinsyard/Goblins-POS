@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api } from '../../lib/api';
-import { fmtMoney, t } from '../../lib/i18n';
+import { fmtMoney, t, tx } from '../../lib/i18n';
 import { usePos } from '../../lib/store';
 import type { Order } from '../../lib/types';
 
@@ -24,7 +24,7 @@ export function RefundDialog({ order, onDone, onClose }: {
       await api('/orders/refund', { method: 'POST', body: { paymentId, reason: reason.trim() } });
       onDone();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     } finally {
       setBusy(false);
     }

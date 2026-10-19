@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, cairoTime, downloadCsv, egp } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Spinner, Table, TextInput, useLoad } from '../lib/ui';
+import { tr } from '../lib/i18n';
 
 interface Uom { id: string }
 interface Location { id: string; name: string }
@@ -58,14 +59,14 @@ function Levels() {
           options={(locations ?? []).map((l) => ({ value: l.id, label: l.name }))} />
       </div>
       <Table
-        headers={['Ingredient', 'Location', 'Qty', 'Unit', 'Avg cost', 'Actions']}
+        headers={[tr('Ingredient'), tr('Location'), tr('Qty'), tr('Unit'), tr('Avg cost'), tr('Actions')]}
         rows={(levels ?? []).map((l) => [
           l.ingredient.name, l.location.name, qty(l.quantity), l.ingredient.uom.id,
           egp(Number(l.ingredient.avgCostCents)),
           <span key="a" className="flex gap-1">
-            <Btn onClick={() => setAction({ kind: 'transfer', level: l })}>Transfer</Btn>
-            <Btn onClick={() => setAction({ kind: 'waste', level: l })}>Waste</Btn>
-            <Btn onClick={() => setAction({ kind: 'adjust', level: l })}>Adjust</Btn>
+            <Btn onClick={() => setAction({ kind: 'transfer', level: l })}>{tr('Transfer')}</Btn>
+            <Btn onClick={() => setAction({ kind: 'waste', level: l })}>{tr('Waste')}</Btn>
+            <Btn onClick={() => setAction({ kind: 'adjust', level: l })}>{tr('Adjust')}</Btn>
           </span>,
         ])}
       />
@@ -89,49 +90,49 @@ function StockActionModal({ kind, level, locations, onClose, onDone }: {
 
   async function submit() {
     const n = Number(amount);
-    if (!Number.isFinite(n) || n === 0) { setErr('Enter a non-zero quantity'); return; }
+    if (!Number.isFinite(n) || n === 0) { setErr(tr('Enter a non-zero quantity')); return; }
     try {
       if (kind === 'transfer') {
-        if (n < 0) { setErr('Quantity must be positive'); return; }
+        if (n < 0) { setErr(tr('Quantity must be positive')); return; }
         await api('/inventory/transfer', { method: 'POST', body: {
           ingredientId: level.ingredientId, fromLocationId: level.locationId, toLocationId, quantity: n,
         } });
       } else if (kind === 'waste') {
-        if (n < 0) { setErr('Quantity must be positive'); return; }
-        if (!reason.trim()) { setErr('Reason is required'); return; }
+        if (n < 0) { setErr(tr('Quantity must be positive')); return; }
+        if (!reason.trim()) { setErr(tr('Reason is required')); return; }
         await api('/inventory/waste', { method: 'POST', body: {
           ingredientId: level.ingredientId, locationId: level.locationId, quantity: n, reason: reason.trim(),
         } });
       } else {
-        if (!reason.trim()) { setErr('Reason is required'); return; }
+        if (!reason.trim()) { setErr(tr('Reason is required')); return; }
         await api('/inventory/adjust', { method: 'POST', body: {
           ingredientId: level.ingredientId, locationId: level.locationId, delta: n, reason: reason.trim(),
         } });
       }
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
     <Modal title={`${titles[kind]} — ${level.ingredient.name}`} onClose={onClose}>
       <ErrorBanner message={err} />
       <p className="mb-3 text-sm text-goblin-300">
-        At {level.location.name}: <b>{qty(level.quantity)} {level.ingredient.uom.id}</b>
+        {tr('At')} {level.location.name}: <b>{qty(level.quantity)} {level.ingredient.uom.id}</b>
       </p>
       <div className="space-y-3">
-        <Field label={kind === 'adjust' ? `Delta (${level.ingredient.uom.id}, +/-)` : `Quantity (${level.ingredient.uom.id})`}>
+        <Field label={kind === 'adjust' ? `${tr('Delta (')}${level.ingredient.uom.id}, +/-)` : `${tr('Quantity (')}${level.ingredient.uom.id})`}>
           <TextInput value={amount} onChange={setAmount} type="number" />
         </Field>
         {kind === 'transfer' && (
-          <Field label="To location">
+          <Field label={tr('To location')}>
             <Select value={toLocationId} onChange={setToLocationId}
               options={locations.filter((l) => l.id !== level.locationId).map((l) => ({ value: l.id, label: l.name }))} />
           </Field>
         )}
         {kind !== 'transfer' && (
-          <Field label="Reason"><TextInput value={reason} onChange={setReason} /></Field>
+          <Field label={tr('Reason')}><TextInput value={reason} onChange={setReason} /></Field>
         )}
-        <Btn kind="primary" onClick={() => void submit()}>Confirm</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{tr('Confirm')}</Btn>
       </div>
     </Modal>
   );
@@ -145,15 +146,15 @@ function Alerts() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="mb-2 font-semibold text-goblin-100">Low stock (at/below reorder point)</h2>
-        <Table headers={['Ingredient', 'On hand', 'Reorder point', 'Suggested order']}
+        <h2 className="mb-2 font-semibold text-goblin-100">{tr('Low stock (at/below reorder point)')}</h2>
+        <Table headers={[tr('Ingredient'), tr('On hand'), tr('Reorder point'), tr('Suggested order')]}
           rows={(low ?? []).map((l) => [
             l.name, `${qty(l.totalQty)} ${l.uom}`, qty(l.reorderPoint), qty(l.reorderQty),
           ])} />
       </div>
       <div>
-        <h2 className="mb-2 font-semibold text-goblin-100">Expiring within 7 days</h2>
-        <Table headers={['Ingredient', 'Lot', 'Remaining', 'Expires']}
+        <h2 className="mb-2 font-semibold text-goblin-100">{tr('Expiring within 7 days')}</h2>
+        <Table headers={[tr('Ingredient'), tr('Lot'), tr('Remaining'), tr('Expires')]}
           rows={(expiring ?? []).map((b) => [
             b.ingredient.name, b.lotCode ?? '—', `${qty(b.remainingQty)} ${b.ingredient.uom.id}`,
             new Date(b.expiresAt).toLocaleDateString('en-EG'),
@@ -174,8 +175,8 @@ function Movements() {
   return (
     <div>
       <div className="mb-3"><Pills value={kind} onChange={setKind}
-        options={MOVE_KINDS.map((k) => ({ value: k, label: k.replace('_', ' ').toLowerCase() }))} /></div>
-      <Table headers={['Time', 'Kind', 'Ingredient', 'Qty', 'From', 'To', 'Note']}
+        options={MOVE_KINDS.map((k) => ({ value: k, label: tr(k.replace('_', ' ').toLowerCase()) }))} /></div>
+      <Table headers={[tr('Time'), tr('Kind'), tr('Ingredient'), tr('Qty'), tr('From'), tr('To'), tr('Note')]}
         rows={(data ?? []).map((m) => [
           cairoTime(m.createdAt), m.kind.replace('_', ' '), m.ingredient.name, qty(m.quantity),
           m.fromLocation?.name ?? '—', m.toLocation?.name ?? '—', m.note ?? '',
@@ -195,24 +196,24 @@ function Counts() {
   const [result, setResult] = useState('');
 
   async function start() {
-    if (!locationId) { setErr('Pick a location'); return; }
+    if (!locationId) { setErr(tr('Pick a location')); return; }
     setErr(''); setResult('');
     try {
       const c = await api<StockCount>('/inventory/counts', { method: 'POST', body: { locationId, kind: 'FULL' } });
       setCount(c);
       setEntries(Object.fromEntries(c.lines.map((l) => [l.ingredientId, String(Number(l.systemQty))])));
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   async function submit() {
     if (!count) return;
     const lines = count.lines.map((l) => ({ ingredientId: l.ingredientId, countedQty: Number(entries[l.ingredientId] ?? 0) }));
-    if (lines.some((l) => !Number.isFinite(l.countedQty) || l.countedQty < 0)) { setErr('All counted quantities must be valid'); return; }
+    if (lines.some((l) => !Number.isFinite(l.countedQty) || l.countedQty < 0)) { setErr(tr('All counted quantities must be valid')); return; }
     try {
       await api(`/inventory/counts/${count.id}/submit`, { method: 'POST', body: { lines } });
       setCount(null);
       setResult('Count posted — variances applied to stock.');
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   if (!count) {
@@ -220,12 +221,12 @@ function Counts() {
       <div className="max-w-md space-y-3">
         <ErrorBanner message={err} />
         {result && <p className="rounded-lg bg-goblin-700 p-2 text-sm text-goblin-500">{result}</p>}
-        <Field label="Location">
+        <Field label={tr('Location')}>
           <Select value={locationId} onChange={setLocationId} allowEmpty="— pick —"
             options={(locations ?? []).map((l) => ({ value: l.id, label: l.name }))} />
         </Field>
-        <Btn kind="primary" onClick={() => void start()}>Start full count</Btn>
-        <p className="text-xs text-goblin-400">Starting a count snapshots system quantities; enter what you actually counted, then post. Variances are adjusted automatically and audited.</p>
+        <Btn kind="primary" onClick={() => void start()}>{tr('Start full count')}</Btn>
+        <p className="text-xs text-goblin-400">{tr('Starting a count snapshots system quantities; enter what you actually counted, then post. Variances are adjusted automatically and audited.')}</p>
       </div>
     );
   }
@@ -236,7 +237,7 @@ function Counts() {
       <div className="overflow-hidden rounded-xl bg-goblin-900 shadow">
         <table className="w-full text-sm">
           <thead className="bg-goblin-800 text-left text-goblin-300">
-            <tr><th className="p-3">Ingredient</th><th className="p-3">System</th><th className="p-3">Counted</th><th className="p-3">Variance</th></tr>
+            <tr><th className="p-3">{tr('Ingredient')}</th><th className="p-3">{tr('System')}</th><th className="p-3">{tr('Counted')}</th><th className="p-3">{tr('Variance')}</th></tr>
           </thead>
           <tbody>
             {count.lines.map((l) => {
@@ -261,8 +262,8 @@ function Counts() {
         </table>
       </div>
       <div className="mt-3 flex gap-2">
-        <Btn kind="primary" onClick={() => void submit()}>Post count</Btn>
-        <Btn onClick={() => setCount(null)}>Discard</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{tr('Post count')}</Btn>
+        <Btn onClick={() => setCount(null)}>{tr('Discard')}</Btn>
       </div>
     </div>
   );
@@ -295,10 +296,10 @@ function InventoryReports() {
         <Pills value={kind} onChange={setKind} options={REPORT_KINDS} />
         <button onClick={() => void downloadCsv(`/reports/inventory/${kind}.csv?from=${encodeURIComponent(from)}`, `inventory-${kind}.csv`)}
           className="ml-auto rounded-lg bg-goblin-900 px-3 py-1.5 text-sm text-white">
-          Export CSV
+          {tr('Export CSV')}
         </button>
       </div>
-      <p className="mb-2 text-xs text-goblin-400">Last 7 days</p>
+      <p className="mb-2 text-xs text-goblin-400">{tr('Last 7 days')}</p>
       {!data ? <Spinner /> : (
         <Table headers={headers.length ? headers : ['—']}
           rows={rows.map((r) => headers.map((h) => cell(r[h])))} />

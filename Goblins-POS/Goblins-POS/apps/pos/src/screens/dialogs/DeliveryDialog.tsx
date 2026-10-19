@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Bike } from 'lucide-react';
 import { api } from '../../lib/api';
-import { t } from '../../lib/i18n';
+import { t, tx } from '../../lib/i18n';
 import { usePos } from '../../lib/store';
 import type { Order } from '../../lib/types';
 
@@ -45,7 +45,7 @@ export function DeliveryDialog({ onCreated, onClose }: { onCreated: (orderId: st
       });
       onCreated(order.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     } finally {
       setBusy(false);
     }

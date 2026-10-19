@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeftRight, ClockPlus, Pause, Play, Square, Tag } from 'lucide-react';
 import { api } from '../lib/api';
-import { fmtMoney, t } from '../lib/i18n';
+import { fmtMoney, t, tx } from '../lib/i18n';
 import { can, usePos } from '../lib/store';
 import type { Order } from '../lib/types';
 import { ResourcePicker } from './dialogs/ResourcePicker';
@@ -51,7 +51,7 @@ export function SessionPanel({ order, onChanged }: { order: Order; onChanged: ()
       await load();
       onChanged();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     } finally {
       setBusy(false);
     }

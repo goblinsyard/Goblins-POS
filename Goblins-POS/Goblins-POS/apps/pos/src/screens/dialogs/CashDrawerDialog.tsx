@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, Timer } from 'lucide-react';
 import { api } from '../../lib/api';
-import { t, type TKey } from '../../lib/i18n';
+import { t, type TKey, tx } from '../../lib/i18n';
 import { usePos } from '../../lib/store';
 
 const KINDS: { kind: 'PAID_IN' | 'PAID_OUT' | 'PETTY_CASH' | 'DRAWER_OPEN' | 'CASH_TRANSFER'; label: TKey }[] = [
@@ -34,7 +34,7 @@ export function CashDrawerDialog({ shiftId, onClose }: { shiftId: string; onClos
       });
       setDone(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     }
   }
 
@@ -91,7 +91,7 @@ export function TimeClockDialog({ onClose }: { onClose: () => void }) {
       await api(`/admin/time-clock/${dir}`, { method: 'POST' });
       setMsg(`✓ ${t(lang, dir === 'in' ? 'clockIn' : 'clockOut')}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     }
   }
 

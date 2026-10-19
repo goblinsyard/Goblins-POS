@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api, cairoTime, egp, parseEgp } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Table, TextInput, useLoad } from '../lib/ui';
 import { X } from 'lucide-react';
+import { tr } from '../lib/i18n';
 
 interface Supplier {
   id: string;
@@ -64,17 +65,17 @@ function PurchaseOrders() {
   if (error) return <p className="p-8 text-red-600">{error}</p>;
   return (
     <div className="space-y-4">
-      <Btn kind="primary" onClick={() => setCreateOpen(true)}>+ New purchase order</Btn>
+      <Btn kind="primary" onClick={() => setCreateOpen(true)}>{tr('+ New purchase order')}</Btn>
       {(pos ?? []).map((po) => (
         <div key={po.id} className="rounded-xl bg-goblin-900 p-4 shadow">
           <div className="mb-2 flex items-center gap-3">
             <span className="font-semibold text-goblin-100">{po.supplier.name}</span>
             <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${PO_BADGE[po.status] ?? 'bg-goblin-800'}`}>
-              {po.status.replace('_', ' ')}
+              {tr(po.status.replace('_', ' '))}
             </span>
             <span className="text-xs text-goblin-400">{cairoTime(po.createdAt)}</span>
             {(po.status === 'SENT' || po.status === 'PARTIALLY_RECEIVED') && (
-              <span className="ml-auto"><Btn onClick={() => setReceiving(po)}>Receive</Btn></span>
+              <span className="ml-auto"><Btn onClick={() => setReceiving(po)}>{tr('Receive')}</Btn></span>
             )}
           </div>
           <table className="w-full text-sm text-goblin-200">
@@ -84,7 +85,7 @@ function PurchaseOrders() {
                   <td className="py-1.5">{l.ingredient.name}</td>
                   <td className="py-1.5">{qty(l.quantity)} {l.ingredient.uom.id}</td>
                   <td className="py-1.5">@ {egp(Number(l.unitCostCents))}</td>
-                  <td className="py-1.5 text-goblin-400">received {qty(l.receivedQty)}</td>
+                  <td className="py-1.5 text-goblin-400">{tr('received')} {qty(l.receivedQty)}</td>
                 </tr>
               ))}
             </tbody>
@@ -92,7 +93,7 @@ function PurchaseOrders() {
           {po.notes && <p className="mt-1 text-xs text-goblin-400">{po.notes}</p>}
         </div>
       ))}
-      {!pos?.length && <p className="text-sm text-goblin-400">No purchase orders yet</p>}
+      {!pos?.length && <p className="text-sm text-goblin-400">{tr('No purchase orders yet')}</p>}
       {createOpen && <NewPoModal onClose={() => setCreateOpen(false)} onDone={() => { setCreateOpen(false); reload(); }} />}
       {receiving && <ReceiveModal po={receiving} onClose={() => setReceiving(null)} onDone={() => { setReceiving(null); reload(); }} />}
     </div>
@@ -114,30 +115,30 @@ function NewPoModal({ onClose, onDone }: { onClose: () => void; onDone: () => vo
   }
 
   async function submit() {
-    if (!supplierId) { setErr('Pick a supplier'); return; }
+    if (!supplierId) { setErr(tr('Pick a supplier')); return; }
     const parsed = lines
       .filter((l) => l.ingredientId)
       .map((l) => ({ ingredientId: l.ingredientId, quantity: Number(l.quantity), unitCostCents: parseEgp(l.unitCost) ?? 0 }));
     if (!parsed.length || parsed.some((l) => !(l.quantity > 0) || !(l.unitCostCents > 0))) {
-      setErr('Every line needs an ingredient, positive quantity and unit cost'); return;
+      setErr(tr('Every line needs an ingredient, positive quantity and unit cost')); return;
     }
     try {
       await api('/inventory/purchase-orders', { method: 'POST', body: { supplierId, lines: parsed, notes: notes.trim() || undefined } });
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title="New purchase order" onClose={onClose} wide>
+    <Modal title={tr('New purchase order')} onClose={onClose} wide>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Supplier">
+        <Field label={tr('Supplier')}>
           <Select value={supplierId} onChange={setSupplierId} allowEmpty="— pick —"
             options={(suppliers ?? []).map((s) => ({ value: s.id, label: s.name }))} />
         </Field>
         {lines.map((l, i) => (
           <div key={i} className="grid grid-cols-[1fr_110px_130px_32px] items-end gap-2">
-            <Field label={i === 0 ? 'Ingredient' : ''}>
+            <Field label={i === 0 ? tr('Ingredient') : ''}>
               <Select value={l.ingredientId}
                 onChange={(v) => {
                   const ing = ingredients?.find((x) => x.id === v);
@@ -146,19 +147,19 @@ function NewPoModal({ onClose, onDone }: { onClose: () => void; onDone: () => vo
                 allowEmpty="— pick —"
                 options={(ingredients ?? []).map((x) => ({ value: x.id, label: `${x.name} (${x.uom.id})` }))} />
             </Field>
-            <Field label={i === 0 ? 'Qty' : ''}>
+            <Field label={i === 0 ? tr('Qty') : ''}>
               <TextInput value={l.quantity} onChange={(v) => setLine(i, { quantity: v })} type="number" />
             </Field>
-            <Field label={i === 0 ? 'Unit cost (EGP)' : ''}>
+            <Field label={i === 0 ? tr('Unit cost (EGP)') : ''}>
               <TextInput value={l.unitCost} onChange={(v) => setLine(i, { unitCost: v })} type="number" />
             </Field>
             <button onClick={() => setLines((cur) => cur.filter((_, j) => j !== i))}
               className="rounded-lg bg-goblin-800 py-2 text-goblin-400 hover:bg-red-50 hover:text-red-600"><X className="h-4 w-4" /></button>
           </div>
         ))}
-        <Btn onClick={() => setLines((cur) => [...cur, { ingredientId: '', quantity: '', unitCost: '' }])}>+ Line</Btn>
-        <Field label="Notes"><TextInput value={notes} onChange={setNotes} /></Field>
-        <Btn kind="primary" onClick={() => void submit()}>Create PO</Btn>
+        <Btn onClick={() => setLines((cur) => [...cur, { ingredientId: '', quantity: '', unitCost: '' }])}>{tr('+ Line')}</Btn>
+        <Field label={tr('Notes')}><TextInput value={notes} onChange={setNotes} /></Field>
+        <Btn kind="primary" onClick={() => void submit()}>{tr('Create PO')}</Btn>
       </div>
     </Modal>
   );
@@ -169,7 +170,7 @@ function flattenAccounts(nodes: any[], prefix = ''): { value: string; label: str
   for (const n of nodes) {
     list.push({
       value: n.id,
-      label: `${prefix}${n.code} — ${n.name} (${(n.balanceCents / 100).toFixed(2)} EGP)`,
+      label: `${prefix}${n.code} — ${n.name} (${(n.balanceCents / 100).toFixed(2)} ${tr('EGP)')}`,
       isPaymentSource: !!n.isPaymentSource,
       code: n.code,
       balanceCents: n.balanceCents,
@@ -199,7 +200,7 @@ function ReceiveModal({ po, onClose, onDone }: { po: Po; onClose: () => void; on
     : [];
 
   async function submit() {
-    if (!locationId) { setErr('Pick a receiving location'); return; }
+    if (!locationId) { setErr(tr('Pick a receiving location')); return; }
     const lines = po.lines
       .map((l) => {
         const entry = entries[l.id];
@@ -210,7 +211,7 @@ function ReceiveModal({ po, onClose, onDone }: { po: Po; onClose: () => void; on
         };
       })
       .filter((l) => l.quantity > 0);
-    if (!lines.length) { setErr('Nothing to receive'); return; }
+    if (!lines.length) { setErr(tr('Nothing to receive')); return; }
     try {
       await api(`/inventory/purchase-orders/${po.id}/receive`, {
         method: 'POST',
@@ -222,27 +223,27 @@ function ReceiveModal({ po, onClose, onDone }: { po: Po; onClose: () => void; on
         },
       });
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title={`Receive — ${po.supplier.name}`} onClose={onClose} wide>
+    <Modal title={`${tr('Receive —')} ${po.supplier.name}`} onClose={onClose} wide>
       <ErrorBanner message={err} />
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-3">
-          <Field label="Into location">
+          <Field label={tr('Into location')}>
             <Select value={locationId} onChange={setLocationId} allowEmpty="— pick —"
               options={(locations ?? []).map((l) => ({ value: l.id, label: l.name }))} />
           </Field>
-          <Field label="Invoice # (optional)"><TextInput value={invoiceNumber} onChange={setInvoiceNumber} /></Field>
-          <Field label="Payment Account (optional)">
+          <Field label={tr('Invoice # (optional)')}><TextInput value={invoiceNumber} onChange={setInvoiceNumber} /></Field>
+          <Field label={tr('Payment Account (optional)')}>
             <Select value={accountId} onChange={setAccountId} allowEmpty="— No auto-payment ledger entry —"
               options={assetAccounts} />
           </Field>
         </div>
         <table className="w-full text-sm">
           <thead className="text-left text-xs uppercase text-goblin-400">
-            <tr><th className="py-1">Item</th><th className="py-1">Outstanding</th><th className="py-1">Receive</th><th className="py-1">Expiry (optional)</th></tr>
+            <tr><th className="py-1">{tr('Item')}</th><th className="py-1">{tr('Outstanding')}</th><th className="py-1">{tr('Receive')}</th><th className="py-1">{tr('Expiry (optional)')}</th></tr>
           </thead>
           <tbody>
             {po.lines.map((l) => (
@@ -263,7 +264,7 @@ function ReceiveModal({ po, onClose, onDone }: { po: Po; onClose: () => void; on
             ))}
           </tbody>
         </table>
-        <Btn kind="primary" onClick={() => void submit()}>Receive goods</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{tr('Receive goods')}</Btn>
       </div>
     </Modal>
   );
@@ -277,33 +278,33 @@ function Suppliers() {
   const [createOpen, setCreateOpen] = useState(false);
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to deactivate this supplier?')) return;
+    if (!confirm(tr('Are you sure you want to deactivate this supplier?'))) return;
     try {
       await api(`/inventory/suppliers/${id}`, { method: 'DELETE' });
       reload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Deactivation failed');
+      alert(e instanceof Error ? e.message : tr('Deactivation failed'));
     }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-goblin-100">Suppliers Directory</h2>
-        <Btn kind="primary" onClick={() => { setEditingSupplier(null); setCreateOpen(true); }}>+ New supplier</Btn>
+        <h2 className="text-lg font-bold text-goblin-100">{tr('Suppliers Directory')}</h2>
+        <Btn kind="primary" onClick={() => { setEditingSupplier(null); setCreateOpen(true); }}>{tr('+ New supplier')}</Btn>
       </div>
       <Table
-        headers={['Name', 'Phone', 'Email', 'Tax ID', 'Notes', 'Status', 'Actions']}
+        headers={[tr('Name'), tr('Phone'), tr('Email'), tr('Tax ID'), tr('Notes'), tr('Status'), tr('Actions')]}
         rows={(data ?? []).map((s) => [
           s.name,
           s.phone ?? '—',
           s.email ?? '—',
           s.taxId ?? '—',
           s.notes ?? '—',
-          s.isActive ? <span className="text-goblin-500 font-semibold">Active</span> : <span className="text-goblin-400">Inactive</span>,
+          s.isActive ? <span className="text-goblin-500 font-semibold">{tr('Active')}</span> : <span className="text-goblin-400">{tr('Inactive')}</span>,
           <div key={s.id} className="flex gap-2">
-            <Btn onClick={() => { setEditingSupplier(s); setCreateOpen(true); }}>Edit</Btn>
-            {s.isActive && <Btn kind="danger" onClick={() => void handleDelete(s.id)}>Deactivate</Btn>}
+            <Btn onClick={() => { setEditingSupplier(s); setCreateOpen(true); }}>{tr('Edit')}</Btn>
+            {s.isActive && <Btn kind="danger" onClick={() => void handleDelete(s.id)}>{tr('Deactivate')}</Btn>}
           </div>,
         ])}
       />
@@ -330,7 +331,7 @@ function SupplierFormModal({ supplier, onClose, onDone }: {
   const [err, setErr] = useState('');
 
   async function submit() {
-    if (!name.trim()) { setErr('Name is required'); return; }
+    if (!name.trim()) { setErr(tr('Name is required')); return; }
     try {
       const body = {
         name: name.trim(),
@@ -347,28 +348,28 @@ function SupplierFormModal({ supplier, onClose, onDone }: {
       }
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Submit failed');
+      setErr(e instanceof Error ? e.message : tr('Submit failed'));
     }
   }
 
   return (
-    <Modal title={supplier ? `Edit Supplier: ${supplier.name}` : 'New Supplier'} onClose={onClose}>
+    <Modal title={supplier ? `${tr('Edit Supplier:')} ${supplier.name}` : tr('New Supplier')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Supplier Name"><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Supplier Name')}><TextInput value={name} onChange={setName} /></Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Phone"><TextInput value={phone} onChange={setPhone} /></Field>
-          <Field label="Email"><TextInput value={email} onChange={setEmail} type="email" /></Field>
+          <Field label={tr('Phone')}><TextInput value={phone} onChange={setPhone} /></Field>
+          <Field label={tr('Email')}><TextInput value={email} onChange={setEmail} type="email" /></Field>
         </div>
-        <Field label="Tax Registration ID (Tax ID)"><TextInput value={taxId} onChange={setTaxId} /></Field>
-        <Field label="Notes / Terms"><TextInput value={notes} onChange={setNotes} /></Field>
+        <Field label={tr('Tax Registration ID (Tax ID)')}><TextInput value={taxId} onChange={setTaxId} /></Field>
+        <Field label={tr('Notes / Terms')}><TextInput value={notes} onChange={setNotes} /></Field>
         {supplier && (
           <label className="flex items-center gap-2 text-sm text-goblin-100 py-1 cursor-pointer">
             <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded text-goblin-500" />
-            <span>Active Supplier</span>
+            <span>{tr('Active Supplier')}</span>
           </label>
         )}
-        <Btn kind="primary" onClick={() => void submit()}>{supplier ? 'Save changes' : 'Create supplier'}</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{supplier ? tr('Save changes') : tr('Create supplier')}</Btn>
       </div>
     </Modal>
   );
@@ -385,18 +386,18 @@ function Production() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="mb-2 font-semibold text-goblin-100">Producible recipes</h2>
-        <Table headers={['Recipe', 'Produces', 'Inputs', '']}
+        <h2 className="mb-2 font-semibold text-goblin-100">{tr('Producible recipes')}</h2>
+        <Table headers={[tr('Recipe'), tr('Produces'), tr('Inputs'), '']}
           rows={(recipes ?? []).map((r) => [
             r.name,
             `${r.outputIngredient.name} (${r.outputIngredient.uom.id})`,
             r.lines.map((l) => `${qty(l.quantity)} ${l.ingredient.uom.id} ${l.ingredient.name}`).join(', '),
-            <Btn key="p" kind="primary" onClick={() => setProducing(r)}>Produce</Btn>,
+            <Btn key="p" kind="primary" onClick={() => setProducing(r)}>{tr('Produce')}</Btn>,
           ])} />
       </div>
       <div>
-        <h2 className="mb-2 font-semibold text-goblin-100">Production log</h2>
-        <Table headers={['Time', 'Process', 'Output', 'Batch', 'Labor', 'By']}
+        <h2 className="mb-2 font-semibold text-goblin-100">{tr('Production log')}</h2>
+        <Table headers={[tr('Time'), tr('Process'), tr('Output'), tr('Batch'), tr('Labor'), tr('By')]}
           rows={(log ?? []).map((p) => [
             cairoTime(p.createdAt), p.manufacturingProcess.name, p.manufacturingProcess.outputIngredient.name,
             qty(p.batchQty), p.laborMinutes ? `${p.laborMinutes} min` : '—', p.producedBy?.name ?? '—',
@@ -418,7 +419,7 @@ function ProduceModal({ recipe, onClose, onDone }: { recipe: Recipe; onClose: ()
 
   async function submit() {
     const n = Number(batchQty);
-    if (!(n > 0)) { setErr('Batch quantity must be positive'); return; }
+    if (!(n > 0)) { setErr(tr('Batch quantity must be positive')); return; }
     try {
       await api('/inventory/production', { method: 'POST', body: {
         processId: recipe.id, batchQty: n,
@@ -426,22 +427,22 @@ function ProduceModal({ recipe, onClose, onDone }: { recipe: Recipe; onClose: ()
         notes: notes.trim() || undefined,
       } });
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title={`Produce — ${recipe.name}`} onClose={onClose}>
+    <Modal title={`${tr('Produce —')} ${recipe.name}`} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label={`Batch quantity (${recipe.outputIngredient.uom.id} of ${recipe.outputIngredient.name})`}>
+        <Field label={`${tr('Batch quantity (')}${recipe.outputIngredient.uom.id} ${tr('of')} ${recipe.outputIngredient.name})`}>
           <TextInput value={batchQty} onChange={setBatchQty} type="number" />
         </Field>
-        <Field label="Labor minutes (optional)"><TextInput value={laborMinutes} onChange={setLaborMinutes} type="number" /></Field>
-        <Field label="Notes"><TextInput value={notes} onChange={setNotes} /></Field>
+        <Field label={tr('Labor minutes (optional)')}><TextInput value={laborMinutes} onChange={setLaborMinutes} type="number" /></Field>
+        <Field label={tr('Notes')}><TextInput value={notes} onChange={setNotes} /></Field>
         <p className="text-xs text-goblin-400">
-          Consumes per unit: {recipe.lines.map((l) => `${qty(l.quantity)} ${l.ingredient.uom.id} ${l.ingredient.name}`).join(' · ')}
+          {tr('Consumes per unit:')} {recipe.lines.map((l) => `${qty(l.quantity)} ${l.ingredient.uom.id} ${l.ingredient.name}`).join(' · ')}
         </p>
-        <Btn kind="primary" onClick={() => void submit()}>Produce batch</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{tr('Produce batch')}</Btn>
       </div>
     </Modal>
   );
@@ -475,34 +476,34 @@ function ReceivedPurchases() {
   const [editingReceipt, setEditingReceipt] = useState<GoodsReceipt | null>(null);
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete and revert this goods receipt? This will reduce stock levels and reset PO received quantities.')) return;
+    if (!confirm(tr('Are you sure you want to delete and revert this goods receipt? This will reduce stock levels and reset PO received quantities.'))) return;
     try {
       await api(`/inventory/goods-receipts/${id}`, { method: 'DELETE' });
       reload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Delete failed');
+      alert(e instanceof Error ? e.message : tr('Delete failed'));
     }
   }
 
   return (
     <div className="space-y-4">
       <Table
-        headers={['Date', 'PO Number', 'Supplier', 'Items Received', 'Payment Account', 'Invoice #', 'Notes', 'Actions']}
+        headers={[tr('Date'), tr('PO Number'), tr('Supplier'), tr('Items Received'), tr('Payment Account'), tr('Invoice #'), tr('Notes'), tr('Actions')]}
         rows={(receipts ?? []).map((r) => [
           new Date(r.receivedAt).toLocaleDateString('en-EG'),
           r.po ? `#${r.po.number}` : '—',
           r.po?.supplier.name ?? '—',
           r.movements.map((m) => `${qty(m.quantity)} ${m.ingredient.uom.id} ${m.ingredient.name}`).join(', '),
-          r.account ? r.account.name : <span className="text-goblin-400">None</span>,
+          r.account ? r.account.name : <span className="text-goblin-400">{tr('None')}</span>,
           r.invoice?.number ?? '—',
           r.notes ?? '—',
           <div key={r.id} className="flex gap-2">
-            <Btn onClick={() => setEditingReceipt(r)}>Edit</Btn>
-            <Btn kind="danger" onClick={() => void handleDelete(r.id)}>Delete</Btn>
+            <Btn onClick={() => setEditingReceipt(r)}>{tr('Edit')}</Btn>
+            <Btn kind="danger" onClick={() => void handleDelete(r.id)}>{tr('Delete')}</Btn>
           </div>
         ])}
       />
-      {!receipts?.length && <p className="text-sm text-goblin-400">No goods receipts found</p>}
+      {!receipts?.length && <p className="text-sm text-goblin-400">{tr('No goods receipts found')}</p>}
       {editingReceipt && (
         <EditReceiptModal
           receipt={editingReceipt}
@@ -539,21 +540,21 @@ function EditReceiptModal({ receipt, onClose, onDone }: {
       });
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Submit failed');
+      setErr(e instanceof Error ? e.message : tr('Submit failed'));
     }
   }
 
   return (
-    <Modal title={`Edit Goods Receipt: ${receipt.po ? `PO #${receipt.po.number}` : receipt.id}`} onClose={onClose}>
+    <Modal title={`${tr('Edit Goods Receipt:')} ${receipt.po ? `PO #${receipt.po.number}` : receipt.id}`} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Payment Account">
+        <Field label={tr('Payment Account')}>
           <Select value={accountId} onChange={setAccountId} allowEmpty="— No auto-payment ledger entry —"
             options={assetAccounts} />
         </Field>
-        <Field label="Invoice Number"><TextInput value={invoiceNumber} onChange={setInvoiceNumber} /></Field>
-        <Field label="Notes"><TextInput value={notes} onChange={setNotes} /></Field>
-        <Btn kind="primary" onClick={() => void submit()}>Save changes</Btn>
+        <Field label={tr('Invoice Number')}><TextInput value={invoiceNumber} onChange={setInvoiceNumber} /></Field>
+        <Field label={tr('Notes')}><TextInput value={notes} onChange={setNotes} /></Field>
+        <Btn kind="primary" onClick={() => void submit()}>{tr('Save changes')}</Btn>
       </div>
     </Modal>
   );

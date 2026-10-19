@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, Delete } from 'lucide-react';
-import { t } from '../../lib/i18n';
+import { t, tx } from '../../lib/i18n';
 import { usePos } from '../../lib/store';
 
 export function AdminPinDialog({
@@ -21,7 +21,7 @@ export function AdminPinDialog({
       await onConfirm(p);
     } catch (e) {
       setError(true);
-      setErrorMessage(e instanceof Error ? e.message : 'Wrong PIN');
+      setErrorMessage(e instanceof Error ? e.message : tx('Wrong PIN'));
       setPin('');
       setTimeout(() => setError(false), 1200);
     }

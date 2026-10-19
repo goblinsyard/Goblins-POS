@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api, egp } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Spinner, Table, TextInput, useLoad } from '../lib/ui';
 import { X } from 'lucide-react';
+import { tr } from '../lib/i18n';
 
 interface Uom { id: string; name?: string }
 interface Ingredient {
@@ -100,32 +101,32 @@ function MenuItemRecipes({ recipes, ingredients, locations, reload }: {
     <div>
       <div className="mb-4 flex flex-wrap items-end gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
         <div className="w-64">
-          <Field label="Search recipes">
-            <TextInput value={search} onChange={setSearch} placeholder="Search item or ingredient..." />
+          <Field label={tr('Search recipes')}>
+            <TextInput value={search} onChange={setSearch} placeholder={tr('Search item or ingredient...')} />
           </Field>
         </div>
         <div className="w-48">
-          <Field label="Category">
+          <Field label={tr('Category')}>
             <Select value={category} onChange={setCategory} allowEmpty="All Categories"
               options={categories.map((c) => ({ value: c, label: c }))} />
           </Field>
         </div>
         <div className="w-48">
-          <Field label="Recipe Status">
+          <Field label={tr('Recipe Status')}>
             <Select value={recipeStatus} onChange={setRecipeStatus}
               options={[
-                { value: 'all', label: 'All Statuses' },
-                { value: 'with', label: 'Has Recipe' },
-                { value: 'without', label: 'No Recipe' },
+                { value: 'all', label: tr('All Statuses') },
+                { value: 'with', label: tr('Has Recipe') },
+                { value: 'without', label: tr('No Recipe') },
               ]} />
           </Field>
         </div>
         {(search || category || recipeStatus !== 'all') && (
-          <Btn kind="ghost" onClick={() => { setSearch(''); setCategory(''); setRecipeStatus('all'); }}>Clear</Btn>
+          <Btn kind="ghost" onClick={() => { setSearch(''); setCategory(''); setRecipeStatus('all'); }}>{tr('Clear')}</Btn>
         )}
       </div>
 
-      <Table headers={['Item', 'Category', 'Recipe', 'Theoretical cost', '']}
+      <Table headers={[tr('Item'), tr('Category'), tr('Recipe'), tr('Theoretical cost'), '']}
         rows={filteredItems.map((item) => {
           const recipe = byMenuItem.get(item.id);
           const cost = recipe
@@ -135,19 +136,19 @@ function MenuItemRecipes({ recipes, ingredients, locations, reload }: {
             item.name, item.category,
             recipe
               ? <div className="w-[300px] whitespace-normal break-words text-goblin-200">{recipe.lines.map((l) => `${qty(l.quantity)} ${l.ingredient?.uom.id ?? ''} ${l.ingredient?.name ?? ''}`).join(', ')}</div>
-              : <span key="n" className="text-amber-600">no recipe — stock won’t deduct</span>,
+              : <span key="n" className="text-amber-600">{tr('no recipe — stock won’t deduct')}</span>,
             cost != null ? egp(Math.round(cost)) : '—',
             <span key="actions" className="flex gap-2">
-              <Btn onClick={() => setEditing({ recipe, menuItem: item })}>{recipe ? 'Edit' : '+ Recipe'}</Btn>
+              <Btn onClick={() => setEditing({ recipe, menuItem: item })}>{recipe ? tr('Edit') : tr('+ Recipe')}</Btn>
               {recipe && (
-                <Btn kind="default" onClick={() => setSimulating({ recipe, menuItem: item })}>Simulate</Btn>
+                <Btn kind="default" onClick={() => setSimulating({ recipe, menuItem: item })}>{tr('Simulate')}</Btn>
               )}
             </span>,
           ];
         })} />
       {editing && (
         <RecipeFormModal
-          title={`Recipe — ${editing.menuItem.name}`}
+          title={`${tr('Recipe —')} ${editing.menuItem.name}`}
           recipe={editing.recipe}
           fixedTarget={{ menuItemId: editing.menuItem.id, defaultName: editing.menuItem.name }}
           ingredients={ingredients} locations={locations}
@@ -191,19 +192,19 @@ function Manufacturing({ processes, ingredients, locations, reload }: {
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
         <div className="flex flex-wrap items-end gap-3">
           <div className="w-64">
-            <Field label="Search processes">
-              <TextInput value={search} onChange={setSearch} placeholder="Search process or ingredient..." />
+            <Field label={tr('Search processes')}>
+              <TextInput value={search} onChange={setSearch} placeholder={tr('Search process or ingredient...')} />
             </Field>
           </div>
           {search && (
-            <Btn kind="ghost" onClick={() => setSearch('')}>Clear</Btn>
+            <Btn kind="ghost" onClick={() => setSearch('')}>{tr('Clear')}</Btn>
           )}
         </div>
         <div>
-          <Btn kind="primary" onClick={() => setCreating(true)}>+ New manufacturing process</Btn>
+          <Btn kind="primary" onClick={() => setCreating(true)}>{tr('+ New manufacturing process')}</Btn>
         </div>
       </div>
-      <Table headers={['Process', 'Produces', 'Per unit consumes', 'Deducts from', '']}
+      <Table headers={[tr('Process'), tr('Produces'), tr('Per unit consumes'), tr('Deducts from'), '']}
         rows={filteredProcesses.map((r) => [
           r.name,
           r.outputIngredient ? `${r.outputIngredient.name} (${r.outputIngredient.uom.id})` : '—',
@@ -211,14 +212,14 @@ function Manufacturing({ processes, ingredients, locations, reload }: {
             {r.lines.map((l) => `${qty(l.quantity)} ${l.ingredient?.uom.id ?? ''} ${l.ingredient?.name ?? ''}`).join(', ')}
           </div>,
           r.deductLocationName,
-          <Btn key="e" onClick={() => setEditing(r)}>Edit</Btn>,
+          <Btn key="e" onClick={() => setEditing(r)}>{tr('Edit')}</Btn>,
         ])} />
       <p className="mt-2 text-xs text-goblin-400">
-        A manufacturing process turns raw stock into an intermediate ingredient. Run batches from Purchasing → Production.
+        {tr('A manufacturing process turns raw stock into an intermediate ingredient. Run batches from Purchasing → Production.')}
       </p>
       {(editing || creating) && (
         <RecipeFormModal
-          title={editing ? `Edit ${editing.name}` : 'New manufacturing process'}
+          title={editing ? `${tr('Edit')} ${editing.name}` : tr('New manufacturing process')}
           recipe={editing ?? undefined}
           intermediateTarget
           ingredients={ingredients} locations={locations}
@@ -266,10 +267,10 @@ function RecipeFormModal({ title, recipe, fixedTarget, intermediateTarget, ingre
       .filter((l) => l.ingredientId)
       .map((l) => ({ ingredientId: l.ingredientId, quantity: Number(l.quantity), wastePct: Number(l.wastePct) || 0 }));
     if (!name.trim() || !parsed.length || parsed.some((l) => !(l.quantity > 0))) {
-      setErr('Name and lines with positive quantities are required'); return;
+      setErr(tr('Name and lines with positive quantities are required')); return;
     }
     if (intermediateTarget && !recipe && !outputIngredientId) {
-      setErr('Pick the intermediate ingredient this process produces'); return;
+      setErr(tr('Pick the intermediate ingredient this process produces')); return;
     }
     try {
       if (recipe) {
@@ -296,7 +297,7 @@ function RecipeFormModal({ title, recipe, fixedTarget, intermediateTarget, ingre
         }
       }
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
@@ -304,44 +305,44 @@ function RecipeFormModal({ title, recipe, fixedTarget, intermediateTarget, ingre
       <ErrorBanner message={err} />
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Recipe name"><TextInput value={name} onChange={setName} /></Field>
-          <Field label={intermediateTarget ? 'Yield per batch (output units)' : 'Yield (portions)'}>
+          <Field label={tr('Recipe name')}><TextInput value={name} onChange={setName} /></Field>
+          <Field label={intermediateTarget ? tr('Yield per batch (output units)') : tr('Yield (portions)')}>
             <TextInput value={yieldQty} onChange={setYieldQty} type="number" />
           </Field>
         </div>
         {intermediateTarget && !recipe && (
-          <Field label="Produces (intermediate ingredient)">
+          <Field label={tr('Produces (intermediate ingredient)')}>
             <Select value={outputIngredientId} onChange={setOutputIngredientId} allowEmpty="— pick —"
               options={intermediates.map((i) => ({ value: i.id, label: `${i.name} (${i.uom.id})` }))} />
           </Field>
         )}
         {intermediateTarget && !recipe && !intermediates.length && (
-          <p className="text-xs text-amber-600">No intermediate ingredients yet — create one in the Ingredients section first (mark it “intermediate”).</p>
+          <p className="text-xs text-amber-600">{tr('No intermediate ingredients yet — create one in the Ingredients section first (mark it “intermediate”).')}</p>
         )}
-        <Field label="Stock deducts from">
+        <Field label={tr('Stock deducts from')}>
           <Select value={deductLocationName} onChange={setDeductLocationName}
             options={(locations.length ? locations.map((l) => l.name) : ['Kitchen', 'Bar']).map((n) => ({ value: n, label: n }))} />
         </Field>
         <div>
           <p className="mb-1 text-xs uppercase tracking-wide text-goblin-400">
-            Ingredients (per {intermediateTarget ? 'one output unit' : 'one portion'})
+            {tr('Ingredients (per')} {intermediateTarget ? tr('one output unit') : tr('one portion')})
           </p>
           {lines.map((l, i) => (
             <div key={i} className="mb-2 grid grid-cols-[1fr_100px_90px_32px] items-center gap-2">
               <Select value={l.ingredientId} onChange={(v) => setLine(i, { ingredientId: v })} allowEmpty="— ingredient —"
                 options={ingredients.map((x) => ({ value: x.id, label: `${x.name} (${x.uom.id})${x.isIntermediate ? ' ⚗' : ''}` }))} />
-              <TextInput value={l.quantity} onChange={(v) => setLine(i, { quantity: v })} type="number" placeholder="qty" />
-              <TextInput value={l.wastePct} onChange={(v) => setLine(i, { wastePct: v })} type="number" placeholder="waste %" />
+              <TextInput value={l.quantity} onChange={(v) => setLine(i, { quantity: v })} type="number" placeholder={tr('qty')} />
+              <TextInput value={l.wastePct} onChange={(v) => setLine(i, { wastePct: v })} type="number" placeholder={tr('waste %')} />
               <button onClick={() => setLines((cur) => cur.filter((_, j) => j !== i))}
                 className="rounded-lg bg-goblin-800 py-2 text-goblin-400 hover:bg-red-50 hover:text-red-600"><X className="h-4 w-4" /></button>
             </div>
           ))}
-          <Btn onClick={() => setLines((cur) => [...cur, { ingredientId: '', quantity: '', wastePct: '0' }])}>+ Line</Btn>
+          <Btn onClick={() => setLines((cur) => [...cur, { ingredientId: '', quantity: '', wastePct: '0' }])}>{tr('+ Line')}</Btn>
         </div>
-        <Field label="Prep instructions (optional)"><TextInput value={prep} onChange={setPrep} /></Field>
+        <Field label={tr('Prep instructions (optional)')}><TextInput value={prep} onChange={setPrep} /></Field>
         <div className="flex items-center gap-3">
-          <Btn kind="primary" onClick={() => void submit()}>{recipe ? 'Save recipe' : 'Create recipe'}</Btn>
-          <span className="text-sm text-goblin-300">Theoretical cost: <b>{egp(Math.round(costPreview))}</b></span>
+          <Btn kind="primary" onClick={() => void submit()}>{recipe ? tr('Save recipe') : tr('Create recipe')}</Btn>
+          <span className="text-sm text-goblin-300">{tr('Theoretical cost:')} <b>{egp(Math.round(costPreview))}</b></span>
         </div>
       </div>
     </Modal>
@@ -381,40 +382,40 @@ function Ingredients({ ingredients, reload }: { ingredients: Ingredient[]; reloa
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3 bg-goblin-900 p-4 rounded-xl shadow-sm border border-goblin-800">
         <div className="flex flex-wrap items-end gap-3">
           <div className="w-64">
-            <Field label="Search ingredients">
-              <TextInput value={search} onChange={setSearch} placeholder="Search name..." />
+            <Field label={tr('Search ingredients')}>
+              <TextInput value={search} onChange={setSearch} placeholder={tr('Search name...')} />
             </Field>
           </div>
           <div className="w-48">
-            <Field label="Type">
+            <Field label={tr('Type')}>
               <Select value={typeFilter} onChange={setTypeFilter}
                 options={[
-                  { value: 'all', label: 'All Types' },
-                  { value: 'raw', label: 'Raw Stock' },
-                  { value: 'intermediate', label: 'Intermediate' },
-                  { value: 'perishable', label: 'Perishable' },
+                  { value: 'all', label: tr('All Types') },
+                  { value: 'raw', label: tr('Raw Stock') },
+                  { value: 'intermediate', label: tr('Intermediate') },
+                  { value: 'perishable', label: tr('Perishable') },
                 ]} />
             </Field>
           </div>
           <div className="w-36">
-            <Field label="Unit">
+            <Field label={tr('Unit')}>
               <Select value={uomFilter} onChange={setUomFilter} allowEmpty="All Units"
                 options={uoms.map((u) => ({ value: u, label: u }))} />
             </Field>
           </div>
           {(search || typeFilter !== 'all' || uomFilter) && (
-            <Btn kind="ghost" onClick={() => { setSearch(''); setTypeFilter('all'); setUomFilter(''); }}>Clear</Btn>
+            <Btn kind="ghost" onClick={() => { setSearch(''); setTypeFilter('all'); setUomFilter(''); }}>{tr('Clear')}</Btn>
           )}
         </div>
         <div>
-          <Btn kind="primary" onClick={() => setModalOpen({ open: true })}>+ New ingredient</Btn>
+          <Btn kind="primary" onClick={() => setModalOpen({ open: true })}>{tr('+ New ingredient')}</Btn>
         </div>
       </div>
-      <Table headers={['Ingredient', 'Unit', 'Avg cost', 'Reorder at', 'Flags', '']}
+      <Table headers={[tr('Ingredient'), tr('Unit'), tr('Avg cost'), tr('Reorder at'), tr('Flags'), '']}
         rows={filteredIngredients.map((i) => [
           i.name, i.uom.id, egp(Math.round(Number(i.avgCostCents))), qty(i.reorderPoint),
           [i.isIntermediate ? '⚗ intermediate' : '', i.isPerishable ? '⏳ perishable' : ''].filter(Boolean).join(' '),
-          <Btn key="edit" onClick={() => setModalOpen({ open: true, ingredient: i })}>Edit</Btn>,
+          <Btn key="edit" onClick={() => setModalOpen({ open: true, ingredient: i })}>{tr('Edit')}</Btn>,
         ])} />
       {modalOpen.open && (
         <IngredientModal
@@ -441,7 +442,7 @@ function IngredientModal({ ingredient, onClose, onDone }: {
   const [err, setErr] = useState('');
 
   async function submit() {
-    if (!name.trim() || !uomId) { setErr('Name and unit are required'); return; }
+    if (!name.trim() || !uomId) { setErr(tr('Name and unit are required')); return; }
     try {
       if (ingredient) {
         await api(`/admin/ingredients/${ingredient.id}`, { method: 'PATCH', body: {
@@ -457,31 +458,31 @@ function IngredientModal({ ingredient, onClose, onDone }: {
         } });
       }
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title={ingredient ? "Edit ingredient" : "New ingredient"} onClose={onClose}>
+    <Modal title={ingredient ? tr('Edit ingredient') : tr('New ingredient')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Name"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Unit of measure">
+        <Field label={tr('Name')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Unit of measure')}>
           <Select value={uomId} onChange={setUomId} allowEmpty="— pick —"
             options={(uoms ?? []).map((u) => ({ value: u.id, label: u.name ? `${u.id} — ${u.name}` : u.id }))} />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Reorder point"><TextInput value={reorderPoint} onChange={setReorderPoint} type="number" /></Field>
-          <Field label="Reorder qty"><TextInput value={reorderQty} onChange={setReorderQty} type="number" /></Field>
+          <Field label={tr('Reorder point')}><TextInput value={reorderPoint} onChange={setReorderPoint} type="number" /></Field>
+          <Field label={tr('Reorder qty')}><TextInput value={reorderQty} onChange={setReorderQty} type="number" /></Field>
         </div>
         <label className="flex items-center gap-2 text-sm text-goblin-200">
           <input type="checkbox" checked={intermediate} onChange={(e) => setIntermediate(e.target.checked)} />
-          Intermediate (produced in-house by a manufacturing process)
+          {tr('Intermediate (produced in-house by a manufacturing process)')}
         </label>
         <label className="flex items-center gap-2 text-sm text-goblin-200">
           <input type="checkbox" checked={perishable} onChange={(e) => setPerishable(e.target.checked)} />
-          Perishable (expiry tracked on receiving)
+          {tr('Perishable (expiry tracked on receiving)')}
         </label>
-        <Btn kind="primary" onClick={() => void submit()}>{ingredient ? 'Save' : 'Create'}</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{ingredient ? tr('Save') : tr('Create')}</Btn>
       </div>
     </Modal>
   );
@@ -540,7 +541,7 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
 
   async function applySimulatedPrice() {
     if (simPriceCents <= 0) {
-      setErr('Simulated price must be positive');
+      setErr(tr('Simulated price must be positive'));
       return;
     }
     setBusy(true);
@@ -551,12 +552,12 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
         method: 'PATCH',
         body: { priceCents: simPriceCents }
       });
-      setMsg('Simulated price applied successfully to active menu!');
+      setMsg(tr('Simulated price applied successfully to active menu!'));
       setTimeout(() => {
         onDone();
       }, 1500);
     } catch (e: any) {
-      setErr(e.message || 'Failed to apply price');
+      setErr(e.message || tr('Failed to apply price'));
       setBusy(false);
     }
   }
@@ -572,18 +573,18 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
         wastePct: Number(l.wastePct) || 0
       }));
       if (parsed.some(l => l.quantity <= 0)) {
-        throw new Error('All ingredients must have positive quantities');
+        throw new Error(tr('All ingredients must have positive quantities'));
       }
       await api(`/admin/recipes/${recipe.id}`, {
         method: 'PATCH',
         body: { lines: parsed }
       });
-      setMsg('Simulated recipe quantities saved successfully!');
+      setMsg(tr('Simulated recipe quantities saved successfully!'));
       setTimeout(() => {
         onDone();
       }, 1500);
     } catch (e: any) {
-      setErr(e.message || 'Failed to save recipe');
+      setErr(e.message || tr('Failed to save recipe'));
       setBusy(false);
     }
   }
@@ -599,13 +600,13 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
   }
 
   return (
-    <Modal title={`Cost & Margin Simulator — ${menuItem.name}`} onClose={onClose} wide>
+    <Modal title={`${tr('Cost & Margin Simulator —')} ${menuItem.name}`} onClose={onClose} wide>
       <ErrorBanner message={err} />
       {msg && <p className="mb-3 rounded bg-goblin-700 p-2 text-goblin-500 font-semibold">{msg}</p>}
 
       <div className="grid gap-6 md:grid-cols-[1fr_320px]">
         <div className="space-y-4">
-          <h3 className="font-semibold text-goblin-100 text-sm border-b pb-1">1. Adjust Recipe Quantities & Material Costs</h3>
+          <h3 className="font-semibold text-goblin-100 text-sm border-b pb-1">{tr('1. Adjust Recipe Quantities & Material Costs')}</h3>
           <div className="space-y-3">
             {lines.map((l, idx) => {
               const currentOverride = costOverrides[l.ingredientId] ?? '';
@@ -614,14 +615,14 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
                 <div key={l.ingredientId} className="grid grid-cols-[2fr_1fr_1fr] gap-3 items-center bg-goblin-800 p-2.5 rounded-lg border">
                   <div>
                     <span className="font-semibold text-goblin-100 text-xs block truncate">{l.name}</span>
-                    <span className="text-[10px] text-goblin-400">Current Cost: {origCostEgp} EGP/{l.uom}</span>
+                    <span className="text-[10px] text-goblin-400">{tr('Current Cost:')} {origCostEgp} {tr('EGP/')}{l.uom}</span>
                   </div>
                   
-                  <Field label={`Qty (${l.uom})`}>
+                  <Field label={`${tr('Qty (')}${l.uom})`}>
                     <TextInput value={l.quantity} onChange={(v) => updateLineQty(idx, v)} type="number" />
                   </Field>
                   
-                  <Field label="Override Cost (EGP)">
+                  <Field label={tr('Override Cost (EGP)')}>
                     <TextInput value={currentOverride} onChange={(v) => updateCostOverride(l.ingredientId, v)} type="number" placeholder={origCostEgp} />
                   </Field>
                 </div>
@@ -631,38 +632,38 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
         </div>
 
         <div className="space-y-4 bg-goblin-800 p-4 rounded-xl border self-start">
-          <h3 className="font-semibold text-goblin-100 text-sm border-b pb-1">2. Simulated Margins</h3>
+          <h3 className="font-semibold text-goblin-100 text-sm border-b pb-1">{tr('2. Simulated Margins')}</h3>
           
           <div className="space-y-3">
-            <Field label="Selling Price (EGP)">
+            <Field label={tr('Selling Price (EGP)')}>
               <TextInput value={simulatedPrice} onChange={setSimulatedPrice} type="number" />
             </Field>
 
             <div className="space-y-2 text-xs divide-y">
               <div className="flex justify-between py-1.5">
-                <span className="text-goblin-300 font-sans">Theoretical Cost</span>
+                <span className="text-goblin-300 font-sans">{tr('Theoretical Cost')}</span>
                 <span className="font-semibold text-goblin-50 font-mono">
                   {egp(Math.round(simulatedCost))}
                   <span className="text-[10px] text-goblin-400 block text-right font-normal font-sans">
-                    Prev: {egp(Math.round(originalCost))}
+                    {tr('Prev:')} {egp(Math.round(originalCost))}
                   </span>
                 </span>
               </div>
               <div className="flex justify-between py-1.5">
-                <span className="text-goblin-300 font-sans">Gross Margin</span>
+                <span className="text-goblin-300 font-sans">{tr('Gross Margin')}</span>
                 <span className={`font-semibold font-mono ${simulatedMargin < 0 ? 'text-red-600' : 'text-goblin-500'}`}>
                   {egp(Math.round(simulatedMargin))}
                   <span className="text-[10px] text-goblin-400 block text-right font-normal font-sans">
-                    Prev: {egp(Math.round(originalMargin))}
+                    {tr('Prev:')} {egp(Math.round(originalMargin))}
                   </span>
                 </span>
               </div>
               <div className="flex justify-between py-1.5">
-                <span className="text-goblin-300 font-sans">Food Cost %</span>
+                <span className="text-goblin-300 font-sans">{tr('Food Cost %')}</span>
                 <span className="font-semibold text-goblin-50 font-mono">
                   {simulatedFoodCostPct.toFixed(1)}%
                   <span className="text-[10px] text-goblin-400 block text-right font-normal font-sans">
-                    Prev: {originalFoodCostPct.toFixed(1)}%
+                    {tr('Prev:')} {originalFoodCostPct.toFixed(1)}%
                   </span>
                 </span>
               </div>
@@ -670,7 +671,7 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
 
             <div className="pt-2">
               <div className="flex justify-between text-[10px] text-goblin-300 mb-1">
-                <span>Food Cost Status</span>
+                <span>{tr('Food Cost Status')}</span>
                 <span>{barText}</span>
               </div>
               <div className="w-full bg-goblin-700 h-2.5 rounded-full overflow-hidden">
@@ -686,13 +687,13 @@ function SimulationModal({ menuItem, recipe, onClose, onDone }: {
                 onClick={applySimulatedPrice} 
                 disabled={busy} 
                 className="w-full rounded-xl bg-goblin-600 hover:bg-goblin-700 text-white font-semibold py-2.5 text-xs text-center transition">
-                Apply Price to Active Menu
+                {tr('Apply Price to Active Menu')}
               </button>
               <button 
                 onClick={saveSimulatedRecipe} 
                 disabled={busy} 
                 className="w-full rounded-xl bg-goblin-900 hover:bg-goblin-950 text-white font-semibold py-2.5 text-xs text-center transition font-sans">
-                Save Recipe Quantities
+                {tr('Save Recipe Quantities')}
               </button>
             </div>
           </div>

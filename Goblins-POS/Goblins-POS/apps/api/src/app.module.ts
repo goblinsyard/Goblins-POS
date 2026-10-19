@@ -12,6 +12,7 @@ import { FloorModule } from './floor/floor.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { KdsModule } from './kds/kds.module';
 import { MenuModule } from './menu/menu.module';
+import { DisplayModule } from './display/display.module';
 import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RealtimeModule } from './realtime/realtime.module';
@@ -33,6 +34,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
     RealtimeModule,
     SettingsModule,
     MenuModule,
+    DisplayModule,
     FloorModule,
     OrdersModule,
     ShiftsModule,

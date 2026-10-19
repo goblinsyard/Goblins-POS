@@ -32,8 +32,11 @@ services:
       SEED_ON_START: "true"
       # backups are written to the host's ./backups folder so they survive rebuilds
       BACKUP_DIR: /backups
+      # menu pictures live in the host's ./uploads folder (back it up with ./backups)
+      UPLOAD_DIR: /uploads
     volumes:
       - ./backups:/backups
+      - ./uploads:/uploads
     ports:
       # this PC only — tablets and terminals use the web app on :8080
       - "127.0.0.1:3000:3000"

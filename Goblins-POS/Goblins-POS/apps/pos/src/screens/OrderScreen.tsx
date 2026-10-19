@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowLeft, ArrowLeftRight, ChevronDown, ChevronRight, Ellipsis, Flame,
-  History, Merge, Palette, RotateCcw, Search, Send, ShoppingCart, Split, Star, Trash2, User, X,
+  ArrowLeft, ArrowLeftRight, ChevronRight, Ellipsis, Flame,
+  History, Keyboard, Megaphone, Merge, Palette, RotateCcw, Search, Send, ShoppingCart, Split, Star, Trash2, User, X,
 } from 'lucide-react';
+import { publishDisplay } from '../lib/customerDisplay';
+import { buildItemVisuals } from '../lib/menuVisuals';
+import { activeOffers, activePrice } from '../lib/priceSchedule';
+import { NoteDialog } from './dialogs/NoteDialog';
 import { api } from '../lib/api';
-import { fmtMoney, t } from '../lib/i18n';
+import { fmtMoney, t, tx } from '../lib/i18n';
 import { can, usePos } from '../lib/store';
 import type { Category, MenuItem, Order, PaymentMethod, Combo, OrderItemLine } from '../lib/types';
 import { CustomerDialog, FeedbackDialog } from './dialogs/CustomerDialog';
@@ -54,7 +58,7 @@ function normalizeSearch(s: string): string {
 }
 
 export function OrderScreen() {
-  const { user, lang, activeOrderId, openOrder, toFloor } = usePos();
+  const { user, lang, activeOrderId, openOrder, toFloor, showImages } = usePos();
   const [menu, setMenu] = useState<Category[]>([]);
   const [activeParentCat, setActiveParentCat] = useState<string>('favorites');
   const [activeSubCat, setActiveSubCat] = useState<string | null>(null);
@@ -90,6 +94,11 @@ export function OrderScreen() {
   const [commentingItem, setCommentingItem] = useState<OrderItemLine | null>(null);
   const [displaySettingsOpen, setDisplaySettingsOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [banner, setBanner] = useState<{ en: string; ar: string }>({ en: '', ar: '' });
+  const [offerTick, setOfferTick] = useState(0);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const visuals = useMemo(() => buildItemVisuals(menu), [menu]);
+  const offers = useMemo(() => activeOffers(menu), [menu, offerTick]);
 
   const reload = useCallback(async () => {
     if (!activeOrderId) return;
@@ -104,6 +113,9 @@ export function OrderScreen() {
       setActiveSubSubCat(null);
     });
     api<PaymentMethod[]>('/payment-methods').then(setMethods);
+    api<Record<string, unknown>>('/settings')
+      .then((st) => setBanner({ en: String(st['pos.bannerText'] ?? ''), ar: String(st['pos.bannerTextAr'] ?? '') }))
+      .catch(() => {});
     api<Combo[]>('/admin/menu/combos').then((c) => setCombos(c.filter((x) => x.isActive))).catch(() => {});
     void reload();
   }, [reload]);
@@ -118,7 +130,7 @@ export function OrderScreen() {
       setOrder(updated);
       rememberRecent(item.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     }
   }
 
@@ -131,7 +143,7 @@ export function OrderScreen() {
       });
       setOrder(updated);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     }
   }
 
@@ -144,7 +156,7 @@ export function OrderScreen() {
       });
       setOrder(updated);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to move item');
+      setError(e instanceof Error ? e.message : tx('Failed to move item'));
     }
   }
 
@@ -178,7 +190,7 @@ export function OrderScreen() {
       });
       setOrder(updated);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to transfer item');
+      setError(e instanceof Error ? e.message : tx('Failed to transfer item'));
     }
   }
 
@@ -191,8 +203,77 @@ export function OrderScreen() {
       });
       setOrder(updated);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to split time charge');
+      setError(e instanceof Error ? e.message : tx('Failed to split time charge'));
     }
+  }
+
+  useEffect(() => {
+    const id = setInterval(() => setOfferTick((x) => x + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // customer-facing screen mirrors this order
+  useEffect(() => {
+    if (!order) return;
+    if (order.status === 'PAID') { publishDisplay({ kind: 'thanks' }); return; }
+    const lines = order.items.filter((i) => i.status !== 'VOIDED').map((i) => ({
+      qty: Number(i.quantity), name: i.description, cents: i.lineCents, mods: i.modifiers.map((m) => m.name),
+    }));
+    const itemDisc = order.items.filter((i) => i.status !== 'VOIDED').reduce((a, i) => a + (i.discountCents ?? 0), 0);
+    publishDisplay({
+      kind: 'order', number: order.number, lines,
+      subtotalCents: order.subtotalCents, discountCents: order.discountCents - itemDisc,
+      serviceCents: order.serviceChargeCents, taxCents: order.taxCents,
+      totalCents: order.totalCents, paidCents: order.paidCents,
+    });
+  }, [order]);
+  useEffect(() => () => publishDisplay({ kind: 'idle' }), []);
+
+  // keyboard: F2 or / = search, Esc = clear search, F9 = pay, F8 = receipt;
+  // a barcode scanner types fast and ends with Enter → add the item with that SKU
+  useEffect(() => {
+    let buf = '';
+    let lastAt = 0;
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      const typing = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      const dialogOpen = !!document.querySelector('.fixed.inset-0.z-50');
+      if (e.key === 'F2' || (e.key === '/' && !typing)) {
+        e.preventDefault(); searchRef.current?.focus(); searchRef.current?.select(); return;
+      }
+      if (e.key === 'F9' && !dialogOpen) { e.preventDefault(); document.getElementById('pos-checkout')?.click(); return; }
+      if (e.key === 'F8' && !dialogOpen) { e.preventDefault(); document.getElementById('pos-receipt')?.click(); return; }
+      if (typing || dialogOpen || e.ctrlKey || e.metaKey || e.altKey) return;
+      const now = Date.now();
+      if (e.key === 'Enter') {
+        const code = buf; buf = '';
+        if (code.length >= 3) { e.preventDefault(); addBySku(code); }
+        return;
+      }
+      if (e.key.length === 1) {
+        buf = now - lastAt > 80 ? e.key : buf + e.key;
+        lastAt = now;
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  function findBySku(code: string): MenuItem | undefined {
+    const c = code.trim().toLowerCase();
+    for (const cat of menu) for (const item of cat.items) if ((item.sku ?? '').toLowerCase() === c) return item;
+    return undefined;
+  }
+
+  function addBySku(code: string): boolean {
+    const item = findBySku(code);
+    if (!item) {
+      setError(lang === 'ar' ? `لا يوجد صنف بالباركود ${code}` : `No item with barcode ${code}`);
+      return false;
+    }
+    if (order?.status === 'PAID') return false;
+    tapItem(item);
+    return true;
   }
 
   function tapItem(item: MenuItem) {
@@ -215,7 +296,7 @@ export function OrderScreen() {
       await api(`/orders/${activeOrderId}/void`, { method: 'POST', body: { reason } });
       toFloor();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     }
   }
 
@@ -272,7 +353,7 @@ export function OrderScreen() {
       });
       setOrder(updated);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update note');
+      setError(e instanceof Error ? e.message : tx('Failed to update note'));
     }
   }
 
@@ -285,7 +366,7 @@ export function OrderScreen() {
       });
       setOrder(updated);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update quantity');
+      setError(e instanceof Error ? e.message : tx('Failed to update quantity'));
     }
   }
 
@@ -302,7 +383,7 @@ export function OrderScreen() {
       }
       await reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     }
   }
 
@@ -313,7 +394,7 @@ export function OrderScreen() {
       await api(`/kds/orders/${activeOrderId}/fire`, { method: 'POST', body: { course: c } });
       await reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     }
   }
 
@@ -361,7 +442,7 @@ export function OrderScreen() {
       setSeat(0);
       openOrder(res.child.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     }
   }
 
@@ -370,7 +451,7 @@ export function OrderScreen() {
       {/* left: menu */}
       <div className={`flex-1 flex-col h-full max-h-screen overflow-hidden ${mobileTab === 'menu' ? 'flex' : 'hidden md:flex'}`}>
         <header className="flex items-center gap-2 border-b border-goblin-800 px-3 py-2">
-          <button onClick={leave} className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-800 px-4 py-2">
+          <button onClick={leave} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-goblin-800 px-4 py-2">
             <ArrowLeft className="h-4 w-4" /> {t(lang, 'floor')}
           </button>
           <h1 className="text-lg font-bold">
@@ -407,12 +488,26 @@ export function OrderScreen() {
 
         {error && <div className="bg-red-900/60 px-4 py-2 text-red-200">{error}</div>}
 
+        {(offers.length > 0 || (lang === 'ar' ? banner.ar || banner.en : banner.en)) && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-amber-700/40 bg-amber-900/40 px-4 py-2 text-sm text-amber-100">
+            <Megaphone className="h-4 w-4 shrink-0 text-amber-300" />
+            {(lang === 'ar' ? banner.ar || banner.en : banner.en) && (
+              <span className="font-semibold">{lang === 'ar' ? banner.ar || banner.en : banner.en}</span>
+            )}
+            {offers.map((o) => (
+              <span key={o.name}>
+                <b>{o.name}</b> {lang === 'ar' ? `حتى ${o.endTime} · ${o.count} صنف` : `until ${o.endTime} · ${o.count} item${o.count === 1 ? '' : 's'}`}
+              </span>
+            ))}
+          </div>
+        )}
+
         {isSessionOrder && <SessionPanel order={order} onChanged={reload} />}
 
         {/* Categories and Grid layout container */}
         <div className="flex flex-1 overflow-hidden">
           {/* Category Sidebar */}
-          <aside className="w-36 md:w-44 bg-goblin-900 border-e border-goblin-800 flex flex-col overflow-y-auto p-2 gap-1.5 shrink-0 select-none">
+          <aside className="w-32 md:w-36 xl:w-44 bg-goblin-900 border-e border-goblin-800 flex flex-col overflow-y-auto p-2 gap-1.5 shrink-0 select-none">
             {/* Course Selector */}
             {!isPaid && (
               <div className="flex items-center justify-between bg-goblin-950/40 rounded-xl p-1.5 mb-1">
@@ -424,7 +519,7 @@ export function OrderScreen() {
                     <button
                       key={n}
                       onClick={() => setCourse(n)}
-                      className={`h-7 w-7 rounded-lg text-xs font-bold transition-all ${
+                      className={`h-9 w-9 rounded-lg text-sm font-bold transition-all ${
                         course === n ? 'bg-goblin-500 text-white' : 'bg-goblin-900 text-goblin-400 hover:text-goblin-200'
                       }`}
                     >
@@ -498,7 +593,7 @@ export function OrderScreen() {
                         }
                         setActiveSubSubCat(null);
                       }}
-                      className={`w-full text-left rounded-xl px-2.5 py-2 text-sm font-semibold transition-all flex items-center justify-between ${
+                      className={`w-full text-start rounded-xl px-3 py-3 text-sm font-semibold transition-all flex items-center justify-between ${
                         isParentActive ? 'bg-goblin-700 text-white font-bold' : 'bg-goblin-950/40 text-goblin-300 hover:bg-goblin-800'
                       }`}
                       style={
@@ -511,73 +606,10 @@ export function OrderScreen() {
                     >
                       <span className="truncate">{lang === 'ar' && c.nameAr ? c.nameAr : c.name}</span>
                       {subCats.length > 0 && (
-                        <span className="opacity-65">{isParentActive ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}</span>
+                        <span className="opacity-65"><ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" /></span>
                       )}
                     </button>
 
-                    {isParentActive && subCats.length > 0 && (
-                      <div className="ps-2 border-l border-goblin-800 ms-1.5 space-y-1 my-1">
-                        {c.items && c.items.length > 0 && (
-                          <button
-                            onClick={() => {
-                              setActiveSubCat(c.id);
-                              setActiveSubSubCat(null);
-                            }}
-                            className={`w-full text-left rounded-lg px-2 py-1.5 text-xs font-medium transition-all ${
-                              activeSubCat === c.id ? 'bg-goblin-800 text-emerald-400 font-semibold' : 'text-goblin-400 hover:bg-goblin-800/40'
-                            }`}
-                          >
-                            • {lang === 'ar' ? 'عام' : 'General'}
-                          </button>
-                        )}
-                        {subCats.map((sc) => {
-                          const isSubActive = activeSubCat === sc.id;
-                          const subSubCats = menu.filter((sub) => sub.parentCategoryId === sc.id);
-                          return (
-                            <div key={sc.id} className="space-y-1">
-                              <button
-                                onClick={() => {
-                                  setActiveSubCat(sc.id);
-                                  setActiveSubSubCat(null);
-                                }}
-                                className={`w-full text-left rounded-lg px-2 py-1.5 text-xs font-medium transition-all flex items-center justify-between ${
-                                  isSubActive ? 'bg-goblin-800 text-emerald-400 font-semibold' : 'text-goblin-400 hover:bg-goblin-800/40'
-                                }`}
-                              >
-                                <span className="truncate">{lang === 'ar' && sc.nameAr ? sc.nameAr : sc.name}</span>
-                                {subSubCats.length > 0 && (
-                                  <span className="opacity-65">{isSubActive ? <ChevronDown className="h-2.5 w-2.5" /> : <ChevronRight className="h-2.5 w-2.5" />}</span>
-                                )}
-                              </button>
-
-                              {isSubActive && subSubCats.length > 0 && (
-                                <div className="ps-2 border-l border-goblin-700 ms-1 space-y-1">
-                                  <button
-                                    onClick={() => setActiveSubSubCat(null)}
-                                    className={`w-full text-left rounded px-1.5 py-1 text-[10px] font-medium transition-all ${
-                                      activeSubSubCat === null ? 'text-emerald-500 font-semibold' : 'text-goblin-500 hover:text-goblin-300'
-                                    }`}
-                                  >
-                                    - {lang === 'ar' ? 'الكل' : 'All'}
-                                  </button>
-                                  {subSubCats.map((ssc) => (
-                                    <button
-                                      key={ssc.id}
-                                      onClick={() => setActiveSubSubCat(ssc.id)}
-                                      className={`w-full text-left rounded px-1.5 py-1 text-[10px] font-medium transition-all ${
-                                        activeSubSubCat === ssc.id ? 'text-emerald-500 font-semibold' : 'text-goblin-500 hover:text-goblin-300'
-                                      }`}
-                                    >
-                                      - {lang === 'ar' && ssc.nameAr ? ssc.nameAr : ssc.name}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -589,8 +621,21 @@ export function OrderScreen() {
             <div className="relative px-3 pt-3">
               <Search className="pointer-events-none absolute top-1/2 mt-1.5 h-4 w-4 -translate-y-1/2 text-goblin-400 ltr:left-6 rtl:right-6" />
               <input
+                ref={searchRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') { setQuery(''); (e.target as HTMLInputElement).blur(); return; }
+                  if (e.key !== 'Enter' || !query.trim()) return;
+                  e.preventDefault();
+                  if (findBySku(query)) { addBySku(query); setQuery(''); return; }
+                  const q = normalizeSearch(query.trim());
+                  const hits = new Map<string, MenuItem>();
+                  for (const c of menu) for (const it of c.items) {
+                    if (normalizeSearch(`${it.name} ${it.nameAr ?? ''} ${it.sku ?? ''}`).includes(q)) hits.set(it.id, it);
+                  }
+                  if (hits.size === 1) { tapItem([...hits.values()][0]!); setQuery(''); }
+                }}
                 placeholder={lang === 'ar' ? 'ابحث في القائمة…' : 'Search menu…'}
                 className="w-full rounded-xl border border-goblin-700 bg-goblin-900 py-2.5 text-sm text-goblin-50 placeholder:text-goblin-500 focus:border-goblin-500 focus:outline-none ltr:pl-9 ltr:pr-9 rtl:pr-9 rtl:pl-9"
               />
@@ -598,14 +643,62 @@ export function OrderScreen() {
                 <button
                   onClick={() => setQuery('')}
                   aria-label={lang === 'ar' ? 'مسح' : 'Clear search'}
-                  className="absolute top-1/2 mt-1.5 -translate-y-1/2 rounded-full p-1 text-goblin-400 hover:text-goblin-100 ltr:right-5 rtl:left-5"
+                  className="absolute top-1/2 mt-1.5 -translate-y-1/2 rounded-full p-2 text-goblin-400 hover:text-goblin-100 ltr:right-5 rtl:left-5"
                 >
                   <X className="h-4 w-4" />
                 </button>
               )}
             </div>
+            {/* Sub-category chips (big touch targets instead of a nested sidebar list) */}
+            {!query.trim() && (() => {
+              const parent = menu.find((c) => c.id === activeParentCat);
+              const subCats = parent ? menu.filter((c) => c.parentCategoryId === parent.id) : [];
+              if (!parent || subCats.length === 0) return null;
+              const activeSub = subCats.find((c) => c.id === activeSubCat);
+              const subSubCats = activeSub ? menu.filter((c) => c.parentCategoryId === activeSub.id) : [];
+              const name = (c: Category) => (lang === 'ar' && c.nameAr ? c.nameAr : c.name);
+              const chip = (active: boolean, color?: string | null) =>
+                `shrink-0 min-h-11 rounded-full border px-4 py-2.5 text-sm font-semibold transition-all active:scale-95 ${
+                  active ? 'border-transparent text-white shadow' : 'border-goblin-700 bg-goblin-900 text-goblin-300 hover:bg-goblin-800'
+                }${active && !color ? ' bg-goblin-600' : ''}`;
+              return (
+                <div className="space-y-2 px-3 pt-3">
+                  <div className="flex flex-wrap gap-2">
+                    {parent.items.length > 0 && (
+                      <button onClick={() => { setActiveSubCat(parent.id); setActiveSubSubCat(null); }}
+                        className={chip(activeSubCat === parent.id, parent.color)}
+                        style={activeSubCat === parent.id && parent.color ? { backgroundColor: parent.color } : undefined}>
+                        {lang === 'ar' ? 'عام' : 'General'}
+                      </button>
+                    )}
+                    {subCats.map((sc) => {
+                      const on = activeSubCat === sc.id;
+                      const col = sc.color || parent.color;
+                      return (
+                        <button key={sc.id} onClick={() => { setActiveSubCat(sc.id); setActiveSubSubCat(null); }}
+                          className={chip(on, col)} style={on && col ? { backgroundColor: col } : undefined}>
+                          {name(sc)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {subSubCats.length > 0 && (
+                    <div className="flex flex-wrap gap-2 border-t border-goblin-800 pt-2">
+                      <button onClick={() => setActiveSubSubCat(null)} className={chip(activeSubSubCat === null)}>
+                        {lang === 'ar' ? 'الكل' : 'All'}
+                      </button>
+                      {subSubCats.map((ssc) => (
+                        <button key={ssc.id} onClick={() => setActiveSubSubCat(ssc.id)} className={chip(activeSubSubCat === ssc.id)}>
+                          {name(ssc)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             {/* Menu Items Grid */}
-            <div className="grid flex-1 auto-rows-min grid-cols-2 gap-2 overflow-auto p-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-2 overflow-auto p-3">
               {(() => {
                 if (activeParentCat === 'combos' && !query.trim()) {
                   return combos.map((combo) => (
@@ -694,23 +787,85 @@ export function OrderScreen() {
                   );
                 }
 
-                return itemsToDisplay.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => { tapItem(item); }}
-                    disabled={isPaid || item.is86ed}
-                    className={`flex min-h-20 flex-col items-center justify-center rounded-xl p-2 text-center shadow transition-all ${
-                      item.is86ed
-                        ? 'bg-goblin-900 opacity-40 line-through'
-                        : 'bg-goblin-800 hover:bg-goblin-750 active:bg-goblin-600'
-                    }`}
-                  >
-                    <span className="font-semibold leading-tight">
-                      {lang === 'ar' && item.nameAr ? item.nameAr : item.name}
-                    </span>
-                    <span className="mt-1 text-sm text-goblin-300">{fmtMoney(item.priceCents, lang)}</span>
-                  </button>
-                ));
+                const stockBadge = (item: MenuItem) =>
+                  item.is86ed ? { text: lang === 'ar' ? 'غير متاح' : 'Unavailable', cls: 'bg-red-700' }
+                  : item.stock === 'OUT' ? { text: lang === 'ar' ? 'نفد المخزون' : 'Out of stock', cls: 'bg-red-600' }
+                  : item.stock === 'LOW' ? { text: lang === 'ar' ? 'مخزون قليل' : 'Low stock', cls: 'bg-amber-600' }
+                  : null;
+                const price = (item: MenuItem) => {
+                  const special = activePrice(item);
+                  return special != null && special !== item.priceCents ? (
+                    <>
+                      <span className="me-1 text-goblin-500 line-through">{fmtMoney(item.priceCents, lang)}</span>
+                      <span className="font-bold text-amber-300">{fmtMoney(special, lang)}</span>
+                    </>
+                  ) : fmtMoney(item.priceCents, lang);
+                };
+
+                if (showImages) {
+                  // picture tiles: every tile gets the same picture area so the grid stays even
+                  return itemsToDisplay.map((item) => {
+                    const label = lang === 'ar' && item.nameAr ? item.nameAr : item.name;
+                    const v = visuals.get(item.id);
+                    const badge = stockBadge(item);
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => { tapItem(item); }}
+                        disabled={isPaid || item.is86ed}
+                        className={`relative flex flex-col overflow-hidden rounded-xl text-center shadow transition-all ${
+                          item.is86ed ? 'bg-goblin-900 opacity-50' : 'bg-goblin-800 hover:bg-goblin-750 active:bg-goblin-600'
+                        }`}
+                      >
+                        {badge && (
+                          <span className={`absolute end-1.5 top-1.5 z-10 rounded-full px-2 py-0.5 text-[10px] font-bold text-white shadow ${badge.cls}`}>
+                            {badge.text}
+                          </span>
+                        )}
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className="aspect-[4/3] w-full object-cover" />
+                        ) : (
+                          <span
+                            className="flex aspect-[4/3] w-full items-center justify-center"
+                            style={{ background: `linear-gradient(135deg, ${v?.color ?? '#2f7d4f'}cc, ${v?.color ?? '#2f7d4f'}55)` }}
+                          >
+                            {v ? <v.Icon className="h-10 w-10 text-white/85" strokeWidth={1.6} /> : null}
+                          </span>
+                        )}
+                        <span className={`px-2 pt-1.5 text-sm font-semibold leading-tight ${item.is86ed ? 'line-through' : ''}`}>{label}</span>
+                        <span className="pb-2 text-xs text-goblin-300">{price(item)}</span>
+                      </button>
+                    );
+                  });
+                }
+
+                return itemsToDisplay.map((item) => {
+                  const badge = stockBadge(item);
+                  const v = visuals.get(item.id);
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => { tapItem(item); }}
+                      disabled={isPaid || item.is86ed}
+                      className={`relative flex min-h-20 flex-col items-center justify-center rounded-xl border-t-4 p-2 text-center shadow transition-all ${
+                        item.is86ed
+                          ? 'bg-goblin-900 opacity-50 line-through'
+                          : 'bg-goblin-800 hover:bg-goblin-750 active:bg-goblin-600'
+                      }`}
+                      style={{ borderTopColor: v?.color ?? 'transparent' }}
+                    >
+                      {badge && (
+                        <span className={`absolute end-1 top-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white no-underline ${badge.cls}`}>
+                          {badge.text}
+                        </span>
+                      )}
+                      <span className="font-semibold leading-tight">
+                        {lang === 'ar' && item.nameAr ? item.nameAr : item.name}
+                      </span>
+                      <span className="mt-1 text-sm text-goblin-300">{price(item)}</span>
+                    </button>
+                  );
+                });
               })()}
             </div>
 
@@ -729,7 +884,7 @@ export function OrderScreen() {
       </div>
 
       {/* right: cart */}
-      <div className={`w-full md:w-80 flex-col h-full max-h-screen overflow-hidden border-s border-goblin-800 bg-goblin-900/50 ${mobileTab === 'cart' ? 'flex' : 'hidden md:flex'}`}>
+      <div className={`w-full md:w-72 xl:w-80 flex-col h-full max-h-screen overflow-hidden border-s border-goblin-800 bg-goblin-900/50 ${mobileTab === 'cart' ? 'flex' : 'hidden md:flex'}`}>
         {/* Mobile Back to Menu Header */}
         <div className="md:hidden p-3 border-b border-goblin-800 bg-goblin-900 flex items-center justify-between">
           <button
@@ -744,19 +899,19 @@ export function OrderScreen() {
           <div className="border-b border-goblin-800">
             <div className="flex gap-1 overflow-x-auto p-2">
               <button onClick={() => setSeat(0)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${seat === 0 ? 'bg-goblin-500' : 'bg-goblin-900 text-goblin-400'}`}>
+                className={`min-h-10 rounded-lg px-3 py-2 text-sm font-semibold ${seat === 0 ? 'bg-goblin-500' : 'bg-goblin-900 text-goblin-400'}`}>
                 {t(lang, 'wholeTable')}
               </button>
               {seatTabs.map((n) => (
                 <button key={n} onClick={() => setSeat(n)}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${seat === n ? 'bg-goblin-500' : 'bg-goblin-900 text-goblin-400'}`}>
+                  className={`min-h-10 shrink-0 rounded-lg px-3 py-2 text-sm font-semibold ${seat === n ? 'bg-goblin-500' : 'bg-goblin-900 text-goblin-400'}`}>
                   {t(lang, 'seat')} {n}
                 </button>
               ))}
             </div>
             {seat > 0 && (
               <div className="flex items-center justify-between bg-goblin-950/20 px-3 py-2 text-xs">
-                <span className="font-semibold text-goblin-400">Seat Customer:</span>
+                <span className="font-semibold text-goblin-400">{tx('Seat Customer:')}</span>
                 <button
                   onClick={() => setSeatCustomerOpen(true)}
                   className="inline-flex items-center gap-1 rounded bg-goblin-800 px-2.5 py-1 font-bold hover:bg-goblin-750"
@@ -768,6 +923,29 @@ export function OrderScreen() {
           </div>
         )}
         <div className="flex-1 overflow-auto p-2">
+          {visibleItems.length === 0 && !isPaid && (
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center text-goblin-400">
+              <ShoppingCart className="h-10 w-10 opacity-50" />
+              <p className="text-base font-semibold text-goblin-300">
+                {seat > 0
+                  ? (lang === 'ar' ? `لا توجد أصناف للمقعد ${seat} بعد` : `Nothing on seat ${seat} yet`)
+                  : (lang === 'ar' ? 'اضغط على أي صنف لإضافته' : 'Tap an item to add it')}
+              </p>
+              <p className="text-xs">
+                {lang === 'ar' ? 'يمكنك البحث بالاسم أو مسح الباركود' : 'You can also search by name or scan a barcode'}
+              </p>
+              {!order.customer && (
+                <button onClick={() => setCustomerOpen(true)}
+                  className="mt-1 inline-flex items-center gap-1.5 rounded-xl bg-goblin-800 px-4 py-2.5 text-sm font-semibold text-goblin-100">
+                  <User className="h-4 w-4" /> {lang === 'ar' ? 'إضافة عميل' : 'Add customer'}
+                </button>
+              )}
+              <p className="pointer-fine-only mt-2 inline-flex items-center gap-1.5 rounded-lg bg-goblin-950/50 px-3 py-1.5 text-[11px]">
+                <Keyboard className="h-3.5 w-3.5" />
+                {lang === 'ar' ? 'F2 بحث · F9 دفع · F8 إيصال' : 'F2 search · F9 pay · F8 receipt'}
+              </p>
+            </div>
+          )}
           {visibleItems.map((line) => (
             <div
               key={line.id}
@@ -787,34 +965,34 @@ export function OrderScreen() {
                   + {m.name} {m.priceCents > 0 && fmtMoney(m.priceCents, lang)}
                 </div>
               ))}
-              {line.notes && <div className="ms-3 text-sm italic text-goblin-400">{line.notes}</div>}
+              {line.notes && <div className="ms-3 mt-0.5 inline-block rounded bg-amber-900/40 px-1.5 text-sm italic text-amber-200">{line.notes}</div>}
               {!isPaid && line.status !== 'VOIDED' && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {!line.isTimeCharge && can(user, 'order.void') && (
-                    <button onClick={() => setVoiding(line.id)} className="rounded-lg bg-red-950/40 text-red-400 border border-red-900/30 px-2.5 py-1 text-xs font-semibold hover:bg-red-900/30 transition-all active:scale-95">
+                    <button onClick={() => setVoiding(line.id)} className="rounded-lg bg-red-950/40 text-red-400 border border-red-900/30 min-h-9 px-3 py-2 text-xs font-semibold hover:bg-red-900/30 transition-all active:scale-95">
                       {t(lang, 'voidItem')}
                     </button>
                   )}
                   {!line.isTimeCharge && (
-                    <button onClick={() => setMovingItem(line)} className="rounded-lg bg-sky-950/40 text-sky-400 border border-sky-900/30 px-2.5 py-1 text-xs font-semibold hover:bg-sky-900/30 transition-all active:scale-95">
+                    <button onClick={() => setMovingItem(line)} className="rounded-lg bg-sky-950/40 text-sky-400 border border-sky-900/30 min-h-9 px-3 py-2 text-xs font-semibold hover:bg-sky-900/30 transition-all active:scale-95">
                       {lang === 'ar' ? 'نقل' : 'Move'}
                     </button>
                   )}
                   {!line.isTimeCharge && (
-                    <button onClick={() => setQuantityEditingItem(line)} className="rounded-lg bg-emerald-950/40 text-emerald-400 border border-emerald-900/30 px-2.5 py-1 text-xs font-semibold hover:bg-emerald-900/30 transition-all active:scale-95">
+                    <button onClick={() => setQuantityEditingItem(line)} className="rounded-lg bg-emerald-950/40 text-emerald-400 border border-emerald-900/30 min-h-9 px-3 py-2 text-xs font-semibold hover:bg-emerald-900/30 transition-all active:scale-95">
                       {lang === 'ar' ? 'كمية' : 'Qty'}
                     </button>
                   )}
                   {!line.isTimeCharge && (
-                    <button onClick={() => setCommentingItem(line)} className="rounded-lg bg-amber-950/40 text-amber-400 border border-amber-900/30 px-2.5 py-1 text-xs font-semibold hover:bg-amber-900/30 transition-all active:scale-95">
-                      {lang === 'ar' ? 'تعليق' : 'Comment'}
+                    <button onClick={() => setCommentingItem(line)} className="rounded-lg bg-amber-950/40 text-amber-400 border border-amber-900/30 min-h-9 px-3 py-2 text-xs font-semibold hover:bg-amber-900/30 transition-all active:scale-95">
+                      {line.notes ? (lang === 'ar' ? 'تعديل الملاحظة' : 'Edit note') : (lang === 'ar' ? 'ملاحظة' : 'Note')}
                     </button>
                   )}
                   {line.isTimeCharge && (
                     <button onClick={() => {
                       setSplittingTimeItem(line);
                       setSelectedTimeSeats([]);
-                    }} className="rounded-lg bg-sky-950/40 text-sky-400 border border-sky-900/30 px-2.5 py-1 text-xs font-semibold hover:bg-sky-900/30 transition-all active:scale-95">
+                    }} className="rounded-lg bg-sky-950/40 text-sky-400 border border-sky-900/30 min-h-9 px-3 py-2 text-xs font-semibold hover:bg-sky-900/30 transition-all active:scale-95">
                       {lang === 'ar' ? 'تقسيم الوقت' : 'Split Time'}
                     </button>
                   )}
@@ -879,7 +1057,7 @@ export function OrderScreen() {
             <button
               onClick={() => void api(`/kds/orders/${order.id}/send`, { method: 'POST' })
                 .then(reload)
-                .catch((e) => setError(e instanceof Error ? e.message : 'Send failed'))}
+                .catch((e) => setError(e instanceof Error ? e.message : tx('Send failed')))}
               className="col-span-2 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-600 py-3 font-bold text-white active:bg-amber-500"
             >
               <Send className="h-4 w-4" /> {t(lang, 'send')}
@@ -890,7 +1068,7 @@ export function OrderScreen() {
               {t(lang, 'discount')}
             </button>
           )}
-          <button onClick={() => void showReceipt()} className="rounded-xl bg-goblin-800 py-3">
+          <button id="pos-receipt" onClick={() => void showReceipt()} className="rounded-xl bg-goblin-800 py-3">
             {t(lang, 'receipt')}
           </button>
           {isPaid && (
@@ -900,6 +1078,7 @@ export function OrderScreen() {
           )}
           {!isPaid && can(user, 'payment.take') && (
             <button
+              id="pos-checkout"
               onClick={() => {
                 if (order.totalCents === 0) {
                   void api(`/orders/${order.id}/pay`, {
@@ -910,7 +1089,7 @@ export function OrderScreen() {
                       await reload();
                       await showReceipt();
                     })
-                    .catch((e) => setError(e instanceof Error ? e.message : 'Checkout failed'));
+                    .catch((e) => setError(e instanceof Error ? e.message : tx('Checkout failed')));
                 } else {
                   setPaying(true);
                 }
@@ -1031,11 +1210,11 @@ export function OrderScreen() {
       {movingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setMovingItem(null)}>
           <div className="w-full max-w-sm space-y-4 rounded-2xl bg-goblin-900 border border-goblin-800 p-5 text-goblin-50 animate-fade-in" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold">Move Item</h2>
-            <p className="text-sm text-goblin-300">Select target seat or table for:<br/><b>{movingItem.description}</b></p>
+            <h2 className="text-lg font-bold">{tx('Move Item')}</h2>
+            <p className="text-sm text-goblin-300">{tx('Select target seat or table for:')}<br/><b>{movingItem.description}</b></p>
             
             <div>
-              <p className="mb-2 text-xs font-semibold text-goblin-400 uppercase">Seats</p>
+              <p className="mb-2 text-xs font-semibold text-goblin-400 uppercase">{tx('Seats')}</p>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={async () => {
@@ -1080,7 +1259,7 @@ export function OrderScreen() {
       )}
       {movingItemTablePicker && movingItem && (
         <ResourcePicker
-          title="Select Destination Table"
+          title={tx('Select Destination Table')}
           excludeResourceId={order.resourceId}
           onPick={async (rid) => {
             setMovingItemTablePicker(false);
@@ -1093,8 +1272,8 @@ export function OrderScreen() {
       {splittingTimeItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setSplittingTimeItem(null)}>
           <div className="w-full max-w-sm space-y-4 rounded-2xl bg-goblin-900 border border-goblin-800 p-5 text-goblin-50 animate-fade-in" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold">Split Time Charge</h2>
-            <p className="text-sm text-goblin-300">Select seats to share this time charge:</p>
+            <h2 className="text-lg font-bold">{tx('Split Time Charge')}</h2>
+            <p className="text-sm text-goblin-300">{tx('Select seats to share this time charge:')}</p>
             
             <div className="grid grid-cols-2 gap-2">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => {
@@ -1161,8 +1340,9 @@ export function OrderScreen() {
         />
       )}
       {commentingItem && (
-        <PromptDialog
-          title={t(lang, 'itemComment')}
+        <NoteDialog
+          title={`${t(lang, 'itemComment')} — ${commentingItem.description}`}
+          initial={commentingItem.notes ?? ''}
           onConfirm={async (notes) => {
             await handleUpdateItemNote(commentingItem.id, notes);
             setCommentingItem(null);

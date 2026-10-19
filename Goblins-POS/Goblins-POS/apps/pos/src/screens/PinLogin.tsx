@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Check, Delete, Moon, Sun } from 'lucide-react';
 import { api } from '../lib/api';
-import { t } from '../lib/i18n';
+import { t, tx } from '../lib/i18n';
 import { usePos } from '../lib/store';
 import type { PinUser } from '../lib/types';
 
@@ -121,7 +121,7 @@ export function PinLogin() {
               onClick={() => setThemeMode(themeMode === 'light' ? 'dark' : 'light')}
               className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-900 px-4 py-2 text-sm text-goblin-300 hover:text-goblin-100 transition-colors"
             >
-              {themeMode === 'light' ? <><Moon className="h-4 w-4" /> Dark</> : <><Sun className="h-4 w-4" /> Light</>}
+              {themeMode === 'light' ? <><Moon className="h-4 w-4" /> {tx('Dark')}</> : <><Sun className="h-4 w-4" /> {tx('Light')}</>}
             </button>
           </div>
         </div>

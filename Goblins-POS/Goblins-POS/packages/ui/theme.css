@@ -199,6 +199,14 @@ input, select, textarea {
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
+/* Fields with no bg-* class used to fall back to the browser's white box, which
+   hid the light dark-mode text. :where() keeps this at zero specificity, so any
+   bg-* utility on a field still wins. */
+:where(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]), select, textarea) {
+  background-color: rgb(var(--goblin-950));
+}
+:where(select) option { background-color: rgb(var(--goblin-900)); color: rgb(var(--goblin-100)); }
+
 /* In light mode, hover:text-white becomes the dark accent instead of white. */
 .light .hover\:text-white:hover {
   color: rgb(var(--goblin-50)) !important;

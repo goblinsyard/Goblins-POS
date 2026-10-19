@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { fmtMoney, t } from '../lib/i18n';
+import { fmtMoney, t, tx } from '../lib/i18n';
 import { can, usePos } from '../lib/store';
 import type { Shift } from '../lib/types';
 
@@ -78,7 +78,7 @@ export function ShiftDialogs({ kind, onClose }: { kind: 'open' | 'close' | 'x'; 
         await refreshShift();
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     }
   }
 

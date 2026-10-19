@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { api, egp, parseEgp } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Table, TextInput, useLoad, Spinner } from '../lib/ui';
 import { X, Check, ChevronDown, ChevronRight } from 'lucide-react';
+import { tr } from '../lib/i18n';
 
 interface Account {
   id: string;
@@ -49,11 +50,11 @@ interface LedgerResponse {
 
 const SECTIONS = ['chart of accounts', 'journal entries', 'cash transfers', 'account ledger', 'financial reports', 'close shift wizard'] as const;
 const ACCOUNT_TYPES = [
-  { value: 'ASSET', label: 'Asset (الأصول)' },
-  { value: 'LIABILITY', label: 'Liability (الخصوم)' },
-  { value: 'EQUITY', label: 'Equity (حقوق الملكية)' },
-  { value: 'REVENUE', label: 'Revenue (الإيرادات)' },
-  { value: 'EXPENSE', label: 'Expense (المصروفات)' },
+  { value: 'ASSET', label: tr('Asset (الأصول)') },
+  { value: 'LIABILITY', label: tr('Liability (الخصوم)') },
+  { value: 'EQUITY', label: tr('Equity (حقوق الملكية)') },
+  { value: 'REVENUE', label: tr('Revenue (الإيرادات)') },
+  { value: 'EXPENSE', label: tr('Expense (المصروفات)') },
 ];
 
 export function AccountingView() {
@@ -90,25 +91,25 @@ function ChartOfAccounts() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-lg font-bold text-goblin-100">Chart of Accounts</h2>
-          <p className="text-xs text-goblin-400">Hierarchical list of Asset, Liability, Equity, Revenue, and Expense accounts.</p>
+          <h2 className="text-lg font-bold text-goblin-100">{tr('Chart of Accounts')}</h2>
+          <p className="text-xs text-goblin-400">{tr('Hierarchical list of Asset, Liability, Equity, Revenue, and Expense accounts.')}</p>
         </div>
-        <Btn kind="primary" onClick={() => { setEditingAccount(null); setCreateOpen(true); }}>+ New Account</Btn>
+        <Btn kind="primary" onClick={() => { setEditingAccount(null); setCreateOpen(true); }}>{tr('+ New Account')}</Btn>
       </div>
 
       <div className="rounded-xl bg-goblin-900 p-4 shadow overflow-hidden">
         <div className="grid grid-cols-[120px_1fr_150px_180px_100px] border-b pb-2 text-xs font-bold uppercase tracking-wider text-goblin-400">
-          <span>Code</span>
-          <span>Account Name</span>
-          <span>Type</span>
-          <span className="text-right">Balance</span>
-          <span className="text-right">Actions</span>
+          <span>{tr('Code')}</span>
+          <span>{tr('Account Name')}</span>
+          <span>{tr('Type')}</span>
+          <span className="text-right">{tr('Balance')}</span>
+          <span className="text-right">{tr('Actions')}</span>
         </div>
         <div className="divide-y text-sm">
           {(accounts ?? []).map((acc) => (
             <AccountRow key={acc.id} account={acc} depth={0} onEdit={(a) => { setEditingAccount(a); setCreateOpen(true); }} />
           ))}
-          {!accounts?.length && <p className="p-4 text-goblin-400">No accounts found.</p>}
+          {!accounts?.length && <p className="p-4 text-goblin-400">{tr('No accounts found.')}</p>}
         </div>
       </div>
 
@@ -142,10 +143,10 @@ function AccountRow({ account, depth, onEdit }: { account: Account; depth: numbe
           <span>{account.name}</span>
           {account.nameAr && <span className="text-xs text-goblin-400 font-normal">({account.nameAr})</span>}
         </span>
-        <span className="text-xs font-semibold uppercase text-goblin-400">{account.type}</span>
+        <span className="text-xs font-semibold uppercase text-goblin-400">{tr(account.type)}</span>
         <span className="text-right font-mono font-semibold text-goblin-100">{fmtBalance(account.balanceCents, account.type)}</span>
         <span className="text-right">
-          <Btn kind="ghost" onClick={() => onEdit(account)}>Edit</Btn>
+          <Btn kind="ghost" onClick={() => onEdit(account)}>{tr('Edit')}</Btn>
         </span>
       </div>
       {hasChildren && expanded && (
@@ -217,7 +218,7 @@ function AccountFormModal({ account, rawAccounts, onClose, onDone }: {
 
   async function submit() {
     if (!code.trim() || !name.trim()) {
-      setErr('Account code and name are required'); return;
+      setErr(tr('Account code and name are required')); return;
     }
     try {
       if (account) {
@@ -244,37 +245,37 @@ function AccountFormModal({ account, rawAccounts, onClose, onDone }: {
       }
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Submit failed');
+      setErr(e instanceof Error ? e.message : tr('Submit failed'));
     }
   }
 
   return (
-    <Modal title={account ? `Edit Account: ${account.name}` : 'New Account'} onClose={onClose}>
+    <Modal title={account ? `${tr('Edit Account:')} ${account.name}` : tr('New Account')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Account Code (e.g. 1110, 5225)"><TextInput value={code} onChange={setCode} /></Field>
-        <Field label="Account Name (English)"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Account Name (Arabic - Optional)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
+        <Field label={tr('Account Code (e.g. 1110, 5225)')}><TextInput value={code} onChange={setCode} /></Field>
+        <Field label={tr('Account Name (English)')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Account Name (Arabic - Optional)')}><TextInput value={nameAr} onChange={setNameAr} /></Field>
         {!account && !parentAccountId && (
-          <Field label="Account Type">
+          <Field label={tr('Account Type')}>
             <Select value={type} onChange={setType} options={ACCOUNT_TYPES} />
           </Field>
         )}
-        <Field label="Parent Account (Inherits Type)">
+        <Field label={tr('Parent Account (Inherits Type)')}>
           <Select value={parentAccountId} onChange={setParentAccountId} allowEmpty="— Root Account (No parent) —" options={parentOptions} />
         </Field>
         {activeType === 'ASSET' && (
           <>
-            <Field label="Initial Balance (EGP)">
+            <Field label={tr('Initial Balance (EGP)')}>
               <TextInput value={initialBalance} onChange={setInitialBalance} type="number" />
             </Field>
             <label className="flex items-center gap-2 text-sm text-goblin-100 py-1 cursor-pointer font-semibold">
               <input type="checkbox" checked={isPaymentSource} onChange={(e) => setIsPaymentSource(e.target.checked)} className="rounded text-goblin-500" />
-              <span>Is Payment Source (can be selected as payment account in Expenses/Purchasing)</span>
+              <span>{tr('Is Payment Source (can be selected as payment account in Expenses/Purchasing)')}</span>
             </label>
           </>
         )}
-        <Btn kind="primary" onClick={() => void submit()}>{account ? 'Save changes' : 'Create account'}</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{account ? tr('Save changes') : tr('Create account')}</Btn>
       </div>
     </Modal>
   );
@@ -302,12 +303,12 @@ function JournalEntriesList() {
   const flatAccounts = accounts ? flattenAccounts(accounts) : [];
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this journal entry? This action is irreversible.')) return;
+    if (!confirm(tr('Are you sure you want to delete this journal entry? This action is irreversible.'))) return;
     try {
       await api(`/accounting/journal-entries/${id}`, { method: 'DELETE' });
       reload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Delete failed');
+      alert(e instanceof Error ? e.message : tr('Delete failed'));
     }
   }
 
@@ -315,10 +316,10 @@ function JournalEntriesList() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-lg font-bold text-goblin-100">Journal Entries</h2>
-          <p className="text-xs text-goblin-400">Browse financial transactions or post a new double-entry manual journal voucher.</p>
+          <h2 className="text-lg font-bold text-goblin-100">{tr('Journal Entries')}</h2>
+          <p className="text-xs text-goblin-400">{tr('Browse financial transactions or post a new double-entry manual journal voucher.')}</p>
         </div>
-        <Btn kind="primary" onClick={() => { setEditingEntry(null); setCreateOpen(true); }}>+ New Entry</Btn>
+        <Btn kind="primary" onClick={() => { setEditingEntry(null); setCreateOpen(true); }}>{tr('+ New Entry')}</Btn>
       </div>
 
       <div className="space-y-4">
@@ -329,14 +330,14 @@ function JournalEntriesList() {
               <div className="flex justify-between items-center border-b pb-2 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-goblin-100">{new Date(entry.date).toLocaleDateString('en-EG')}</span>
-                  {entry.reference && <span className="bg-goblin-800 px-1.5 py-0.5 rounded text-goblin-300 font-mono">Ref: {entry.reference}</span>}
+                  {entry.reference && <span className="bg-goblin-800 px-1.5 py-0.5 rounded text-goblin-300 font-mono">{tr('Ref:')} {entry.reference}</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-goblin-400">Debit Sum: {egp(sumDebit)}</span>
+                  <span className="font-mono text-goblin-400">{tr('Debit Sum:')} {egp(sumDebit)}</span>
                   {isManualEntry(entry) && (
                     <div className="flex gap-1 ml-2">
-                      <Btn onClick={() => { setEditingEntry(entry); setCreateOpen(true); }}>Edit</Btn>
-                      <Btn kind="danger" onClick={() => void handleDelete(entry.id)}>Delete</Btn>
+                      <Btn onClick={() => { setEditingEntry(entry); setCreateOpen(true); }}>{tr('Edit')}</Btn>
+                      <Btn kind="danger" onClick={() => void handleDelete(entry.id)}>{tr('Delete')}</Btn>
                     </div>
                   )}
                 </div>
@@ -345,9 +346,9 @@ function JournalEntriesList() {
               <table className="w-full text-xs text-goblin-200 border-collapse">
                 <thead>
                   <tr className="text-left font-bold text-goblin-400">
-                    <th className="py-1">Account</th>
-                    <th className="py-1 text-right w-32">Debit (Dr)</th>
-                    <th className="py-1 text-right w-32">Credit (Cr)</th>
+                    <th className="py-1">{tr('Account')}</th>
+                    <th className="py-1 text-right w-32">{tr('Debit (Dr)')}</th>
+                    <th className="py-1 text-right w-32">{tr('Credit (Cr)')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-goblin-800">
@@ -363,7 +364,7 @@ function JournalEntriesList() {
             </div>
           );
         })}
-        {!entries?.length && <p className="text-sm text-goblin-400">No journal entries found.</p>}
+        {!entries?.length && <p className="text-sm text-goblin-400">{tr('No journal entries found.')}</p>}
       </div>
 
       {createOpen && (
@@ -413,14 +414,14 @@ function JournalEntryFormModal({ flatAccounts, onClose, onDone, entry }: {
   const isBalanced = totalDebit === totalCredit && totalDebit > 0;
 
   async function submit() {
-    if (!description.trim()) { setErr('Description is required'); return; }
+    if (!description.trim()) { setErr(tr('Description is required')); return; }
     if (!isBalanced) {
-      setErr(`Debit and Credit sums must balance. Current Debit: ${egp(totalDebit)}, Credit: ${egp(totalCredit)}`);
+      setErr(`${tr('Debit and Credit sums must balance. Current Debit:')} ${egp(totalDebit)}${tr(', Credit:')} ${egp(totalCredit)}`);
       return;
     }
     const finalLines = parsedLines.filter((l) => l.accountId && (l.debitCents > 0 || l.creditCents > 0));
     if (finalLines.length < 2) {
-      setErr('Journal entry needs at least 2 lines with accounts and values.');
+      setErr(tr('Journal entry needs at least 2 lines with accounts and values.'));
       return;
     }
 
@@ -438,25 +439,25 @@ function JournalEntryFormModal({ flatAccounts, onClose, onDone, entry }: {
       }
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Submit failed');
+      setErr(e instanceof Error ? e.message : tr('Submit failed'));
     }
   }
 
   return (
-    <Modal title={entry ? "Edit Journal Entry" : "New Journal Entry"} onClose={onClose} wide>
+    <Modal title={entry ? tr('Edit Journal Entry') : tr('New Journal Entry')} onClose={onClose} wide>
       <ErrorBanner message={err} />
       <div className="space-y-4">
-        <Field label="Description / Narration"><TextInput value={description} onChange={setDescription} /></Field>
+        <Field label={tr('Description / Narration')}><TextInput value={description} onChange={setDescription} /></Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Date"><TextInput value={date} onChange={setDate} type="date" /></Field>
-          <Field label="Reference # (e.g. Voucher, Check ID)"><TextInput value={reference} onChange={setReference} /></Field>
+          <Field label={tr('Date')}><TextInput value={date} onChange={setDate} type="date" /></Field>
+          <Field label={tr('Reference # (e.g. Voucher, Check ID)')}><TextInput value={reference} onChange={setReference} /></Field>
         </div>
 
         <div className="space-y-2 border-t pt-3">
           <div className="grid grid-cols-[1fr_130px_130px_32px] gap-2 text-xs font-bold text-goblin-400">
-            <span>Ledger Account</span>
-            <span className="text-right">Debit (Dr)</span>
-            <span className="text-right">Credit (Cr)</span>
+            <span>{tr('Ledger Account')}</span>
+            <span className="text-right">{tr('Debit (Dr)')}</span>
+            <span className="text-right">{tr('Credit (Cr)')}</span>
             <span></span>
           </div>
 
@@ -490,24 +491,24 @@ function JournalEntryFormModal({ flatAccounts, onClose, onDone, entry }: {
           ))}
 
           <div className="flex gap-2">
-            <Btn onClick={() => setLines((cur) => [...cur, { accountId: '', debit: '', credit: '' }])}>+ Add Line</Btn>
+            <Btn onClick={() => setLines((cur) => [...cur, { accountId: '', debit: '', credit: '' }])}>{tr('+ Add Line')}</Btn>
           </div>
         </div>
 
         <div className="flex justify-between items-center border-t pt-3 text-sm font-semibold">
           <div className="flex gap-4">
-            <span className="text-goblin-500">Total Debit: {egp(totalDebit)}</span>
-            <span className="text-goblin-100">Total Credit: {egp(totalCredit)}</span>
+            <span className="text-goblin-500">{tr('Total Debit:')} {egp(totalDebit)}</span>
+            <span className="text-goblin-100">{tr('Total Credit:')} {egp(totalCredit)}</span>
           </div>
           {totalDebit > 0 && (
             <span className={isBalanced ? 'text-goblin-500' : 'text-red-600'}>
-              {isBalanced ? <span className="inline-flex items-center gap-1"><Check className="h-4 w-4" /> Balanced</span> : `✗ Difference: ${egp(Math.abs(totalDebit - totalCredit))}`}
+              {isBalanced ? <span className="inline-flex items-center gap-1"><Check className="h-4 w-4" /> {tr('Balanced')}</span> : `${tr('✗ Difference:')} ${egp(Math.abs(totalDebit - totalCredit))}`}
             </span>
           )}
         </div>
 
         <Btn kind="primary" onClick={() => void submit()} disabled={!isBalanced}>
-          Post Journal Voucher
+          {tr('Post Journal Voucher')}
         </Btn>
       </div>
     </Modal>
@@ -528,12 +529,12 @@ function AccountLedger() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-bold text-goblin-100">Account Ledger</h2>
-        <p className="text-xs text-goblin-400">View statement of accounts and transaction ledgers for any account.</p>
+        <h2 className="text-lg font-bold text-goblin-100">{tr('Account Ledger')}</h2>
+        <p className="text-xs text-goblin-400">{tr('View statement of accounts and transaction ledgers for any account.')}</p>
       </div>
 
       <div className="w-96">
-        <Field label="Select Account">
+        <Field label={tr('Select Account')}>
           <Select value={selectedAccountId} onChange={setSelectedAccountId} allowEmpty="— pick account —" options={flatAccounts} />
         </Field>
       </div>
@@ -542,11 +543,11 @@ function AccountLedger() {
         <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-4">
           <div className="flex justify-between border-b pb-2">
             <h3 className="font-bold text-goblin-50">{ledger.account.code} — {ledger.account.name}</h3>
-            <span className="text-xs font-semibold text-goblin-400 uppercase">Type: {ledger.account.type}</span>
+            <span className="text-xs font-semibold text-goblin-400 uppercase">{tr('Type:')} {tr(ledger.account.type)}</span>
           </div>
 
           <Table
-            headers={['Date', 'Description', 'Reference', 'Debit (Dr)', 'Credit (Cr)', 'Running Balance']}
+            headers={[tr('Date'), tr('Description'), tr('Reference'), tr('Debit (Dr)'), tr('Credit (Cr)'), tr('Running Balance')]}
             rows={ledger.lines.map((l) => [
               new Date(l.date).toLocaleDateString('en-EG'),
               l.description,
@@ -556,7 +557,7 @@ function AccountLedger() {
               <span key="bal" className="font-semibold font-mono text-goblin-100">{fmtBalance(l.runningBalanceCents, ledger.account.type)}</span>,
             ])}
           />
-          {ledger.lines.length === 0 && <p className="text-sm text-goblin-400 text-center py-4">No ledger postings for this account yet.</p>}
+          {ledger.lines.length === 0 && <p className="text-sm text-goblin-400 text-center py-4">{tr('No ledger postings for this account yet.')}</p>}
         </div>
       )}
     </div>
@@ -571,8 +572,8 @@ function FinancialReports() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-bold text-goblin-100">Financial Statements & Reports</h2>
-        <p className="text-xs text-goblin-400">Generate standard business balance sheets, trial balances, and income statements.</p>
+        <h2 className="text-lg font-bold text-goblin-100">{tr('Financial Statements & Reports')}</h2>
+        <p className="text-xs text-goblin-400">{tr('Generate standard business balance sheets, trial balances, and income statements.')}</p>
       </div>
       <div className="flex gap-2">
         <Pills value={reportTab} onChange={setReportTab} options={REPORT_TABS} />
@@ -592,9 +593,9 @@ function TrialBalanceReport() {
 
   return (
     <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-4">
-      <h3 className="font-bold text-goblin-50 border-b pb-2">Trial Balance Statement</h3>
+      <h3 className="font-bold text-goblin-50 border-b pb-2">{tr('Trial Balance Statement')}</h3>
       <Table
-        headers={['Account Code', 'Account Name', 'Type', 'Debit (Dr)', 'Credit (Cr)']}
+        headers={[tr('Account Code'), tr('Account Name'), tr('Type'), tr('Debit (Dr)'), tr('Credit (Cr)')]}
         rows={(data ?? []).map((a) => [
           a.code,
           a.name,
@@ -604,8 +605,8 @@ function TrialBalanceReport() {
         ])}
       />
       <div className="flex justify-end gap-12 border-t pt-3 font-bold text-goblin-50 text-sm">
-        <span>Total Debit: <span className="text-goblin-500">{egp(totalDebit)}</span></span>
-        <span>Total Credit: <span className="text-goblin-100">{egp(totalCredit)}</span></span>
+        <span>{tr('Total Debit:')} <span className="text-goblin-500">{egp(totalDebit)}</span></span>
+        <span>{tr('Total Credit:')} <span className="text-goblin-100">{egp(totalCredit)}</span></span>
       </div>
     </div>
   );
@@ -638,39 +639,39 @@ function BalanceSheetReport() {
 
   return (
     <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-6">
-      <h3 className="font-bold text-goblin-50 border-b pb-2">Balance Sheet (Statement of Financial Position)</h3>
+      <h3 className="font-bold text-goblin-50 border-b pb-2">{tr('Balance Sheet (Statement of Financial Position)')}</h3>
 
       <div className="space-y-4">
         <div>
-          <h4 className="font-bold text-sm text-goblin-500 mb-2 border-b border-goblin-600 pb-1">Assets</h4>
-          <Table headers={['Account', 'Balance']} rows={assetRows} />
+          <h4 className="font-bold text-sm text-goblin-500 mb-2 border-b border-goblin-600 pb-1">{tr('Assets')}</h4>
+          <Table headers={[tr('Account'), tr('Balance')]} rows={assetRows} />
           <div className="text-right font-bold text-goblin-50 text-sm mt-2">
-            Total Assets: <span className="font-mono">{fmtBalance(totalAssets, 'ASSET')}</span>
+            {tr('Total Assets:')} <span className="font-mono">{fmtBalance(totalAssets, 'ASSET')}</span>
           </div>
         </div>
 
         <div>
-          <h4 className="font-bold text-sm text-goblin-50 mb-2 border-b border-goblin-800 pb-1 font-mono">Liabilities</h4>
-          <Table headers={['Account', 'Balance']} rows={liabilityRows} />
+          <h4 className="font-bold text-sm text-goblin-50 mb-2 border-b border-goblin-800 pb-1 font-mono">{tr('Liabilities')}</h4>
+          <Table headers={[tr('Account'), tr('Balance')]} rows={liabilityRows} />
           <div className="text-right font-bold text-goblin-50 text-sm mt-2">
-            Total Liabilities: <span className="font-mono">{fmtBalance(totalLiabilities, 'LIABILITY')}</span>
+            {tr('Total Liabilities:')} <span className="font-mono">{fmtBalance(totalLiabilities, 'LIABILITY')}</span>
           </div>
         </div>
 
         <div>
-          <h4 className="font-bold text-sm text-goblin-50 mb-2 border-b border-goblin-800 pb-1 font-mono">Equity</h4>
-          <Table headers={['Account', 'Balance']} rows={equityRows} />
+          <h4 className="font-bold text-sm text-goblin-50 mb-2 border-b border-goblin-800 pb-1 font-mono">{tr('Equity')}</h4>
+          <Table headers={[tr('Account'), tr('Balance')]} rows={equityRows} />
           <div className="text-right font-bold text-goblin-50 text-sm mt-2">
-            Total Equity: <span className="font-mono">{fmtBalance(totalEquity, 'EQUITY')}</span>
+            {tr('Total Equity:')} <span className="font-mono">{fmtBalance(totalEquity, 'EQUITY')}</span>
           </div>
         </div>
       </div>
 
       <div className="border-t pt-4 flex justify-between items-center text-sm font-bold border-double border-t-4">
-        <span className="text-goblin-500">Total Assets: {fmtBalance(totalAssets, 'ASSET')}</span>
-        <span className="text-goblin-50">Liabilities + Equity: {fmtBalance(totalLiabilities + totalEquity, 'LIABILITY')}</span>
+        <span className="text-goblin-500">{tr('Total Assets:')} {fmtBalance(totalAssets, 'ASSET')}</span>
+        <span className="text-goblin-50">{tr('Liabilities + Equity:')} {fmtBalance(totalLiabilities + totalEquity, 'LIABILITY')}</span>
         <span className={Math.abs(totalAssets - (totalLiabilities + totalEquity)) === 0 ? 'text-goblin-500' : 'text-red-600'}>
-          {Math.abs(totalAssets - (totalLiabilities + totalEquity)) === 0 ? <span className="inline-flex items-center gap-1"><Check className="h-4 w-4" /> Equation Balances</span> : `✗ Discrepancy: ${egp(Math.abs(totalAssets - (totalLiabilities + totalEquity)))}`}
+          {Math.abs(totalAssets - (totalLiabilities + totalEquity)) === 0 ? <span className="inline-flex items-center gap-1"><Check className="h-4 w-4" /> {tr('Equation Balances')}</span> : `${tr('✗ Discrepancy:')} ${egp(Math.abs(totalAssets - (totalLiabilities + totalEquity)))}`}
         </span>
       </div>
     </div>
@@ -705,37 +706,37 @@ function PnlReport() {
   return (
     <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-6">
       <div className="flex justify-between items-center border-b pb-2">
-        <h3 className="font-bold text-goblin-50">Profit & Loss Statement (Income Statement)</h3>
+        <h3 className="font-bold text-goblin-50">{tr('Profit & Loss Statement (Income Statement)')}</h3>
         <div className="flex items-center gap-2 text-xs">
-          <span>From</span>
+          <span>{tr('From')}</span>
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded border p-1" />
-          <span>To</span>
+          <span>{tr('To')}</span>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded border p-1" />
         </div>
       </div>
 
       <div className="space-y-4">
         <div>
-          <h4 className="font-bold text-sm text-goblin-500 mb-2 border-b border-goblin-600 pb-1">Operating Revenues</h4>
-          <Table headers={['Account', 'Amount']} rows={revenueRows} />
+          <h4 className="font-bold text-sm text-goblin-500 mb-2 border-b border-goblin-600 pb-1">{tr('Operating Revenues')}</h4>
+          <Table headers={[tr('Account'), tr('Amount')]} rows={revenueRows} />
           <div className="text-right font-bold text-goblin-50 text-sm mt-2">
-            Total Revenue: {egp(data.totalRevenue)}
+            {tr('Total Revenue:')} {egp(data.totalRevenue)}
           </div>
         </div>
 
         <div>
-          <h4 className="font-bold text-sm text-red-800 mb-2 border-b border-red-100 pb-1">Operating Expenses</h4>
-          <Table headers={['Account', 'Amount']} rows={expenseRows} />
+          <h4 className="font-bold text-sm text-red-800 mb-2 border-b border-red-100 pb-1">{tr('Operating Expenses')}</h4>
+          <Table headers={[tr('Account'), tr('Amount')]} rows={expenseRows} />
           <div className="text-right font-bold text-goblin-50 text-sm mt-2">
-            Total Expenses: {egp(data.totalExpense)}
+            {tr('Total Expenses:')} {egp(data.totalExpense)}
           </div>
         </div>
       </div>
 
       <div className="border-t pt-4 flex justify-between items-center text-sm font-bold border-double border-t-4">
-        <span>Operating Profit / Loss</span>
+        <span>{tr('Operating Profit / Loss')}</span>
         <span className={data.netProfit >= 0 ? 'text-goblin-500 font-mono text-base' : 'text-red-700 font-mono text-base'}>
-          {data.netProfit >= 0 ? 'Net Income: ' : 'Net Loss: '} {egp(data.netProfit)}
+          {data.netProfit >= 0 ? tr('Net Income: ') : tr('Net Loss: ')} {egp(data.netProfit)}
         </span>
       </div>
     </div>
@@ -747,7 +748,7 @@ function flattenAccounts(nodes: any[], prefix = ''): { value: string; label: str
   for (const n of nodes) {
     list.push({
       value: n.id,
-      label: `${prefix}${n.code} — ${n.name} (${(n.balanceCents / 100).toFixed(2)} EGP)`,
+      label: `${prefix}${n.code} — ${n.name} (${(n.balanceCents / 100).toFixed(2)} ${tr('EGP)')}`,
       code: n.code,
       balanceCents: n.balanceCents,
     });
@@ -784,10 +785,10 @@ function CashTransfers() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-lg font-bold text-goblin-100">Cash Transfers</h2>
-          <p className="text-xs text-goblin-400 font-normal">Record and review movements of cash between bank accounts, drawers, and safes.</p>
+          <h2 className="text-lg font-bold text-goblin-100">{tr('Cash Transfers')}</h2>
+          <p className="text-xs text-goblin-400 font-normal">{tr('Record and review movements of cash between bank accounts, drawers, and safes.')}</p>
         </div>
-        <Btn kind="primary" onClick={() => setCreateOpen(true)}>+ New Cash Transfer</Btn>
+        <Btn kind="primary" onClick={() => setCreateOpen(true)}>{tr('+ New Cash Transfer')}</Btn>
       </div>
 
       <div className="space-y-4">
@@ -801,7 +802,7 @@ function CashTransfers() {
               <div className="flex justify-between items-center border-b pb-2 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-goblin-100">{new Date(t.date).toLocaleDateString('en-EG')}</span>
-                  {t.reference && <span className="bg-goblin-800 px-1.5 py-0.5 rounded text-goblin-300 font-mono">Ref: {t.reference}</span>}
+                  {t.reference && <span className="bg-goblin-800 px-1.5 py-0.5 rounded text-goblin-300 font-mono">{tr('Ref:')} {t.reference}</span>}
                 </div>
                 <span className="font-mono text-goblin-500 font-bold text-sm">{egp(amount)}</span>
               </div>
@@ -809,13 +810,13 @@ function CashTransfers() {
               
               <div className="grid grid-cols-2 gap-4 text-xs bg-goblin-800 rounded-lg p-3">
                 <div>
-                  <span className="block text-goblin-400 font-semibold uppercase tracking-wider mb-1">Source (Credit)</span>
+                  <span className="block text-goblin-400 font-semibold uppercase tracking-wider mb-1">{tr('Source (Credit)')}</span>
                   <span className="font-mono text-goblin-100">
                     {creditLine ? `${creditLine.account.code} — ${creditLine.account.name}` : '—'}
                   </span>
                 </div>
                 <div>
-                  <span className="block text-goblin-500 font-semibold uppercase tracking-wider mb-1">Target (Debit)</span>
+                  <span className="block text-goblin-500 font-semibold uppercase tracking-wider mb-1">{tr('Target (Debit)')}</span>
                   <span className="font-mono text-goblin-500 font-semibold">
                     {debitLine ? `${debitLine.account.code} — ${debitLine.account.name}` : '—'}
                   </span>
@@ -824,7 +825,7 @@ function CashTransfers() {
             </div>
           );
         })}
-        {!transfers?.length && <p className="text-sm text-goblin-400">No cash transfers found.</p>}
+        {!transfers?.length && <p className="text-sm text-goblin-400">{tr('No cash transfers found.')}</p>}
       </div>
 
       {createOpen && (
@@ -851,17 +852,17 @@ function CashTransferFormModal({ flatAssetAccounts, onClose, onDone }: {
 
   async function submit() {
     if (!sourceAccountId || !targetAccountId) {
-      setErr('Both source and target accounts are required'); return;
+      setErr(tr('Both source and target accounts are required')); return;
     }
     if (sourceAccountId === targetAccountId) {
-      setErr('Source and target accounts must be different'); return;
+      setErr(tr('Source and target accounts must be different')); return;
     }
     const cents = parseEgp(amount);
     if (!cents || cents <= 0) {
-      setErr('Enter a valid positive transfer amount'); return;
+      setErr(tr('Enter a valid positive transfer amount')); return;
     }
     if (!description.trim()) {
-      setErr('Description is required'); return;
+      setErr(tr('Description is required')); return;
     }
 
     try {
@@ -878,31 +879,31 @@ function CashTransferFormModal({ flatAssetAccounts, onClose, onDone }: {
       });
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Submit failed');
+      setErr(e instanceof Error ? e.message : tr('Submit failed'));
     }
   }
 
   return (
-    <Modal title="New Cash Transfer" onClose={onClose}>
+    <Modal title={tr('New Cash Transfer')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-4">
-        <Field label="From Account (Source)">
+        <Field label={tr('From Account (Source)')}>
           <Select value={sourceAccountId} onChange={setSourceAccountId} allowEmpty="— pick source account —" options={flatAssetAccounts} />
         </Field>
-        <Field label="To Account (Target)">
+        <Field label={tr('To Account (Target)')}>
           <Select value={targetAccountId} onChange={setTargetAccountId} allowEmpty="— pick target account —" options={flatAssetAccounts} />
         </Field>
-        <Field label="Amount (EGP)"><TextInput value={amount} onChange={setAmount} placeholder="0.00" type="number" /></Field>
-        <Field label="Description / Narration"><TextInput value={description} onChange={setDescription} placeholder="e.g. Safe drop, bank deposit" /></Field>
+        <Field label={tr('Amount (EGP)')}><TextInput value={amount} onChange={setAmount} placeholder="0.00" type="number" /></Field>
+        <Field label={tr('Description / Narration')}><TextInput value={description} onChange={setDescription} placeholder={tr('e.g. Safe drop, bank deposit')} /></Field>
         
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Date"><TextInput value={date} onChange={setDate} type="date" /></Field>
-          <Field label="Reference # (optional)"><TextInput value={reference} onChange={setReference} placeholder="e.g. Check ID, Slip #" /></Field>
+          <Field label={tr('Date')}><TextInput value={date} onChange={setDate} type="date" /></Field>
+          <Field label={tr('Reference # (optional)')}><TextInput value={reference} onChange={setReference} placeholder={tr('e.g. Check ID, Slip #')} /></Field>
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Btn onClick={onClose}>Cancel</Btn>
-          <Btn kind="primary" onClick={() => void submit()}>Record Transfer</Btn>
+          <Btn onClick={onClose}>{tr('Cancel')}</Btn>
+          <Btn kind="primary" onClick={() => void submit()}>{tr('Record Transfer')}</Btn>
         </div>
       </div>
     </Modal>
@@ -915,7 +916,7 @@ function flattenAssetAccounts(nodes: any[], prefix = ''): { value: string; label
     if (n.type === 'ASSET') {
       list.push({
         value: n.id,
-        label: `${prefix}${n.code} — ${n.name} (${(n.balanceCents / 100).toFixed(2)} EGP)`,
+        label: `${prefix}${n.code} — ${n.name} (${(n.balanceCents / 100).toFixed(2)} ${tr('EGP)')}`,
         code: n.code,
         balanceCents: n.balanceCents,
       });
@@ -965,7 +966,7 @@ function CloseShiftWizard() {
     try {
       const cents = parseEgp(newCountedAmount);
       if (cents === null || cents < 0) {
-        throw new Error('Please enter a valid non-negative count amount.');
+        throw new Error(tr('Please enter a valid non-negative count amount.'));
       }
       await api(`/shifts/${lastClosedShift.id}/reconcile`, {
         method: 'POST',
@@ -1066,8 +1067,8 @@ function CloseShiftWizard() {
   if (!lastClosedShift) {
     return (
       <div className="rounded-xl bg-goblin-900 p-6 shadow text-center">
-        <p className="text-goblin-300 font-medium font-sans">No closed shifts found in the system.</p>
-        <p className="text-xs text-goblin-400 mt-1 font-sans">Please close a shift in the POS first before using the Close Shift Wizard.</p>
+        <p className="text-goblin-300 font-medium font-sans">{tr('No closed shifts found in the system.')}</p>
+        <p className="text-xs text-goblin-400 mt-1 font-sans">{tr('Please close a shift in the POS first before using the Close Shift Wizard.')}</p>
       </div>
     );
   }
@@ -1078,7 +1079,7 @@ function CloseShiftWizard() {
     try {
       const cents = parseEgp(amountStr);
       if (!cents || cents <= 0) {
-        throw new Error('Please enter a valid positive transfer amount.');
+        throw new Error(tr('Please enter a valid positive transfer amount.'));
       }
       await api('/accounting/transfers', {
         method: 'POST',
@@ -1094,7 +1095,7 @@ function CloseShiftWizard() {
       await reloadAccounts();
       await reloadTransfers();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Transfer failed');
+      setError(e instanceof Error ? e.message : tr('Transfer failed'));
     } finally {
       setLoading(false);
     }
@@ -1103,37 +1104,37 @@ function CloseShiftWizard() {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <div>
-        <h2 className="text-lg font-bold text-goblin-100 font-sans">Accountant's Shift Close Wizard</h2>
-        <p className="text-xs text-goblin-400 font-sans mb-3">Step-by-step process to reconcile and move cash from POS registers to the Main Safe and Tips Drawer.</p>
+        <h2 className="text-lg font-bold text-goblin-100 font-sans">{tr('Accountant\'s Shift Close Wizard')}</h2>
+        <p className="text-xs text-goblin-400 font-sans mb-3">{tr('Step-by-step process to reconcile and move cash from POS registers to the Main Safe and Tips Drawer.')}</p>
         
         <div className="bg-goblin-900 rounded-xl p-5 shadow border border-goblin-800 font-sans space-y-4">
           <div className="flex justify-between items-center border-b pb-3">
             <div>
-              <h3 className="font-bold text-goblin-50 text-sm">Last Closed Shift Summary</h3>
+              <h3 className="font-bold text-goblin-50 text-sm">{tr('Last Closed Shift Summary')}</h3>
               <p className="text-[11px] text-goblin-400 mt-0.5">
-                Closed At: {new Date(lastClosedShift.closedAt).toLocaleString('en-EG')} | Operator: {lastClosedShift.openedBy?.name ?? '—'}
+                {tr('Closed At:')} {new Date(lastClosedShift.closedAt).toLocaleString('en-EG')} {tr('| Operator:')} {lastClosedShift.openedBy?.name ?? '—'}
               </p>
             </div>
             <span className="font-mono bg-goblin-800 px-2 py-0.5 rounded text-goblin-100 text-[10px] font-semibold">
-              ID: {lastClosedShift.id.slice(-6)}
+              {tr('ID:')} {lastClosedShift.id.slice(-6)}
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
             <div className="bg-goblin-800 p-2.5 rounded-lg border border-goblin-800">
-              <p className="text-goblin-400 font-medium">Opening Float</p>
+              <p className="text-goblin-400 font-medium">{tr('Opening Float')}</p>
               <p className="font-bold font-mono text-goblin-100 mt-1">{egp(lastClosedShift.floatCents)}</p>
             </div>
             <div className="bg-goblin-800 p-2.5 rounded-lg border border-goblin-800">
-              <p className="text-goblin-400 font-medium">Expected Drawer Cash</p>
+              <p className="text-goblin-400 font-medium">{tr('Expected Drawer Cash')}</p>
               <p className="font-bold font-mono text-goblin-100 mt-1">{egp(lastClosedShift.expectedCents ?? 0)}</p>
             </div>
             <div className="bg-goblin-800 p-2.5 rounded-lg border border-goblin-800">
-              <p className="text-goblin-400 font-medium">Actual Counted Cash</p>
+              <p className="text-goblin-400 font-medium">{tr('Actual Counted Cash')}</p>
               <p className="font-bold font-mono text-goblin-100 mt-1">{egp(lastClosedShift.countedCents ?? 0)}</p>
             </div>
             <div className="bg-goblin-800 p-2.5 rounded-lg border border-goblin-800">
-              <p className="text-goblin-400 font-medium">Difference (Variance)</p>
+              <p className="text-goblin-400 font-medium">{tr('Difference (Variance)')}</p>
               <p className={`font-bold font-mono mt-1 ${(lastClosedShift.varianceCents ?? 0) < 0 ? 'text-red-600' : (lastClosedShift.varianceCents ?? 0) > 0 ? 'text-goblin-500' : 'text-goblin-100'}`}>
                 {(lastClosedShift.varianceCents ?? 0) > 0 ? '+' : ''}{egp(lastClosedShift.varianceCents ?? 0)}
               </p>
@@ -1149,16 +1150,16 @@ function CloseShiftWizard() {
                   setIsReconciling(true);
                 }}
               >
-                Correct Count / Reconcile
+                {tr('Correct Count / Reconcile')}
               </Btn>
             </div>
           ) : (
             <div className="bg-indigo-50/50 p-3.5 rounded-lg border border-indigo-100 space-y-3">
-              <p className="text-xs font-semibold text-indigo-900">Correct Cash Drawer Count</p>
+              <p className="text-xs font-semibold text-indigo-900">{tr('Correct Cash Drawer Count')}</p>
               {reconcileError && <ErrorBanner message={reconcileError} />}
               <div className="flex flex-wrap items-end gap-3">
                 <div className="w-44">
-                  <Field label="New Counted Amount (EGP)">
+                  <Field label={tr('New Counted Amount (EGP)')}>
                     <TextInput
                       value={newCountedAmount}
                       onChange={setNewCountedAmount}
@@ -1173,13 +1174,13 @@ function CloseShiftWizard() {
                     disabled={reconcileLoading}
                     onClick={() => void submitReconciliation()}
                   >
-                    Save & Reconcile
+                    {tr('Save & Reconcile')}
                   </Btn>
                   <Btn
                     disabled={reconcileLoading}
                     onClick={() => setIsReconciling(false)}
                   >
-                    Cancel
+                    {tr('Cancel')}
                   </Btn>
                 </div>
               </div>
@@ -1199,24 +1200,24 @@ function CloseShiftWizard() {
             <div>
               <h3 className="font-bold text-goblin-50 flex items-center gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-goblin-800 text-xs font-bold text-goblin-200">1</span>
-                <span>Move Tips to Tips Drawer</span>
-                {step1StatusState === 'success' && <span className="text-xs text-goblin-500 font-semibold bg-goblin-800 px-2 py-0.5 rounded">Completed</span>}
-                {step1StatusState === 'skipped' && <span className="text-xs text-goblin-400 font-semibold bg-goblin-800 px-2 py-0.5 rounded">Skipped</span>}
+                <span>{tr('Move Tips to Tips Drawer')}</span>
+                {step1StatusState === 'success' && <span className="text-xs text-goblin-500 font-semibold bg-goblin-800 px-2 py-0.5 rounded">{tr('Completed')}</span>}
+                {step1StatusState === 'skipped' && <span className="text-xs text-goblin-400 font-semibold bg-goblin-800 px-2 py-0.5 rounded">{tr('Skipped')}</span>}
               </h3>
               <p className="text-xs text-goblin-400 mt-1">
-                Transfers the cash tips collected in this shift from the Cash Drawer to the Tips Drawer.
+                {tr('Transfers the cash tips collected in this shift from the Cash Drawer to the Tips Drawer.')}
               </p>
             </div>
             {cashDrawerAcc && tipsDrawerAcc && (
               <div className="text-right text-xs">
-                <div className="text-goblin-400">Drawer Balance: <span className="font-mono text-goblin-100 font-semibold">{egp(cashDrawerAcc.balanceCents)}</span></div>
-                <div className="text-goblin-400">Tips Drawer Balance: <span className="font-mono text-goblin-100 font-semibold">{egp(tipsDrawerAcc.balanceCents)}</span></div>
+                <div className="text-goblin-400">{tr('Drawer Balance:')} <span className="font-mono text-goblin-100 font-semibold">{egp(cashDrawerAcc.balanceCents)}</span></div>
+                <div className="text-goblin-400">{tr('Tips Drawer Balance:')} <span className="font-mono text-goblin-100 font-semibold">{egp(tipsDrawerAcc.balanceCents)}</span></div>
               </div>
             )}
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-3 items-end">
-            <Field label="Amount to Transfer (EGP)">
+            <Field label={tr('Amount to Transfer (EGP)')}>
               <TextInput
                 value={step1Amount}
                 onChange={setStep1Amount}
@@ -1240,7 +1241,7 @@ function CloseShiftWizard() {
                   }
                 }}
               >
-                Approve & Transfer
+                {tr('Approve & Transfer')}
               </Btn>
               {step1StatusState === 'pending' && (
                 <Btn
@@ -1248,13 +1249,13 @@ function CloseShiftWizard() {
                   onClick={() => setStep1Status('skipped')}
                   disabled={loading}
                 >
-                  Skip
+                  {tr('Skip')}
                 </Btn>
               )}
             </div>
           </div>
           {tipsCents === 0 && step1StatusState === 'skipped' && !step1Posted && (
-            <p className="text-[11px] text-goblin-400 mt-2">ℹ️ No cash tips were recorded for this shift.</p>
+            <p className="text-[11px] text-goblin-400 mt-2">{tr('ℹ️ No cash tips were recorded for this shift.')}</p>
           )}
         </div>
 
@@ -1266,23 +1267,23 @@ function CloseShiftWizard() {
             <div>
               <h3 className="font-bold text-goblin-50 flex items-center gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-goblin-800 text-xs font-bold text-goblin-200">2</span>
-                <span>Transfer Remaining Cash to Main Safe</span>
-                {step2StatusState === 'success' && <span className="text-xs text-goblin-500 font-semibold bg-goblin-800 px-2 py-0.5 rounded">Completed</span>}
+                <span>{tr('Transfer Remaining Cash to Main Safe')}</span>
+                {step2StatusState === 'success' && <span className="text-xs text-goblin-500 font-semibold bg-goblin-800 px-2 py-0.5 rounded">{tr('Completed')}</span>}
               </h3>
               <p className="text-xs text-goblin-400 mt-1">
-                Transfers the remaining cash sales from the Cash Drawer to the Main Safe.
+                {tr('Transfers the remaining cash sales from the Cash Drawer to the Main Safe.')}
               </p>
             </div>
             {cashDrawerAcc && mainSafeAcc && (
               <div className="text-right text-xs">
-                <div className="text-goblin-400">Drawer Balance: <span className="font-mono text-goblin-100 font-semibold">{egp(cashDrawerAcc.balanceCents)}</span></div>
-                <div className="text-goblin-400">Safe Balance: <span className="font-mono text-goblin-100 font-semibold">{egp(mainSafeAcc.balanceCents)}</span></div>
+                <div className="text-goblin-400">{tr('Drawer Balance:')} <span className="font-mono text-goblin-100 font-semibold">{egp(cashDrawerAcc.balanceCents)}</span></div>
+                <div className="text-goblin-400">{tr('Safe Balance:')} <span className="font-mono text-goblin-100 font-semibold">{egp(mainSafeAcc.balanceCents)}</span></div>
               </div>
             )}
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-3 items-end">
-            <Field label="Amount to Transfer (EGP)">
+            <Field label={tr('Amount to Transfer (EGP)')}>
               <TextInput
                 value={step2Amount}
                 onChange={setStep2Amount}
@@ -1306,7 +1307,7 @@ function CloseShiftWizard() {
                   }
                 }}
               >
-                Approve & Transfer
+                {tr('Approve & Transfer')}
               </Btn>
             </div>
           </div>
@@ -1320,24 +1321,24 @@ function CloseShiftWizard() {
             <div>
               <h3 className="font-bold text-goblin-50 flex items-center gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-goblin-800 text-xs font-bold text-goblin-200">3</span>
-                <span>Transfer Custody to Safe</span>
-                {step3StatusState === 'success' && <span className="text-xs text-goblin-500 font-semibold bg-goblin-800 px-2 py-0.5 rounded">Completed</span>}
-                {step3StatusState === 'skipped' && <span className="text-xs text-goblin-400 font-semibold bg-goblin-800 px-2 py-0.5 rounded">Skipped</span>}
+                <span>{tr('Transfer Custody to Safe')}</span>
+                {step3StatusState === 'success' && <span className="text-xs text-goblin-500 font-semibold bg-goblin-800 px-2 py-0.5 rounded">{tr('Completed')}</span>}
+                {step3StatusState === 'skipped' && <span className="text-xs text-goblin-400 font-semibold bg-goblin-800 px-2 py-0.5 rounded">{tr('Skipped')}</span>}
               </h3>
               <p className="text-xs text-goblin-400 mt-1">
-                Returns/deposits any remaining custody account balance back to the Main Safe.
+                {tr('Returns/deposits any remaining custody account balance back to the Main Safe.')}
               </p>
             </div>
             {custodyAcc && mainSafeAcc && (
               <div className="text-right text-xs">
-                <div className="text-goblin-400">Custody Balance: <span className="font-mono text-goblin-100 font-semibold">{egp(custodyAcc.balanceCents)}</span></div>
-                <div className="text-goblin-400">Safe Balance: <span className="font-mono text-goblin-100 font-semibold">{egp(mainSafeAcc.balanceCents)}</span></div>
+                <div className="text-goblin-400">{tr('Custody Balance:')} <span className="font-mono text-goblin-100 font-semibold">{egp(custodyAcc.balanceCents)}</span></div>
+                <div className="text-goblin-400">{tr('Safe Balance:')} <span className="font-mono text-goblin-100 font-semibold">{egp(mainSafeAcc.balanceCents)}</span></div>
               </div>
             )}
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-3 items-end">
-            <Field label="Amount to Transfer (EGP)">
+            <Field label={tr('Amount to Transfer (EGP)')}>
               <TextInput
                 value={step3Amount}
                 onChange={setStep3Amount}
@@ -1361,7 +1362,7 @@ function CloseShiftWizard() {
                   }
                 }}
               >
-                Approve & Transfer
+                {tr('Approve & Transfer')}
               </Btn>
               {step3StatusState === 'pending' && (
                 <Btn
@@ -1369,13 +1370,13 @@ function CloseShiftWizard() {
                   onClick={() => setStep3Status('skipped')}
                   disabled={loading}
                 >
-                  Skip
+                  {tr('Skip')}
                 </Btn>
               )}
             </div>
           </div>
           {custodyAcc && custodyAcc.balanceCents === 0 && step3StatusState === 'skipped' && (
-            <p className="text-[11px] text-goblin-400 mt-2">ℹ️ Custody account balance is zero.</p>
+            <p className="text-[11px] text-goblin-400 mt-2">{tr('ℹ️ Custody account balance is zero.')}</p>
           )}
         </div>
 
@@ -1384,15 +1385,15 @@ function CloseShiftWizard() {
           <div>
             <h3 className="font-bold text-base flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-goblin-900 text-xs font-bold text-goblin-400">4</span>
-              <span>Total Safe Actual Balance</span>
+              <span>{tr('Total Safe Actual Balance')}</span>
             </h3>
             <p className="text-xs text-goblin-400 mt-1">
-              The verified cash balance currently remaining in the Main Safe after completing all shift close transfers.
+              {tr('The verified cash balance currently remaining in the Main Safe after completing all shift close transfers.')}
             </p>
           </div>
           {mainSafeAcc && (
             <div className="text-right">
-              <div className="text-xs text-goblin-400 uppercase tracking-wider font-semibold">Verified Safe Balance</div>
+              <div className="text-xs text-goblin-400 uppercase tracking-wider font-semibold">{tr('Verified Safe Balance')}</div>
               <div className="text-3xl font-extrabold text-goblin-400 font-mono mt-1">
                 {egp(mainSafeAcc.balanceCents)}
               </div>

@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { priceSession, type RatePlanSpec } from '@goblins/shared';
 import { api } from '../lib/api';
-import { fmtMoney, t } from '../lib/i18n';
+import { fmtMoney, t, tx } from '../lib/i18n';
 import { can, usePos } from '../lib/store';
 import type { FloorResource, FloorZone, OpenOrderSummary, Order } from '../lib/types';
 import { CashDrawerDialog, TimeClockDialog } from './dialogs/CashDrawerDialog';
@@ -28,6 +28,16 @@ function formatTimeCairo(isoString: string) {
     hour12: true,
   });
 }
+
+/** "1h 05m" / "12m" since an ISO time. */
+function elapsed(iso: string, lang: 'en' | 'ar'): string {
+  const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
+  const h = Math.floor(mins / 60), m = mins % 60;
+  if (lang === 'ar') return h ? `${h}س ${String(m).padStart(2, '0')}د` : `${m}د`;
+  return h ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
+}
+
+const cairoDay = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(d);
 
 function toLocalCairo(epochMs: number) {
   const d = new Date(epochMs);
@@ -141,8 +151,18 @@ export function Floor() {
   return (
     <div className="flex h-screen flex-col bg-goblin-950 text-goblin-50">
       <header className="flex flex-col gap-2 border-b border-goblin-800 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-bold text-goblin-300">{t(lang, 'appName')}</h1>
-        <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-end">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-goblin-600 text-lg font-black text-white">G</span>
+          <div className="min-w-0 leading-tight">
+            <h1 className="whitespace-nowrap text-lg font-bold text-goblin-100">Goblins Yard</h1>
+            <p className="whitespace-nowrap text-xs text-goblin-400">
+              {shift
+                ? `${lang === 'ar' ? 'وردية مفتوحة منذ' : 'Shift open since'} ${formatTimeCairo(shift.openedAt)}`
+                : (lang === 'ar' ? 'لا توجد وردية مفتوحة' : 'No open shift')}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-end [&>button]:min-h-11">
           {shift ? (
             <>
               <button onClick={takeaway} className="rounded-xl bg-goblin-600 px-4 py-2 font-semibold active:bg-goblin-500">
@@ -300,6 +320,8 @@ export function Floor() {
                       const session = res.sessions[0];
                       const nextRes = res.reservations?.[0];
                       const isVip = res.type === 'PS_ROOM' && res.ratePlan?.name.toUpperCase().includes('VIP');
+                      const since = session?.segments?.map((g) => g.startedAt).sort()[0] ?? res.orders[0]?.openedAt;
+                      const bookedToday = !!nextRes && cairoDay(new Date(nextRes.startAt)) === cairoDay(new Date());
                       return (
                         <button
                           key={res.id}
@@ -320,6 +342,16 @@ export function Floor() {
                           {res.orders.length > 1 && (
                             <span className="text-xs font-normal">
                               {res.orders.length} ▸ {fmtMoney(res.orders.reduce((a, o) => a + o.totalCents, 0), lang)}
+                            </span>
+                          )}
+                          {since && res.orders.length > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold opacity-90">
+                              <Timer className="h-3 w-3" /> {elapsed(since, lang)}
+                            </span>
+                          )}
+                          {!showBookings && bookedToday && res.orders.length === 0 && (
+                            <span className="mt-0.5 inline-flex items-center gap-1 rounded bg-black/30 px-1 text-[10px] font-bold text-amber-200">
+                              <CalendarDays className="h-2.5 w-2.5" /> {lang === 'ar' ? 'محجوز' : 'Booked'} {formatTimeCairo(nextRes!.startAt)}
                             </span>
                           )}
                           {session && cost != null && (
@@ -462,7 +494,7 @@ function NewTabDialog({ onClose, onCreated }: NewTabDialogProps) {
       }
       api<any[]>(`/crm/customers/lookup?q=${encodeURIComponent(q)}&onlyActive=true`)
         .then(setResults)
-        .catch((e) => setError(e instanceof Error ? e.message : 'Error'));
+        .catch((e) => setError(e instanceof Error ? e.message : tx('Error')));
     }, 250);
     return () => clearTimeout(handle);
   }, [q]);
@@ -477,7 +509,7 @@ function NewTabDialog({ onClose, onCreated }: NewTabDialogProps) {
       });
       onCreated(order.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error starting tab');
+      setError(e instanceof Error ? e.message : tx('Error starting tab'));
     } finally {
       setBusy(false);
     }
@@ -485,7 +517,7 @@ function NewTabDialog({ onClose, onCreated }: NewTabDialogProps) {
 
   async function createCustomerAndSelect() {
     if (!newName.trim() || !newPhone.trim()) {
-      setError('Name and phone are required');
+      setError(tx('Name and phone are required'));
       return;
     }
     setError('');
@@ -501,7 +533,7 @@ function NewTabDialog({ onClose, onCreated }: NewTabDialogProps) {
       });
       onCreated(order.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error creating customer');
+      setError(e instanceof Error ? e.message : tx('Error creating customer'));
     } finally {
       setBusy(false);
     }
@@ -510,7 +542,7 @@ function NewTabDialog({ onClose, onCreated }: NewTabDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md bg-goblin-900 rounded-2xl p-5 text-white" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold mb-3">Open New Tab</h2>
+        <h2 className="text-lg font-bold mb-3">{tx('Open New Tab')}</h2>
         {error && <p className="mb-2 bg-red-900/60 p-2 text-sm text-red-200 rounded">{error}</p>}
 
         {creating ? (
@@ -559,7 +591,7 @@ function NewTabDialog({ onClose, onCreated }: NewTabDialogProps) {
                   <span className="text-goblin-300">{c.pointsBalance} pts</span>
                 </button>
               ))}
-              {q.trim() && results.length === 0 && <p className="p-2 text-sm text-goblin-400">No customers found</p>}
+              {q.trim() && results.length === 0 && <p className="p-2 text-sm text-goblin-400">{tx('No customers found')}</p>}
             </div>
             <button onClick={() => setCreating(true)} className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-goblin-800 py-3">
               <Plus className="h-4 w-4" /> {lang === 'ar' ? 'زبون جديد' : 'New Customer'}

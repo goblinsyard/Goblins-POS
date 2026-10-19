@@ -1,3 +1,4 @@
+import { AR_PATTERNS, AR_TEXT } from '../../../../packages/ui/i18n-ar';
 /** POS UI strings — English + Arabic. */
 const STRINGS = {
   en: {
@@ -122,6 +123,9 @@ const STRINGS = {
     editQty: 'Edit Quantity',
     quantity: 'Quantity',
     displaySettings: 'Display Settings',
+    itemPictures: 'Item pictures',
+    picturesOn: 'Show pictures',
+    picturesOff: 'Text only',
     themeColor: 'Color Theme',
     themeMode: 'Display Mode',
     lightMode: 'Light Mode',
@@ -254,6 +258,9 @@ const STRINGS = {
     editQty: 'تعديل الكمية',
     quantity: 'الكمية',
     displaySettings: 'إعدادات العرض',
+    itemPictures: 'صور الأصناف',
+    picturesOn: 'إظهار الصور',
+    picturesOff: 'نص فقط',
     themeColor: 'سمة الألوان',
     themeMode: 'وضع العرض',
     lightMode: 'الوضع الفاتح',
@@ -276,4 +283,23 @@ export function fmtMoney(cents: number, lang: 'en' | 'ar'): string {
   return new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-EG', {
     style: 'currency', currency: 'EGP', maximumFractionDigits: 2,
   }).format(cents / 100);
+}
+
+/**
+ * Translate an English phrase (e.g. a server error message) into the POS's
+ * current language. Uses the shared Arabic dictionary; unknown text stays as is.
+ */
+export function tx(text: string, lang?: 'en' | 'ar'): string {
+  let l = lang;
+  if (!l) {
+    try { l = (localStorage.getItem('pos.lang') as 'en' | 'ar') ?? 'en'; } catch { l = 'en'; }
+  }
+  if (l !== 'ar' || !text) return text;
+  const exact = AR_TEXT[text] ?? AR_TEXT[text.trim()];
+  if (exact) return exact;
+  for (const [re, fn] of AR_PATTERNS) {
+    const m = re.exec(text);
+    if (m) return fn(m);
+  }
+  return text;
 }

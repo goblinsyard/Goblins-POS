@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, cairoTime } from '../lib/api';
 import { Btn, Select, Table, TextInput, useLoad } from '../lib/ui';
+import { tr } from '../lib/i18n';
 
 export function AuditView() {
   const { data } = useLoad(() =>
@@ -29,7 +30,7 @@ export function AuditView() {
   ].sort() as string[];
 
   const userOptions = uniqueUsers.map(u => ({ value: u, label: u }));
-  const entityOptions = uniqueEntities.map(e => ({ value: e, label: e }));
+  const entityOptions = uniqueEntities.map(e => ({ value: e, label: tr(e) }));
   const tableOptions = uniqueTables.map(t => ({ value: t, label: t }));
 
   const clearFilters = () => {
@@ -105,65 +106,65 @@ export function AuditView() {
       <div className="bg-goblin-800 border border-goblin-700 rounded-xl p-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">Search</label>
-            <TextInput value={search} onChange={setSearch} placeholder="Search user, action, entity or detail..." />
+            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">{tr('Search')}</label>
+            <TextInput value={search} onChange={setSearch} placeholder={tr('Search user, action, entity or detail...')} />
           </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">Module Group</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">{tr('Module Group')}</label>
             <Select value={moduleGroup} onChange={setModuleGroup} options={[
-              { value: 'ALL', label: 'All Modules' },
-              { value: 'HR', label: 'HR & Payroll' },
-              { value: 'ACCOUNTING', label: 'Accounting' },
-              { value: 'MENU', label: 'Menu & Pricing' },
-              { value: 'SESSIONS', label: 'Sessions & Tables' },
-              { value: 'EXPENSES', label: 'Expenses' },
-              { value: 'OTHER', label: 'Other / System' }
+              { value: 'ALL', label: tr('All Modules') },
+              { value: 'HR', label: tr('HR & Payroll') },
+              { value: 'ACCOUNTING', label: tr('Accounting') },
+              { value: 'MENU', label: tr('Menu & Pricing') },
+              { value: 'SESSIONS', label: tr('Sessions & Tables') },
+              { value: 'EXPENSES', label: tr('Expenses') },
+              { value: 'OTHER', label: tr('Other / System') }
             ]} />
           </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">Performed By</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">{tr('Performed By')}</label>
             <Select value={userFilter} onChange={setUserFilter} allowEmpty="All Users" options={userOptions} />
           </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">Entity Type</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">{tr('Entity Type')}</label>
             <Select value={entityFilter} onChange={setEntityFilter} allowEmpty="All Entities" options={entityOptions} />
           </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">Table/Room</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-goblin-300 mb-1">{tr('Table/Room')}</label>
             <Select value={tableFilter} onChange={setTableFilter} allowEmpty="All Tables" options={tableOptions} />
           </div>
         </div>
         
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-goblin-700">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-goblin-400">Timeframe:</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-goblin-400">{tr('Timeframe:')}</span>
             <div className="w-48">
               <Select value={timePeriod} onChange={setTimePeriod} options={[
-                { value: 'ALL', label: 'All Loaded Logs (500)' },
-                { value: 'TODAY', label: 'Today (24h)' },
-                { value: '3DAYS', label: 'Last 3 Days' },
-                { value: '7DAYS', label: 'Last 7 Days' },
-                { value: '30DAYS', label: 'Last 30 Days' }
+                { value: 'ALL', label: tr('All Loaded Logs (500)') },
+                { value: 'TODAY', label: tr('Today (24h)') },
+                { value: '3DAYS', label: tr('Last 3 Days') },
+                { value: '7DAYS', label: tr('Last 7 Days') },
+                { value: '30DAYS', label: tr('Last 30 Days') }
               ]} />
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-            <span className="text-xs text-goblin-300">Showing <b>{filteredLogs.length}</b> of <b>{logsList.length}</b> entries</span>
+            <span className="text-xs text-goblin-300">{tr('Showing')} <b>{filteredLogs.length}</b> {tr('of')} <b>{logsList.length}</b> {tr('entries')}</span>
             {(search || moduleGroup !== 'ALL' || userFilter || entityFilter || tableFilter || timePeriod !== 'ALL') && (
-              <Btn onClick={clearFilters}>Clear Filters</Btn>
+              <Btn onClick={clearFilters}>{tr('Clear Filters')}</Btn>
             )}
           </div>
         </div>
       </div>
 
       <Table
-        headers={['Time', 'User', 'Action', 'Entity', 'Detail']}
+        headers={[tr('Time'), tr('User'), tr('Action'), tr('Entity'), tr('Detail')]}
         rows={filteredLogs.map((r) => [
           cairoTime(r.createdAt),
           r.user?.name ?? '—',
           r.action,
-          r.entity ?? '',
+          tr(r.entity ?? ''),
           formatDetail(r.action, r.detail),
         ])}
       />

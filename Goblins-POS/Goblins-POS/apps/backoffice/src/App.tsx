@@ -24,6 +24,7 @@ import { SettingsView } from './tabs/Settings';
 import { StaffView } from './tabs/Staff';
 import { TablesView } from './tabs/Tables';
 import { UtilizationView } from './tabs/Utilization';
+import { tr } from './lib/i18n';
 
 /** Apply and persist the light/dark appearance (goblin theme in both). */
 function applyMode(m: 'light' | 'dark') {
@@ -120,6 +121,8 @@ export function App() {
     const next: Lang = lang === 'en' ? 'ar' : 'en';
     setLang(next);
     setLangState(next);
+    // reload so every screen (including lists built at load time) renders in the new language
+    location.reload();
   }
 
   const [weakLogins, setWeakLogins] = useState<{ name: string; password: boolean; pin: boolean }[]>([]);
@@ -183,7 +186,7 @@ export function App() {
         ))}
         <button onClick={toggleLang}
           className="mt-auto flex items-center gap-2.5 rounded-lg px-3 py-2 text-start text-sm text-goblin-300 hover:bg-goblin-800">
-          <Languages className="h-4 w-4" /> {lang === 'en' ? 'العربية' : 'English'}
+          <Languages className="h-4 w-4" /> {lang === 'en' ? 'العربية' : tr('English')}
         </button>
         <button onClick={toggleMode}
           className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-start text-sm text-goblin-300 hover:bg-goblin-800">
@@ -200,10 +203,10 @@ export function App() {
       <main className="flex-1 overflow-auto p-4 md:p-6">
         {weakLogins.length > 0 && (
           <div className="mb-4 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-amber-300 [.light_&]:text-amber-800">
-            <strong>Change the demo logins before going live.</strong>{' '}
+            <strong>{tr('Change the demo logins before going live.')}</strong>{' '}
             {weakLogins.map((w) => `${w.name} (${[w.password && 'password', w.pin && 'PIN'].filter(Boolean).join(' + ')})`).join(', ')}
-            {' '}still use the default from the README. Update them in{' '}
-            <button className="font-semibold underline" onClick={() => setTab('Staff')}>Staff</button>.
+            {' '}{tr('still use the default from the README. Update them in')}{' '}
+            <button className="font-semibold underline" onClick={() => setTab('Staff')}>{tr('Staff')}</button>.
           </div>
         )}
         <View />

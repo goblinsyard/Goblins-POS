@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Cake, Check, Plus, Star } from 'lucide-react';
 import { api } from '../../lib/api';
-import { fmtMoney, t } from '../../lib/i18n';
+import { fmtMoney, t, tx } from '../../lib/i18n';
 import { can, usePos } from '../../lib/store';
 import type { Order } from '../../lib/types';
 
@@ -50,7 +50,7 @@ export function CustomerDialog({ order, seat, onChanged, onClose }: {
     const handle = setTimeout(() => {
       api<CrmCustomer[]>(`/crm/customers/lookup?q=${encodeURIComponent(phone)}&onlyActive=true`)
         .then(setResults)
-        .catch((e) => setError(e instanceof Error ? e.message : 'Error'));
+        .catch((e) => setError(e instanceof Error ? e.message : tx('Error')));
     }, phone ? 250 : 0);
     return () => clearTimeout(handle);
   }, [phone, attached]);
@@ -58,7 +58,7 @@ export function CustomerDialog({ order, seat, onChanged, onClose }: {
   async function run(fn: () => Promise<unknown>, after?: () => void) {
     setError(''); setBusy(true);
     try { await fn(); after?.(); }
-    catch (e) { setError(e instanceof Error ? e.message : 'Error'); }
+    catch (e) { setError(e instanceof Error ? e.message : tx('Error')); }
     finally { setBusy(false); }
   }
 
@@ -197,7 +197,7 @@ export function FeedbackDialog({ orderId, onClose }: { orderId: string; onClose:
       });
       setSent(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     }
   }
 

@@ -13,6 +13,8 @@ interface PosState {
   themeColor: 'goblin' | 'indigo' | 'rose' | 'amber' | 'slate';
   setThemeMode: (mode: 'light' | 'dark') => void;
   setThemeColor: (color: 'goblin' | 'indigo' | 'rose' | 'amber' | 'slate') => void;
+  showImages: boolean;
+  setShowImages: (on: boolean) => void;
   loginPin: (userId: string, pin: string) => Promise<void>;
   logout: () => void;
   refreshShift: () => Promise<void>;
@@ -45,6 +47,14 @@ export const usePos = create<PosState>((set) => ({
   lang: (localStorage.getItem('pos.lang') as 'en' | 'ar') ?? 'en',
   themeMode: initialMode,
   themeColor: initialColor,
+  showImages: (() => {
+    try { return localStorage.getItem('pos.showImages') === '1'; } catch { return false; }
+  })(),
+
+  setShowImages: (on) => {
+    try { localStorage.setItem('pos.showImages', on ? '1' : '0'); } catch { /* per-terminal convenience only */ }
+    set({ showImages: on });
+  },
 
   setThemeMode: (mode) => {
     localStorage.setItem('pos.themeMode', mode);

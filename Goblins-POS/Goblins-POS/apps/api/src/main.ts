@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
+import { uploadsDir } from './media/media';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -13,6 +14,16 @@ async function bootstrap() {
   // network proxies makes req.ip the real device, so rate limits apply per
   // terminal instead of one shared bucket for the whole venue.
   app.set('trust proxy', process.env.TRUST_PROXY ?? 'loopback, linklocal, uniquelocal');
+
+  // Menu pictures. File names contain a random part and change on every upload,
+  // so browsers may cache them for a long time.
+  app.useStaticAssets(uploadsDir('menu'), {
+    prefix: '/api/media/menu/',
+    maxAge: '365d',
+    immutable: true,
+    index: false,
+    dotfiles: 'deny',
+  });
 
   // Allow large import payloads (menu catalog, customer data, etc.)
   app.use(json({ limit: '20mb' }));

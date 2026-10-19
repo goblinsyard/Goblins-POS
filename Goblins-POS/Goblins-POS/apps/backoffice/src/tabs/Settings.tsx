@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Spinner, Table, TextInput, useLoad } from '../lib/ui';
+import { tr } from '../lib/i18n';
 
 interface Printer {
   id: string; name: string; connection: 'NETWORK' | 'USB' | 'PREVIEW'; address: string;
@@ -60,11 +61,11 @@ function GeneralSettings() {
   const dirtyKeys = keys.filter((k) => draft[k] !== undefined && draft[k] !== String(settings[k]));
 
   async function sendTest() {
-    setTestMsg('Sending…');
+    setTestMsg(tr('Sending…'));
     try {
       const r = await api<{ sent: number; skipped?: string; errors: string[] }>('/notify/test', { method: 'POST' });
-      setTestMsg(r.sent ? `Sent to ${r.sent} number(s).` : r.skipped ?? (r.errors.join('; ') || 'Not sent'));
-    } catch (e) { setTestMsg(e instanceof Error ? e.message : 'Failed'); }
+      setTestMsg(r.sent ? `${tr('Sent to')} ${r.sent} ${tr('number(s).')}` : r.skipped ?? (r.errors.join('; ') || tr('Not sent')));
+    } catch (e) { setTestMsg(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   async function save() {
@@ -75,7 +76,7 @@ function GeneralSettings() {
       const raw = draft[k];
       if (typeof original === 'number') {
         const n = Number(raw);
-        if (!Number.isFinite(n)) { setErr(`${k} must be a number`); return; }
+        if (!Number.isFinite(n)) { setErr(`${k} ${tr('must be a number')}`); return; }
         body[k] = n;
       } else if (typeof original === 'boolean') {
         body[k] = raw === 'true';
@@ -87,13 +88,13 @@ function GeneralSettings() {
       await api('/settings', { method: 'PUT', body });
       setSaved(true);
       reload();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
     <div className="max-w-2xl">
       <ErrorBanner message={err} />
-      {saved && <p className="mb-3 rounded-lg bg-goblin-700 p-2 text-sm text-goblin-500">Settings saved.</p>}
+      {saved && <p className="mb-3 rounded-lg bg-goblin-700 p-2 text-sm text-goblin-500">{tr('Settings saved.')}</p>}
       <div className="overflow-hidden rounded-xl bg-goblin-900 shadow">
         <table className="w-full text-sm">
           <tbody>
@@ -107,8 +108,8 @@ function GeneralSettings() {
                       <select value={draft[k] ?? 'false'}
                         onChange={(e) => setDraft((c) => ({ ...c, [k]: e.target.value }))}
                         className="rounded-lg border border-goblin-700 bg-goblin-900 p-1.5">
-                        <option value="true">true</option>
-                        <option value="false">false</option>
+                        <option value="true">{tr('true')}</option>
+                        <option value="false">{tr('false')}</option>
                       </select>
                     ) : (
                       <input value={draft[k] ?? ''} dir="auto"
@@ -125,19 +126,17 @@ function GeneralSettings() {
       </div>
       <div className="mt-3">
         <Btn kind="primary" onClick={() => void save()} disabled={!dirtyKeys.length}>
-          Save{dirtyKeys.length ? ` (${dirtyKeys.length})` : ''}
+          {tr('Save')}{dirtyKeys.length ? ` (${dirtyKeys.length})` : ''}
         </Btn>
       </div>
       <div className="mt-6 rounded-xl bg-goblin-900 p-4 text-sm shadow">
-        <p className="font-semibold text-goblin-100">Owner notifications</p>
+        <p className="font-semibold text-goblin-100">{tr('Owner notifications')}</p>
         <p className="mt-1 text-goblin-300">
-          Set <code>notify.ownerPhone</code> above (e.g. 01001234567; separate several with commas) and your Twilio
-          account below. You'll get a summary when each shift is closed, and an alert when an ingredient reaches its
-          reorder point. The same account is used for customer campaigns and prepaid-time reminders.
+          {tr('Set')} <code>{tr('notify.ownerPhone')}</code> {tr('above (e.g. 01001234567; separate several with commas) and your Twilio account below. You\'ll get a summary when each shift is closed, and an alert when an ingredient reaches its reorder point. The same account is used for customer campaigns and prepaid-time reminders.')}
         </p>
         <TwilioForm settings={settings} onSaved={reload} />
         <div className="mt-3 flex items-center gap-3">
-          <Btn onClick={() => void sendTest()}>Send test message</Btn>
+          <Btn onClick={() => void sendTest()}>{tr('Send test message')}</Btn>
           {testMsg && <span className="text-goblin-300">{testMsg}</span>}
         </div>
       </div>
@@ -159,20 +158,20 @@ function TwilioForm({ settings, onSaved }: { settings: Record<string, unknown>; 
     try {
       await api('/settings', { method: 'PUT', body });
       setToken('');
-      setMsg('Saved.');
+      setMsg(tr('Saved.'));
       onSaved();
-    } catch (e) { setMsg(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setMsg(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
     <div className="mt-3 grid gap-2 sm:grid-cols-3">
-      <Field label="Twilio Account SID"><TextInput value={sid} onChange={setSid} autoComplete="off" /></Field>
-      <Field label={hasToken ? 'Auth token (saved — type to replace)' : 'Auth token'}>
+      <Field label={tr('Twilio Account SID')}><TextInput value={sid} onChange={setSid} autoComplete="off" /></Field>
+      <Field label={hasToken ? tr('Auth token (saved — type to replace)') : tr('Auth token')}>
         <TextInput value={token} onChange={setToken} type="password" autoComplete="new-password" />
       </Field>
-      <Field label="From number (WhatsApp sender)"><TextInput value={from} onChange={setFrom} placeholder="+14155238886" /></Field>
+      <Field label={tr('From number (WhatsApp sender)')}><TextInput value={from} onChange={setFrom} placeholder="+14155238886" /></Field>
       <div className="flex items-center gap-3 sm:col-span-3">
-        <Btn onClick={() => void save()}>Save Twilio account</Btn>
+        <Btn onClick={() => void save()}>{tr('Save Twilio account')}</Btn>
         {msg && <span className="text-goblin-300">{msg}</span>}
       </div>
     </div>
@@ -214,30 +213,30 @@ function ReceiptSettings() {
       await api('/settings', { method: 'PUT', body: draft });
       setSaved(true);
       reload();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-goblin-100">Receipt Design & Layout</h2>
+        <h2 className="text-lg font-bold text-goblin-100">{tr('Receipt Design & Layout')}</h2>
         <ErrorBanner message={err} />
-        {saved && <p className="rounded-lg bg-goblin-700 p-2 text-sm text-goblin-500">Receipt settings saved.</p>}
+        {saved && <p className="rounded-lg bg-goblin-700 p-2 text-sm text-goblin-500">{tr('Receipt settings saved.')}</p>}
         
         <LogoSection current={(settings['receipt.logo'] as string) || ''} onSaved={reload} />
 
         <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-3">
-          <Field label="Header Title (EN)"><TextInput value={draft['receipt.header'] ?? ''} onChange={(v) => setDraft(c => ({ ...c, 'receipt.header': v }))} /></Field>
-          <Field label="Header Title (Arabic)"><TextInput value={draft['receipt.headerAr'] ?? ''} onChange={(v) => setDraft(c => ({ ...c, 'receipt.headerAr': v }))} /></Field>
-          <Field label="Footer Note (EN)"><TextInput value={draft['receipt.footer'] ?? ''} onChange={(v) => setDraft(c => ({ ...c, 'receipt.footer': v }))} /></Field>
-          <Field label="Footer Note (Arabic)"><TextInput value={draft['receipt.footerAr'] ?? ''} onChange={(v) => setDraft(c => ({ ...c, 'receipt.footerAr': v }))} /></Field>
+          <Field label={tr('Header Title (EN)')}><TextInput value={draft['receipt.header'] ?? ''} onChange={(v) => setDraft(c => ({ ...c, 'receipt.header': v }))} /></Field>
+          <Field label={tr('Header Title (Arabic)')}><TextInput value={draft['receipt.headerAr'] ?? ''} onChange={(v) => setDraft(c => ({ ...c, 'receipt.headerAr': v }))} /></Field>
+          <Field label={tr('Footer Note (EN)')}><TextInput value={draft['receipt.footer'] ?? ''} onChange={(v) => setDraft(c => ({ ...c, 'receipt.footer': v }))} /></Field>
+          <Field label={tr('Footer Note (Arabic)')}><TextInput value={draft['receipt.footerAr'] ?? ''} onChange={(v) => setDraft(c => ({ ...c, 'receipt.footerAr': v }))} /></Field>
           
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Font Size">
+            <Field label={tr('Font Size')}>
               <Select value={draft['receipt.fontSize'] ?? 'normal'} onChange={(v) => setDraft(c => ({ ...c, 'receipt.fontSize': v }))}
-                options={[{ value: 'normal', label: 'Normal' }, { value: 'large', label: 'Large (Header & Footer)' }]} />
+                options={[{ value: 'normal', label: tr('Normal') }, { value: 'large', label: tr('Large (Header & Footer)') }]} />
             </Field>
-            <Field label="QR Code Text">
+            <Field label={tr('QR Code Text')}>
               <TextInput value={draft['receipt.qrCodeText'] ?? ''} onChange={(v) => setDraft(c => ({ ...c, 'receipt.qrCodeText': v }))} disabled={!draft['receipt.showQrCode']} />
             </Field>
           </div>
@@ -245,35 +244,35 @@ function ReceiptSettings() {
           <div className="space-y-2 pt-2">
             <label className="flex items-center gap-2 text-sm text-goblin-200">
               <input type="checkbox" checked={draft['receipt.showTaxSummary'] ?? false} onChange={(e) => setDraft(c => ({ ...c, 'receipt.showTaxSummary': e.target.checked }))} />
-              Show detailed Tax (VAT & Service Charge) breakdown
+              {tr('Show detailed Tax (VAT & Service Charge) breakdown')}
             </label>
             <label className="flex items-center gap-2 text-sm text-goblin-200">
               <input type="checkbox" checked={draft['receipt.showLoyalty'] ?? false} onChange={(e) => setDraft(c => ({ ...c, 'receipt.showLoyalty': e.target.checked }))} />
-              Show Customer Loyalty tiers and point balances
+              {tr('Show Customer Loyalty tiers and point balances')}
             </label>
             <label className="flex items-center gap-2 text-sm text-goblin-200">
               <input type="checkbox" checked={draft['receipt.showQrCode'] ?? false} onChange={(e) => setDraft(c => ({ ...c, 'receipt.showQrCode': e.target.checked }))} />
-              Show QR Code at the bottom of the receipt
+              {tr('Show QR Code at the bottom of the receipt')}
             </label>
           </div>
         </div>
 
         <Btn kind="primary" onClick={() => void save()} disabled={!isDirty}>
-          Save Layout
+          {tr('Save Layout')}
         </Btn>
       </div>
 
       {/* Live Preview Column */}
       <div className="flex flex-col items-center">
-        <h3 className="mb-2 font-semibold text-goblin-300 uppercase text-xs tracking-wider">Live Mock Preview</h3>
+        <h3 className="mb-2 font-semibold text-goblin-300 uppercase text-xs tracking-wider">{tr('Live Mock Preview')}</h3>
         <div className="w-[300px] border border-dashed border-goblin-700 rounded-2xl bg-[#fafafa] p-4 text-black shadow-inner font-mono text-xs leading-snug">
           {settings['receipt.logo'] && (
-            <img src={settings['receipt.logo'] as string} alt="Receipt Logo" className="mx-auto mb-3 max-h-12 border rounded bg-goblin-900 p-0.5" />
+            <img src={settings['receipt.logo'] as string} alt={tr('Receipt Logo')} className="mx-auto mb-3 max-h-12 border rounded bg-goblin-900 p-0.5" />
           )}
           
           <div className="text-center">
             <div className={draft['receipt.fontSize'] === 'large' ? 'font-bold text-sm' : ''}>
-              {draft['receipt.header'] || 'Goblins Yard'}
+              {draft['receipt.header'] || tr('Goblins Yard')}
             </div>
             {draft['receipt.headerAr'] && (
               <div className={draft['receipt.fontSize'] === 'large' ? 'font-bold text-sm' : ''}>
@@ -281,67 +280,67 @@ function ReceiptSettings() {
               </div>
             )}
             <div className="text-goblin-400">{String(settings['business.address'] || '123 Nile Street, Zamalek, Cairo')}</div>
-            <div className="text-goblin-400">Tax ID: {String(settings['business.taxId'] || '123-456-789')}</div>
+            <div className="text-goblin-400">{tr('Tax ID:')} {String(settings['business.taxId'] || '123-456-789')}</div>
           </div>
           
           <div className="my-2 border-t border-dashed border-goblin-700"></div>
           
           <div className="flex justify-between">
-            <span>Order #1234</span>
-            <span>DINE IN</span>
+            <span>{tr('Order #1234')}</span>
+            <span>{tr('DINE IN')}</span>
           </div>
           <div className="flex justify-between">
-            <span>Table: T1</span>
-            <span>Server: Hassan</span>
+            <span>{tr('Table: T1')}</span>
+            <span>{tr('Server: Hassan')}</span>
           </div>
           
           <div className="my-2 border-t border-dashed border-goblin-700"></div>
           
           <div className="flex justify-between">
-            <span>1 x Virgin Mojito</span>
-            <span>85.00 EGP</span>
+            <span>{tr('1 x Virgin Mojito')}</span>
+            <span>{tr('85.00 EGP')}</span>
           </div>
           <div className="flex justify-between">
-            <span>1 x Pizza Margherita</span>
-            <span>160.00 EGP</span>
+            <span>{tr('1 x Pizza Margherita')}</span>
+            <span>{tr('160.00 EGP')}</span>
           </div>
           
           <div className="my-2 border-t border-dashed border-goblin-700"></div>
           
           <div className="flex justify-between font-bold">
-            <span>Subtotal</span>
-            <span>245.00 EGP</span>
+            <span>{tr('Subtotal')}</span>
+            <span>{tr('245.00 EGP')}</span>
           </div>
           {draft['receipt.showTaxSummary'] && (
             <>
               <div className="flex justify-between">
-                <span>Service (12%)</span>
-                <span>29.40 EGP</span>
+                <span>{tr('Service (12%)')}</span>
+                <span>{tr('29.40 EGP')}</span>
               </div>
               <div className="flex justify-between">
-                <span>VAT (14%)</span>
-                <span>38.42 EGP</span>
+                <span>{tr('VAT (14%)')}</span>
+                <span>{tr('38.42 EGP')}</span>
               </div>
             </>
           )}
           
           <div className="my-1 border-t border-goblin-700"></div>
           <div className="flex justify-between font-bold">
-            <span>TOTAL</span>
-            <span>{draft['receipt.showTaxSummary'] ? '312.82 EGP' : '245.00 EGP'}</span>
+            <span>{tr('TOTAL')}</span>
+            <span>{draft['receipt.showTaxSummary'] ? tr('312.82 EGP') : tr('245.00 EGP')}</span>
           </div>
           <div className="my-1 border-t border-goblin-700"></div>
           
           {draft['receipt.showLoyalty'] && (
             <div className="text-center text-goblin-300 my-2 pt-1 border-t border-dashed border-goblin-700">
-              <div>Loyalty Tier: Goblin King</div>
-              <div>Points Balance: 125 pts</div>
+              <div>{tr('Loyalty Tier: Goblin King')}</div>
+              <div>{tr('Points Balance: 125 pts')}</div>
             </div>
           )}
           
           <div className="text-center mt-3">
             <div className={draft['receipt.fontSize'] === 'large' ? 'font-bold text-sm' : ''}>
-              {draft['receipt.footer'] || 'Thank you! See you soon'}
+              {draft['receipt.footer'] || tr('Thank you! See you soon')}
             </div>
             {draft['receipt.footerAr'] && (
               <div className={draft['receipt.fontSize'] === 'large' ? 'font-bold text-sm' : ''}>
@@ -352,7 +351,7 @@ function ReceiptSettings() {
 
           {draft['receipt.showQrCode'] && (
             <div className="mt-3 border-t border-dashed border-goblin-700 pt-3 flex flex-col items-center">
-              <div className="w-16 h-16 bg-goblin-700 flex items-center justify-center text-[10px] text-goblin-300">QR Code</div>
+              <div className="w-16 h-16 bg-goblin-700 flex items-center justify-center text-[10px] text-goblin-300">{tr('QR Code')}</div>
               <div className="text-[9px] text-goblin-400 mt-1 max-w-[150px] truncate">{draft['receipt.qrCodeText']}</div>
             </div>
           )}
@@ -369,7 +368,7 @@ function LogoSection({ current, onSaved }: { current: string; onSaved: () => voi
   function pick(file: File | undefined) {
     setErr('');
     if (!file) return;
-    if (file.size > 300 * 1024) { setErr('Keep the logo under 300 KB (small PNG works best on receipts)'); return; }
+    if (file.size > 300 * 1024) { setErr(tr('Keep the logo under 300 KB (small PNG works best on receipts)')); return; }
     const reader = new FileReader();
     reader.onload = () => {
       void (async () => {
@@ -377,7 +376,7 @@ function LogoSection({ current, onSaved }: { current: string; onSaved: () => voi
         try {
           await api('/settings', { method: 'PUT', body: { 'receipt.logo': reader.result as string } });
           onSaved();
-        } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+        } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
         finally { setBusy(false); }
       })();
     };
@@ -387,29 +386,29 @@ function LogoSection({ current, onSaved }: { current: string; onSaved: () => voi
   async function remove() {
     setBusy(true);
     try { await api('/settings', { method: 'PUT', body: { 'receipt.logo': '' } }); onSaved(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
     finally { setBusy(false); }
   }
 
   return (
     <div className="mt-6 rounded-xl bg-goblin-900 p-4 shadow">
-      <h2 className="mb-2 font-semibold text-goblin-100">Receipt logo</h2>
+      <h2 className="mb-2 font-semibold text-goblin-100">{tr('Receipt logo')}</h2>
       <ErrorBanner message={err} />
       {current ? (
         <div className="mb-3 flex items-center gap-4">
-          <img src={current} alt="Receipt logo" className="max-h-24 rounded border border-goblin-700 bg-goblin-900 p-1" />
-          <Btn kind="danger" onClick={() => void remove()} disabled={busy}>Remove</Btn>
+          <img src={current} alt={tr('Receipt logo')} className="max-h-24 rounded border border-goblin-700 bg-goblin-900 p-1" />
+          <Btn kind="danger" onClick={() => void remove()} disabled={busy}>{tr('Remove')}</Btn>
         </div>
       ) : (
-        <p className="mb-3 text-sm text-goblin-400">No logo yet.</p>
+        <p className="mb-3 text-sm text-goblin-400">{tr('No logo yet.')}</p>
       )}
       <label className="inline-block cursor-pointer rounded-lg bg-goblin-600 px-3 py-1.5 text-sm text-white hover:bg-goblin-700">
-        {busy ? 'Uploading…' : 'Upload logo'}
+        {busy ? tr('Uploading…') : tr('Upload logo')}
         <input type="file" accept="image/png,image/jpeg,image/svg+xml" className="hidden"
           onChange={(e) => pick(e.target.files?.[0])} />
       </label>
       <p className="mt-2 text-xs text-goblin-400">
-        Shown at the top of receipts on screen and in browser printing. Thermal ESC/POS printers print text only for now — logo raster printing is a future print-service upgrade.
+        {tr('Shown at the top of receipts on screen and in browser printing. Thermal ESC/POS printers print text only for now — logo raster printing is a future print-service upgrade.')}
       </p>
     </div>
   );
@@ -427,17 +426,17 @@ function Printers() {
     setMsg('');
     try {
       const r = await api<{ sent: boolean; mode: string }>(`/admin/printers/${id}/test`, { method: 'POST' });
-      setMsg(`Test sent (${r.mode}) — check the printer / preview window.`);
-    } catch (e) { setMsg(e instanceof Error ? e.message : 'Failed'); }
+      setMsg(`${tr('Test sent (')}${r.mode}${tr(') — check the printer / preview window.')}`);
+    } catch (e) { setMsg(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   async function deletePrinter(id: string) {
-    if (!confirm('Are you sure you want to delete this printer?')) return;
+    if (!confirm(tr('Are you sure you want to delete this printer?'))) return;
     try {
       await api(`/admin/printers/${id}`, { method: 'DELETE' });
       reload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Delete failed');
+      alert(e instanceof Error ? e.message : tr('Delete failed'));
     }
   }
 
@@ -445,17 +444,17 @@ function Printers() {
   return (
     <div>
       <div className="mb-3 flex items-center gap-3">
-        <Btn kind="primary" onClick={() => { setEditingPrinter(null); setCreateOpen(true); }}>+ New printer</Btn>
+        <Btn kind="primary" onClick={() => { setEditingPrinter(null); setCreateOpen(true); }}>{tr('+ New printer')}</Btn>
         {msg && <span className="text-sm text-goblin-300">{msg}</span>}
       </div>
-      <Table headers={['Name', 'Connection', 'Address', 'Paper', 'Used by', 'Actions']}
+      <Table headers={[tr('Name'), tr('Connection'), tr('Address'), tr('Paper'), tr('Used by'), tr('Actions')]}
         rows={(printers ?? []).map((p) => [
           p.name, p.connection, p.address, `${p.paperWidth}mm`,
           p.stations.map((s) => s.name).join(', ') || '—',
           <div key={p.id} className="flex gap-2">
-            <Btn onClick={() => void test(p.id)}>Test</Btn>
-            <Btn onClick={() => { setEditingPrinter(p); setCreateOpen(true); }}>Edit</Btn>
-            <Btn kind="danger" onClick={() => void deletePrinter(p.id)}>Delete</Btn>
+            <Btn onClick={() => void test(p.id)}>{tr('Test')}</Btn>
+            <Btn onClick={() => { setEditingPrinter(p); setCreateOpen(true); }}>{tr('Edit')}</Btn>
+            <Btn kind="danger" onClick={() => void deletePrinter(p.id)}>{tr('Delete')}</Btn>
           </div>,
         ])} />
       {createOpen && (
@@ -477,7 +476,7 @@ function PrinterFormModal({ onClose, onDone, printer }: { onClose: () => void; o
   const [err, setErr] = useState('');
 
   async function submit() {
-    if (!name.trim() || !address.trim()) { setErr('Name and address are required'); return; }
+    if (!name.trim() || !address.trim()) { setErr(tr('Name and address are required')); return; }
     try {
       const body = {
         name: name.trim(),
@@ -491,29 +490,29 @@ function PrinterFormModal({ onClose, onDone, printer }: { onClose: () => void; o
         await api('/admin/printers', { method: 'POST', body });
       }
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title={printer ? "Edit printer" : "New printer"} onClose={onClose}>
+    <Modal title={printer ? tr('Edit printer') : tr('New printer')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Name"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Connection">
+        <Field label={tr('Name')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Connection')}>
           <Select value={connection} onChange={(v) => {
             setConnection(v as typeof connection);
             if (v === 'PREVIEW') setAddress('preview');
           }}
             options={['NETWORK', 'USB', 'PREVIEW'].map((c) => ({ value: c, label: c }))} />
         </Field>
-        <Field label={connection === 'NETWORK' ? 'Address (ip:port, ESC/POS TCP 9100)' : 'Address'}>
+        <Field label={connection === 'NETWORK' ? tr('Address (ip:port, ESC/POS TCP 9100)') : tr('Address')}>
           <TextInput value={address} onChange={setAddress} />
         </Field>
-        <Field label="Paper width (mm)">
+        <Field label={tr('Paper width (mm)')}>
           <Select value={paperWidth} onChange={setPaperWidth}
-            options={['58', '80'].map((w) => ({ value: w, label: `${w}mm` }))} />
+            options={['58', '80'].map((w) => ({ value: w, label: `${w}${tr('mm')}` }))} />
         </Field>
-        <Btn kind="primary" onClick={() => void submit()}>{printer ? "Save" : "Create"}</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{printer ? tr('Save') : tr('Create')}</Btn>
       </div>
     </Modal>
   );
@@ -530,14 +529,14 @@ function Stations() {
   async function patch(id: string, body: Record<string, unknown>) {
     setErr('');
     try { await api(`/admin/stations/${id}`, { method: 'PATCH', body }); reload(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   async function deleteStation(id: string, name: string) {
-    if (!confirm(`Delete station "${name}"? Items assigned to it will become unrouted.`)) return;
+    if (!confirm(`${tr('Delete station "')}${name}${tr('"? Items assigned to it will become unrouted.')}`)) return;
     setErr('');
     try { await api(`/admin/stations/${id}`, { method: 'DELETE' }); reload(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Failed to delete'); }
+    catch (e) { setErr(e instanceof Error ? e.message : tr('Failed to delete')); }
   }
 
   if (error) return <p className="p-8 text-red-600">{error}</p>;
@@ -545,22 +544,22 @@ function Stations() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-goblin-50">Prep Stations</h2>
-          <p className="text-sm text-goblin-300">Manage kitchen and bar prep stations where order items are routed.</p>
+          <h2 className="text-lg font-semibold text-goblin-50">{tr('Prep Stations')}</h2>
+          <p className="text-sm text-goblin-300">{tr('Manage kitchen and bar prep stations where order items are routed.')}</p>
         </div>
-        <Btn kind="primary" onClick={() => setFormOpen({})}>+ New Prep Station</Btn>
+        <Btn kind="primary" onClick={() => setFormOpen({})}>{tr('+ New Prep Station')}</Btn>
       </div>
       <ErrorBanner message={err} />
       <div className="overflow-hidden rounded-xl bg-goblin-900 shadow border border-goblin-800">
         <table className="w-full text-sm">
           <thead className="bg-goblin-800 text-left text-goblin-300 text-xs uppercase tracking-wide">
             <tr>
-              <th className="p-3">Station</th>
-              <th className="p-3">Kind</th>
-              <th className="p-3">Printer</th>
-              <th className="p-3">KDS Screen</th>
-              <th className="p-3">Print Tickets</th>
-              <th className="p-3">Actions</th>
+              <th className="p-3">{tr('Station')}</th>
+              <th className="p-3">{tr('Kind')}</th>
+              <th className="p-3">{tr('Printer')}</th>
+              <th className="p-3">{tr('KDS Screen')}</th>
+              <th className="p-3">{tr('Print Tickets')}</th>
+              <th className="p-3">{tr('Actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -570,12 +569,12 @@ function Stations() {
                   {st.name}
                   {st.nameAr && <span className="ml-2 text-goblin-400 font-normal text-xs">({st.nameAr})</span>}
                 </td>
-                <td className="p-3 text-goblin-300">{st.kind}</td>
+                <td className="p-3 text-goblin-300">{tr(st.kind)}</td>
                 <td className="p-3">
                   <select value={st.printerId ?? ''}
                     onChange={(e) => void patch(st.id, { printerId: e.target.value || null })}
                     className="rounded-lg border border-goblin-700 bg-goblin-900 p-1.5 text-sm">
-                    <option value="">— none —</option>
+                    <option value="">{tr('— none —')}</option>
                     {(printers ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </td>
@@ -595,20 +594,20 @@ function Stations() {
                       onClick={() => setFormOpen({ station: st })}
                       className="rounded border border-goblin-700 bg-goblin-900 px-2.5 py-1 text-xs text-goblin-200 hover:bg-goblin-800 font-medium"
                     >
-                      Edit
+                      {tr('Edit')}
                     </button>
                     <button
                       onClick={() => void deleteStation(st.id, st.name)}
                       className="rounded border border-red-200 bg-red-50 px-2.5 py-1 text-xs text-red-700 hover:bg-red-100 font-medium"
                     >
-                      Delete
+                      {tr('Delete')}
                     </button>
                   </div>
                 </td>
               </tr>
             ))}
             {!(stations ?? []).length && (
-              <tr><td colSpan={6} className="p-6 text-center text-goblin-400 italic">No stations yet. Create a Kitchen and Bar station to route orders.</td></tr>
+              <tr><td colSpan={6} className="p-6 text-center text-goblin-400 italic">{tr('No stations yet. Create a Kitchen and Bar station to route orders.')}</td></tr>
             )}
           </tbody>
         </table>
@@ -645,7 +644,7 @@ function StationFormModal({
   const [err, setErr] = useState('');
 
   async function submit() {
-    if (!name.trim()) { setErr('Name is required'); return; }
+    if (!name.trim()) { setErr(tr('Name is required')); return; }
     setErr('');
     try {
       const body = { name: name.trim(), nameAr: nameAr.trim() || null, kind, printerId: printerId || null, useKds, usePrinter };
@@ -655,46 +654,46 @@ function StationFormModal({
         await api('/admin/stations', { method: 'POST', body });
       }
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title={station ? `Edit Station: ${station.name}` : 'New Prep Station'} onClose={onClose}>
+    <Modal title={station ? `${tr('Edit Station:')} ${station.name}` : tr('New Prep Station')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Name (English)">
-          <TextInput value={name} onChange={setName} placeholder="e.g. Kitchen, Bar" />
+        <Field label={tr('Name (English)')}>
+          <TextInput value={name} onChange={setName} placeholder={tr('e.g. Kitchen, Bar')} />
         </Field>
-        <Field label="Name (Arabic — optional)">
+        <Field label={tr('Name (Arabic — optional)')}>
           <TextInput value={nameAr} onChange={setNameAr} placeholder="e.g. المطبخ" />
         </Field>
-        <Field label="Kind">
+        <Field label={tr('Kind')}>
           <select value={kind} onChange={(e) => setKind(e.target.value)}
             className="w-full rounded-lg border border-goblin-700 bg-goblin-900 p-2.5 text-sm">
-            <option value="PREP">PREP (Kitchen, Bar)</option>
-            <option value="EXPO">EXPO (Pass-through display)</option>
+            <option value="PREP">{tr('PREP (Kitchen, Bar)')}</option>
+            <option value="EXPO">{tr('EXPO (Pass-through display)')}</option>
           </select>
         </Field>
-        <Field label="Printer">
+        <Field label={tr('Printer')}>
           <select value={printerId} onChange={(e) => setPrinterId(e.target.value)}
             className="w-full rounded-lg border border-goblin-700 bg-goblin-900 p-2.5 text-sm">
-            <option value="">— none —</option>
+            <option value="">{tr('— none —')}</option>
             {printers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </Field>
         <label className="flex items-center gap-2 text-sm text-goblin-100 cursor-pointer py-1">
           <input type="checkbox" checked={useKds} onChange={(e) => setUseKds(e.target.checked)}
             className="rounded border-goblin-700 text-goblin-500 focus:ring-goblin-500" />
-          <span>Show on KDS screen</span>
+          <span>{tr('Show on KDS screen')}</span>
         </label>
         <label className="flex items-center gap-2 text-sm text-goblin-100 cursor-pointer py-1">
           <input type="checkbox" checked={usePrinter} onChange={(e) => setUsePrinter(e.target.checked)}
             className="rounded border-goblin-700 text-goblin-500 focus:ring-goblin-500" />
-          <span>Print Tickets automatically</span>
+          <span>{tr('Print Tickets automatically')}</span>
         </label>
         <div className="flex gap-2 pt-1">
-          <Btn kind="ghost" onClick={onClose}>Cancel</Btn>
-          <Btn kind="primary" onClick={() => void submit()}>{station ? 'Save' : 'Create'}</Btn>
+          <Btn kind="ghost" onClick={onClose}>{tr('Cancel')}</Btn>
+          <Btn kind="primary" onClick={() => void submit()}>{station ? tr('Save') : tr('Create')}</Btn>
         </div>
       </div>
     </Modal>
@@ -766,9 +765,9 @@ function DatabaseManager() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      setSuccess('Floor layout exported successfully.');
+      setSuccess(tr('Floor layout exported successfully.'));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Export failed');
+      setErr(e instanceof Error ? e.message : tr('Export failed'));
     } finally { setBusy(false); }
   }
 
@@ -779,18 +778,18 @@ function DatabaseManager() {
     try {
       const text = await file.text();
       const payload = JSON.parse(text);
-      if (!Array.isArray(payload)) throw new Error('Floor layout file must be a JSON array of zones.');
+      if (!Array.isArray(payload)) throw new Error(tr('Floor layout file must be a JSON array of zones.'));
       const res = await api<any>('/admin/import/layout', { method: 'POST', body: payload });
-      setSuccess(`Floor import complete! ${res.zonesCreated} zones, ${res.resourcesCreated} resources imported.`);
+      setSuccess(`${tr('Floor import complete!')} ${res.zonesCreated} ${tr('zones,')} ${res.resourcesCreated} ${tr('resources imported.')}`);
     } catch (err) {
-      setErr(err instanceof Error ? err.message : 'Import failed');
+      setErr(err instanceof Error ? err.message : tr('Import failed'));
     } finally { setBusy(false); e.target.value = ''; }
   }
 
   const loadBackups = useCallback(() => {
     api<{ files: string[] }>('/admin/db/backups')
       .then((res) => setBackups(res.files || []))
-      .catch((e) => setErr(e instanceof Error ? e.message : 'Failed to load backups'));
+      .catch((e) => setErr(e instanceof Error ? e.message : tr('Failed to load backups')));
   }, []);
 
   useEffect(() => {
@@ -802,7 +801,7 @@ function DatabaseManager() {
         setAutoBackupInterval(String(res.intervalHours || 24));
         setAutoBackupKeep(String(res.keepCount || 10));
       })
-      .catch((e) => setErr(e instanceof Error ? e.message : 'Failed to load auto-backup config'));
+      .catch((e) => setErr(e instanceof Error ? e.message : tr('Failed to load auto-backup config')));
   }, [loadBackups]);
 
   async function saveAutoBackupConfig() {
@@ -816,9 +815,9 @@ function DatabaseManager() {
           keepCount: parseInt(autoBackupKeep, 10) || 10,
         },
       });
-      setSuccess('Auto-backup configuration updated successfully.');
+      setSuccess(tr('Auto-backup configuration updated successfully.'));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to save auto-backup config');
+      setErr(e instanceof Error ? e.message : tr('Failed to save auto-backup config'));
     } finally {
       setBusy(false);
     }
@@ -829,49 +828,49 @@ function DatabaseManager() {
     try {
       const res = await api<{ files: string[] }>('/admin/db/backup', { method: 'POST' });
       setBackups(res.files || []);
-      setSuccess('Database backup created successfully.');
+      setSuccess(tr('Database backup created successfully.'));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Backup failed');
+      setErr(e instanceof Error ? e.message : tr('Backup failed'));
     } finally {
       setBusy(false);
     }
   }
 
   async function triggerRestore(filename: string) {
-    if (!confirm(`Are you sure you want to restore the database from ${filename}? Current data will be overwritten.`)) return;
+    if (!confirm(`${tr('Are you sure you want to restore the database from')} ${filename}${tr('? Current data will be overwritten.')}`)) return;
     setErr(''); setSuccess(''); setBusy(true);
     try {
       await api('/admin/db/restore', { method: 'POST', body: { filename } });
-      setSuccess('Database successfully restored from backup.');
+      setSuccess(tr('Database successfully restored from backup.'));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Restore failed');
+      setErr(e instanceof Error ? e.message : tr('Restore failed'));
     } finally {
       setBusy(false);
     }
   }
 
   async function triggerReset() {
-    if (!confirm('WARNING: This will delete ALL orders, payments, sessions, shifts, time clock entries, manual journal entries, and audit logs. Setup data (menu items, categories, printers, tables) will be kept. THIS IS IRREVERSIBLE. Proceed?')) return;
+    if (!confirm(tr('WARNING: This will delete ALL orders, payments, sessions, shifts, time clock entries, manual journal entries, and audit logs. Setup data (menu items, categories, printers, tables) will be kept. THIS IS IRREVERSIBLE. Proceed?'))) return;
     setErr(''); setSuccess(''); setBusy(true);
     try {
       await api('/admin/db/reset', { method: 'POST' });
-      setSuccess('Transaction and activity data successfully reset.');
+      setSuccess(tr('Transaction and activity data successfully reset.'));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Reset failed');
+      setErr(e instanceof Error ? e.message : tr('Reset failed'));
     } finally {
       setBusy(false);
     }
   }
 
   async function triggerEraseDemo() {
-    if (!confirm('CRITICAL WARNING: This will delete ALL demo assets (menu items, categories, modifier groups, ingredients, recipes, suppliers, floor zones, tables, customer profiles) AND all transaction histories. Only your system users, roles, tax rates, branch, and base Chart of Accounts structure will be preserved. THIS IS IRREVERSIBLE. Proceed?')) return;
-    if (!confirm('Are you absolutely sure you want to wipe the system database? All menu configuration and sales data will be permanently deleted.')) return;
+    if (!confirm(tr('CRITICAL WARNING: This will delete ALL demo assets (menu items, categories, modifier groups, ingredients, recipes, suppliers, floor zones, tables, customer profiles) AND all transaction histories. Only your system users, roles, tax rates, branch, and base Chart of Accounts structure will be preserved. THIS IS IRREVERSIBLE. Proceed?'))) return;
+    if (!confirm(tr('Are you absolutely sure you want to wipe the system database? All menu configuration and sales data will be permanently deleted.'))) return;
     setErr(''); setSuccess(''); setBusy(true);
     try {
       await api('/admin/db/erase-demo', { method: 'POST' });
-      setSuccess('Demo assets and transactions successfully erased. The database is now clean.');
+      setSuccess(tr('Demo assets and transactions successfully erased. The database is now clean.'));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Erase failed');
+      setErr(e instanceof Error ? e.message : tr('Erase failed'));
     } finally {
       setBusy(false);
     }
@@ -890,9 +889,9 @@ function DatabaseManager() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      setSuccess('Menu catalog exported successfully.');
+      setSuccess(tr('Menu catalog exported successfully.'));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Export failed');
+      setErr(e instanceof Error ? e.message : tr('Export failed'));
     }
   }
 
@@ -909,9 +908,9 @@ function DatabaseManager() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      setSuccess('Customers directory exported successfully.');
+      setSuccess(tr('Customers directory exported successfully.'));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Export failed');
+      setErr(e instanceof Error ? e.message : tr('Export failed'));
     }
   }
 
@@ -928,9 +927,9 @@ function DatabaseManager() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      setSuccess('Vendors directory exported successfully.');
+      setSuccess(tr('Vendors directory exported successfully.'));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Export failed');
+      setErr(e instanceof Error ? e.message : tr('Export failed'));
     }
   }
 
@@ -938,9 +937,9 @@ function DatabaseManager() {
     setErr(''); setSuccess(''); setBusy(true);
     try {
       const res = await api<any>('/admin/import/vendors-from-poster', { method: 'POST', body: {} });
-      setSuccess(`Synced ${res.importedCount ?? 0} vendors from Poster POS.`);
+      setSuccess(`${tr('Synced')} ${res.importedCount ?? 0} ${tr('vendors from Poster POS.')}`);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Sync failed');
+      setErr(e instanceof Error ? e.message : tr('Sync failed'));
     } finally {
       setBusy(false);
     }
@@ -955,9 +954,9 @@ function DatabaseManager() {
       try {
         const payload = JSON.parse(event.target?.result as string);
         const res = await api<any>('/admin/import/vendors', { method: 'POST', body: payload });
-        setSuccess(`Imported ${res.importedCount ?? 0} vendors successfully.`);
+        setSuccess(`${tr('Imported')} ${res.importedCount ?? 0} ${tr('vendors successfully.')}`);
       } catch (err) {
-        setErr(err instanceof Error ? err.message : 'Import failed');
+        setErr(err instanceof Error ? err.message : tr('Import failed'));
       } finally {
         setBusy(false);
         e.target.value = '';
@@ -983,7 +982,7 @@ function DatabaseManager() {
         } else if (file.name.endsWith('.csv')) {
           const rows = parseCsv(text);
           if (rows.length < 2) {
-            throw new Error('CSV file must contain a header row and at least one data row.');
+            throw new Error(tr('CSV file must contain a header row and at least one data row.'));
           }
           
           const headers = (rows[0] ?? []).map(h => h.toLowerCase().trim());
@@ -998,7 +997,7 @@ function DatabaseManager() {
             const notesIdx = headers.indexOf('notes');
 
             if (nameIdx === -1 || phoneIdx === -1) {
-              throw new Error('Customers CSV must contain "Name" and "Phone" columns.');
+              throw new Error(tr('Customers CSV must contain "Name" and "Phone" columns.'));
             }
 
             payload = dataRows.map(row => ({
@@ -1022,7 +1021,7 @@ function DatabaseManager() {
             const deltaIdx = headers.indexOf('pricedeltaegp');
 
             if (catIdx === -1 || itemIdx === -1 || priceIdx === -1) {
-              throw new Error('Menu CSV must contain "Category", "Item", and "PriceEGP" columns.');
+              throw new Error(tr('Menu CSV must contain "Category", "Item", and "PriceEGP" columns.'));
             }
 
             const categoriesMap: Record<string, any> = {};
@@ -1083,19 +1082,19 @@ function DatabaseManager() {
             payload = Object.values(categoriesMap);
           }
         } else {
-          throw new Error('Unsupported file extension. Please upload a .json or .csv file.');
+          throw new Error(tr('Unsupported file extension. Please upload a .json or .csv file.'));
         }
 
         // Post to backend
         const res = await api<any>(`/admin/import/${type}`, { method: 'POST', body: payload });
         
         if (type === 'menu') {
-          setSuccess(`Import complete! Created/updated ${res.itemsImported} items under ${res.categoriesCreated} categories.`);
+          setSuccess(`${tr('Import complete! Created/updated')} ${res.itemsImported} ${tr('items under')} ${res.categoriesCreated} ${tr('categories.')}`);
         } else {
-          setSuccess(`Import complete! Imported/updated ${res.importedCount} customers.`);
+          setSuccess(`${tr('Import complete! Imported/updated')} ${res.importedCount} ${tr('customers.')}`);
         }
       } catch (err) {
-        setErr(err instanceof Error ? err.message : 'Import failed');
+        setErr(err instanceof Error ? err.message : tr('Import failed'));
       } finally {
         setBusy(false);
         e.target.value = ''; // Reset file input
@@ -1107,32 +1106,32 @@ function DatabaseManager() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h2 className="text-lg font-bold text-goblin-100">Database & Data Manager</h2>
+      <h2 className="text-lg font-bold text-goblin-100">{tr('Database & Data Manager')}</h2>
       <ErrorBanner message={err} />
       {success && <p className="mb-3 rounded-lg bg-goblin-700 p-2 text-sm text-goblin-500">{success}</p>}
 
       <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-4">
         <div>
-          <h3 className="font-semibold text-goblin-50">Backup & Reset Tools</h3>
-          <p className="text-xs text-goblin-300 mt-0.5">Manage backups and perform system wipes or resets to configure a new restaurant.</p>
+          <h3 className="font-semibold text-goblin-50">{tr('Backup & Reset Tools')}</h3>
+          <p className="text-xs text-goblin-300 mt-0.5">{tr('Manage backups and perform system wipes or resets to configure a new restaurant.')}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Btn kind="primary" onClick={triggerBackup} disabled={busy}>
-            {busy ? 'Processing...' : 'Create Backup'}
+            {busy ? tr('Processing...') : tr('Create Backup')}
           </Btn>
           <Btn kind="danger" onClick={triggerReset} disabled={busy}>
-            Reset Transactions
+            {tr('Reset Transactions')}
           </Btn>
           <Btn kind="danger" onClick={triggerEraseDemo} disabled={busy}>
-            Erase Demo & Reset Setup
+            {tr('Erase Demo & Reset Setup')}
           </Btn>
         </div>
       </div>
 
       <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-4">
         <div>
-          <h3 className="font-semibold text-goblin-50">Auto-Backup Scheduler</h3>
-          <p className="text-xs text-goblin-300 mt-0.5">Configure automatic background database backups to cycle at custom intervals and rotate old files.</p>
+          <h3 className="font-semibold text-goblin-50">{tr('Auto-Backup Scheduler')}</h3>
+          <p className="text-xs text-goblin-300 mt-0.5">{tr('Configure automatic background database backups to cycle at custom intervals and rotate old files.')}</p>
         </div>
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm text-goblin-100 font-semibold cursor-pointer">
@@ -1142,12 +1141,12 @@ function DatabaseManager() {
               onChange={(e) => setAutoBackupEnabled(e.target.checked)}
               disabled={busy}
             />
-            <span>Enable Cycling Auto-Backup</span>
+            <span>{tr('Enable Cycling Auto-Backup')}</span>
           </label>
 
           {autoBackupEnabled && (
             <div className="grid grid-cols-2 gap-4 pl-6 border-l-2 border-goblin-800">
-              <Field label="Interval (Hours)">
+              <Field label={tr('Interval (Hours)')}>
                 <TextInput
                   type="number"
                   value={autoBackupInterval}
@@ -1155,7 +1154,7 @@ function DatabaseManager() {
                   disabled={busy}
                 />
               </Field>
-              <Field label="Retention Count (Keep latest N backups)">
+              <Field label={tr('Retention Count (Keep latest N backups)')}>
                 <TextInput
                   type="number"
                   value={autoBackupKeep}
@@ -1168,40 +1167,40 @@ function DatabaseManager() {
 
           <div className="pt-2">
             <Btn onClick={saveAutoBackupConfig} disabled={busy}>
-              Save Auto-Backup Config
+              {tr('Save Auto-Backup Config')}
             </Btn>
           </div>
         </div>
       </div>
 
       <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-3">
-        <h3 className="font-semibold text-goblin-50">Available Backups</h3>
+        <h3 className="font-semibold text-goblin-50">{tr('Available Backups')}</h3>
         <Table
-          headers={['Filename', 'Action']}
+          headers={[tr('Filename'), tr('Action')]}
           rows={backups.map((b) => [
             b,
             <Btn key={b} onClick={() => void triggerRestore(b)} disabled={busy}>
-              Restore
+              {tr('Restore')}
             </Btn>,
           ])}
         />
-        {backups.length === 0 && <p className="text-sm text-goblin-400">No backups found.</p>}
+        {backups.length === 0 && <p className="text-sm text-goblin-400">{tr('No backups found.')}</p>}
       </div>
 
       <div className="rounded-xl bg-goblin-900 p-4 shadow space-y-5">
         <div>
-          <h3 className="font-semibold text-goblin-50">Import & Export Data</h3>
-          <p className="text-xs text-goblin-300 mt-0.5">Import and export your Menu Catalog, Floor Layout, Customers Directory, or Vendors Directory in JSON or CSV formats.</p>
+          <h3 className="font-semibold text-goblin-50">{tr('Import & Export Data')}</h3>
+          <p className="text-xs text-goblin-300 mt-0.5">{tr('Import and export your Menu Catalog, Floor Layout, Customers Directory, or Vendors Directory in JSON or CSV formats.')}</p>
         </div>
 
         <div className="grid grid-cols-4 gap-6 pt-2 border-t divide-x divide-goblin-800">
           {/* Menu Catalog */}
           <div className="space-y-3">
-            <h4 className="font-medium text-goblin-100 text-sm">Menu Catalog</h4>
+            <h4 className="font-medium text-goblin-100 text-sm">{tr('Menu Catalog')}</h4>
             <div className="flex flex-col gap-2">
-              <Btn onClick={exportMenu} disabled={busy}>Export Menu (JSON)</Btn>
+              <Btn onClick={exportMenu} disabled={busy}>{tr('Export Menu (JSON)')}</Btn>
               <div className="border-t pt-2 mt-1">
-                <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">Import Menu Catalog</label>
+                <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">{tr('Import Menu Catalog')}</label>
                 <input
                   type="file"
                   accept=".json,.csv"
@@ -1209,18 +1208,18 @@ function DatabaseManager() {
                   disabled={busy}
                   className="w-full text-xs text-goblin-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-goblin-800 file:text-goblin-100 hover:file:bg-goblin-700 cursor-pointer"
                 />
-                <p className="text-[10px] text-goblin-400 mt-1">Accepts JSON (nested structure) or CSV with columns: `Category, Item, Description, SKU, PriceEGP, ModifierGroup, Modifier, PriceDeltaEGP`</p>
+                <p className="text-[10px] text-goblin-400 mt-1">{tr('Accepts JSON (nested structure) or CSV with columns: `Category, Item, Description, SKU, PriceEGP, ModifierGroup, Modifier, PriceDeltaEGP`')}</p>
               </div>
             </div>
           </div>
 
           {/* Floor Layout */}
           <div className="space-y-3 pl-6">
-            <h4 className="font-medium text-goblin-100 text-sm">Floor Layout</h4>
+            <h4 className="font-medium text-goblin-100 text-sm">{tr('Floor Layout')}</h4>
             <div className="flex flex-col gap-2">
-              <Btn onClick={exportFloor} disabled={busy}>Export Layout (JSON)</Btn>
+              <Btn onClick={exportFloor} disabled={busy}>{tr('Export Layout (JSON)')}</Btn>
               <div className="border-t pt-2 mt-1">
-                <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">Import Floor Layout</label>
+                <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">{tr('Import Floor Layout')}</label>
                 <input
                   type="file"
                   accept=".json"
@@ -1228,18 +1227,18 @@ function DatabaseManager() {
                   disabled={busy}
                   className="w-full text-xs text-goblin-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-goblin-800 file:text-goblin-100 hover:file:bg-goblin-700 cursor-pointer"
                 />
-                <p className="text-[10px] text-goblin-400 mt-1">Accepts JSON or CSV with columns: `ZoneName, ZoneNameAr, ResourceName, ResourceNameAr, Type, Capacity`</p>
+                <p className="text-[10px] text-goblin-400 mt-1">{tr('Accepts JSON or CSV with columns: `ZoneName, ZoneNameAr, ResourceName, ResourceNameAr, Type, Capacity`')}</p>
               </div>
             </div>
           </div>
 
           {/* Customers Directory */}
           <div className="space-y-3">
-            <h4 className="font-medium text-goblin-100 text-sm">Customers Directory</h4>
+            <h4 className="font-medium text-goblin-100 text-sm">{tr('Customers Directory')}</h4>
             <div className="flex flex-col gap-2">
-              <Btn onClick={exportCustomers} disabled={busy}>Export Customers (JSON)</Btn>
+              <Btn onClick={exportCustomers} disabled={busy}>{tr('Export Customers (JSON)')}</Btn>
               <div className="border-t pt-2 mt-1">
-                <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">Import Customers</label>
+                <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">{tr('Import Customers')}</label>
                 <input
                   type="file"
                   accept=".json,.csv"
@@ -1247,19 +1246,19 @@ function DatabaseManager() {
                   disabled={busy}
                   className="w-full text-xs text-goblin-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-goblin-800 file:text-goblin-100 hover:file:bg-goblin-700 cursor-pointer"
                 />
-                <p className="text-[10px] text-goblin-400 mt-1">Accepts JSON or CSV with columns: `Name, Phone, Email, Birthday, Tags, Notes` (Tags split by comma)</p>
+                <p className="text-[10px] text-goblin-400 mt-1">{tr('Accepts JSON or CSV with columns: `Name, Phone, Email, Birthday, Tags, Notes` (Tags split by comma)')}</p>
               </div>
             </div>
           </div>
 
           {/* Vendors Directory */}
           <div className="space-y-3 pl-6">
-            <h4 className="font-medium text-goblin-100 text-sm">Vendors Directory</h4>
+            <h4 className="font-medium text-goblin-100 text-sm">{tr('Vendors Directory')}</h4>
             <div className="flex flex-col gap-2">
-              <Btn onClick={exportVendors} disabled={busy}>Export Vendors (JSON)</Btn>
-              <Btn onClick={syncVendorsFromPoster} disabled={busy}>Sync from Poster POS</Btn>
+              <Btn onClick={exportVendors} disabled={busy}>{tr('Export Vendors (JSON)')}</Btn>
+              <Btn onClick={syncVendorsFromPoster} disabled={busy}>{tr('Sync from Poster POS')}</Btn>
               <div className="border-t pt-2 mt-1">
-                <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">Import Vendors</label>
+                <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">{tr('Import Vendors')}</label>
                 <input
                   type="file"
                   accept=".json"
@@ -1267,7 +1266,7 @@ function DatabaseManager() {
                   disabled={busy}
                   className="w-full text-xs text-goblin-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-goblin-800 file:text-goblin-100 hover:file:bg-goblin-700 cursor-pointer"
                 />
-                <p className="text-[10px] text-goblin-400 mt-1">Accepts JSON with vendor records from export or Poster POS format.</p>
+                <p className="text-[10px] text-goblin-400 mt-1">{tr('Accepts JSON with vendor records from export or Poster POS format.')}</p>
               </div>
             </div>
           </div>
@@ -1292,11 +1291,11 @@ interface PaymentMethod {
 }
 
 const PAY_KINDS = [
-  { value: 'CASH', label: 'Cash (كاش)' },
-  { value: 'CARD', label: 'Card (بطاقة)' },
-  { value: 'WALLET', label: 'Mobile Wallet (محفظة)' },
-  { value: 'LOYALTY_POINTS', label: 'Loyalty Points (نقاط)' },
-  { value: 'OTHER', label: 'Other (أخرى)' },
+  { value: 'CASH', label: tr('Cash (كاش)') },
+  { value: 'CARD', label: tr('Card (بطاقة)') },
+  { value: 'WALLET', label: tr('Mobile Wallet (محفظة)') },
+  { value: 'LOYALTY_POINTS', label: tr('Loyalty Points (نقاط)') },
+  { value: 'OTHER', label: tr('Other (أخرى)') },
 ];
 
 function PaymentMethods() {
@@ -1306,13 +1305,13 @@ function PaymentMethods() {
   const [err, setErr] = useState('');
 
   async function deleteMethod(id: string) {
-    if (!confirm('Are you sure you want to delete this payment method?')) return;
+    if (!confirm(tr('Are you sure you want to delete this payment method?'))) return;
     setErr('');
     try {
       await api(`/admin/payment-methods/${id}`, { method: 'DELETE' });
       reload();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Delete failed');
+      setErr(e instanceof Error ? e.message : tr('Delete failed'));
     }
   }
 
@@ -1322,23 +1321,23 @@ function PaymentMethods() {
       <ErrorBanner message={err} />
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-goblin-100">Payment Methods</h2>
-          <p className="text-xs text-goblin-400 font-normal">Manage payment options accepted at the POS.</p>
+          <h2 className="text-lg font-bold text-goblin-100">{tr('Payment Methods')}</h2>
+          <p className="text-xs text-goblin-400 font-normal">{tr('Manage payment options accepted at the POS.')}</p>
         </div>
-        <Btn kind="primary" onClick={() => { setEditingMethod(null); setCreateOpen(true); }}>+ New Payment Method</Btn>
+        <Btn kind="primary" onClick={() => { setEditingMethod(null); setCreateOpen(true); }}>{tr('+ New Payment Method')}</Btn>
       </div>
-      <Table headers={['Name (EN)', 'Name (AR)', 'Type (Kind)', 'Linked Account', 'Opens Drawer', 'Status', 'Sort Order', 'Actions']}
+      <Table headers={[tr('Name (EN)'), tr('Name (AR)'), tr('Type (Kind)'), tr('Linked Account'), tr('Opens Drawer'), tr('Status'), tr('Sort Order'), tr('Actions')]}
         rows={(methods ?? []).map((m) => [
           m.name,
           m.nameAr || '—',
           m.kind,
           m.account ? `${m.account.name} (${m.account.code})` : '—',
           m.opensDrawer ? 'Yes' : 'No',
-          m.isActive ? <span className="text-goblin-500 font-semibold">Active</span> : <span className="text-goblin-400">Inactive</span>,
+          m.isActive ? <span className="text-goblin-500 font-semibold">{tr('Active')}</span> : <span className="text-goblin-400">{tr('Inactive')}</span>,
           String(m.sortOrder),
           <div key={m.id} className="flex gap-2">
-            <Btn onClick={() => { setEditingMethod(m); setCreateOpen(true); }}>Edit</Btn>
-            <Btn kind="danger" onClick={() => void deleteMethod(m.id)}>Delete</Btn>
+            <Btn onClick={() => { setEditingMethod(m); setCreateOpen(true); }}>{tr('Edit')}</Btn>
+            <Btn kind="danger" onClick={() => void deleteMethod(m.id)}>{tr('Delete')}</Btn>
           </div>,
         ])} />
       {createOpen && (
@@ -1372,7 +1371,7 @@ function PaymentMethodFormModal({ onClose, onDone, method }: { onClose: () => vo
     : [];
 
   async function submit() {
-    if (!name.trim()) { setErr('Name is required'); return; }
+    if (!name.trim()) { setErr(tr('Name is required')); return; }
     setErr('');
     const body = {
       name: name.trim(),
@@ -1391,25 +1390,25 @@ function PaymentMethodFormModal({ onClose, onDone, method }: { onClose: () => vo
       }
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Save failed');
+      setErr(e instanceof Error ? e.message : tr('Save failed'));
     }
   }
 
   return (
-    <Modal title={method ? "Edit Payment Method" : "New Payment Method"} onClose={onClose}>
+    <Modal title={method ? tr('Edit Payment Method') : tr('New Payment Method')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-4">
-        <Field label="Name (English)"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Name (Arabic - Optional)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
-        <Field label="Type (Kind)">
+        <Field label={tr('Name (English)')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Name (Arabic - Optional)')}><TextInput value={nameAr} onChange={setNameAr} /></Field>
+        <Field label={tr('Type (Kind)')}>
           <Select value={kind} onChange={setKind} options={PAY_KINDS} />
         </Field>
-        <Field label="Linked Ledger Account (Payment Source)">
+        <Field label={tr('Linked Ledger Account (Payment Source)')}>
           <Select
             value={accountId}
             onChange={setAccountId}
             options={[
-              { value: '', label: 'None (Use default cash/bank)' },
+              { value: '', label: tr('None (Use default cash/bank)') },
               ...sourceAccounts
             ]}
           />
@@ -1417,17 +1416,17 @@ function PaymentMethodFormModal({ onClose, onDone, method }: { onClose: () => vo
         <div className="flex flex-col gap-2 rounded-lg border border-goblin-800 p-3 bg-goblin-800">
           <label className="flex items-center gap-2 text-sm text-goblin-100 font-semibold cursor-pointer">
             <input type="checkbox" checked={opensDrawer} onChange={(e) => setOpensDrawer(e.target.checked)} />
-            <span>Opens Cash Drawer</span>
+            <span>{tr('Opens Cash Drawer')}</span>
           </label>
           <label className="flex items-center gap-2 text-sm text-goblin-100 font-semibold cursor-pointer mt-1">
             <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-            <span>Active (Available in POS)</span>
+            <span>{tr('Active (Available in POS)')}</span>
           </label>
         </div>
-        <Field label="Sort Order"><TextInput type="number" value={sortOrder} onChange={setSortOrder} /></Field>
+        <Field label={tr('Sort Order')}><TextInput type="number" value={sortOrder} onChange={setSortOrder} /></Field>
         <div className="flex justify-end gap-2 pt-2">
-          <Btn onClick={onClose}>Cancel</Btn>
-          <Btn kind="primary" onClick={() => void submit()}>{method ? "Save" : "Create"}</Btn>
+          <Btn onClick={onClose}>{tr('Cancel')}</Btn>
+          <Btn kind="primary" onClick={() => void submit()}>{method ? tr('Save') : tr('Create')}</Btn>
         </div>
       </div>
     </Modal>
@@ -1437,7 +1436,7 @@ function PaymentMethodFormModal({ onClose, onDone, method }: { onClose: () => vo
 function flattenAccounts(nodes: any[], prefix = ''): { value: string; label: string; isPaymentSource: boolean; code: string; balanceCents: number }[] {
   const list: any[] = [];
   for (const n of nodes) {
-    list.push({ value: n.id, label: `${prefix}${n.name} (${n.code}) (${(n.balanceCents / 100).toFixed(2)} EGP)`, isPaymentSource: n.isPaymentSource, code: n.code, balanceCents: n.balanceCents });
+    list.push({ value: n.id, label: `${prefix}${n.name} (${n.code}) (${(n.balanceCents / 100).toFixed(2)} ${tr('EGP)')}`, isPaymentSource: n.isPaymentSource, code: n.code, balanceCents: n.balanceCents });
     if (n.subAccounts && n.subAccounts.length > 0) {
       list.push(...flattenAccounts(n.subAccounts, prefix + '  '));
     }

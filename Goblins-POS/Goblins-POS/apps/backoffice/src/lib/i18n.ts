@@ -1,3 +1,4 @@
+import { AR_PATTERNS, AR_TEXT } from '../../../../packages/ui/i18n-ar';
 /**
  * Back-office i18n scaffold (EN/AR + RTL). Shell/nav/common strings are
  * translated; individual tab bodies remain English for now and can be
@@ -58,6 +59,21 @@ const AR: Dict = {
 };
 
 const DICT: Record<Lang, Dict> = { en: EN, ar: AR };
+
+/**
+ * Translate an English UI phrase. English is the key, so untranslated text
+ * simply stays English. Also used for server error messages.
+ */
+export function tr(text: string): string {
+  if (current === 'en' || !text) return text;
+  const exact = AR_TEXT[text] ?? AR_TEXT[text.trim()];
+  if (exact) return exact;
+  for (const [re, fn] of AR_PATTERNS) {
+    const m = re.exec(text);
+    if (m) return fn(m);
+  }
+  return text;
+}
 
 /** Translate a key for the current language (falls back to EN, then the key). */
 export function t(key: string): string {

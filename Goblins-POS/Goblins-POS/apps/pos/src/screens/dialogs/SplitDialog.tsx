@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Square, SquareCheck } from 'lucide-react';
 import { api } from '../../lib/api';
-import { fmtMoney, t } from '../../lib/i18n';
+import { fmtMoney, t, tx } from '../../lib/i18n';
 import { usePos } from '../../lib/store';
 import type { Order } from '../../lib/types';
 
@@ -35,7 +35,7 @@ export function SplitDialog({ order, onSplit, onClose }: {
       });
       onSplit(res.child.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error');
+      setError(e instanceof Error ? e.message : tx('Error'));
     } finally {
       setBusy(false);
     }
@@ -61,7 +61,7 @@ export function SplitDialog({ order, onSplit, onClose }: {
           ))}
         </div>
         {allSelected && (
-          <p className="mt-2 text-xs text-amber-300">Leave at least one item on this bill.</p>
+          <p className="mt-2 text-xs text-amber-300">{tx('Leave at least one item on this bill.')}</p>
         )}
         <div className="mt-4 flex gap-2">
           <button onClick={onClose} className="flex-1 rounded-xl bg-goblin-800 py-3">{t(lang, 'cancel')}</button>

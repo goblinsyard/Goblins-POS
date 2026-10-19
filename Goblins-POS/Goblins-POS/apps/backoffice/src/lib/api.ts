@@ -1,3 +1,4 @@
+import { tr } from './i18n';
 let token: string | null = sessionStorage.getItem('bo.token');
 
 export function setToken(t: string | null) {
@@ -27,7 +28,7 @@ export async function api<T>(path: string, options: { method?: string; body?: un
   try { return JSON.parse(text) as T; } catch { return text as unknown as T; }
 }
 
-export const egp = (cents: number) => `${(cents / 100).toLocaleString('en-EG', { maximumFractionDigits: 2 })} EGP`;
+export const egp = (cents: number) => `${(cents / 100).toLocaleString('en-EG', { maximumFractionDigits: 2 })} ${tr('EGP')}`;
 export const pct = (bps: number) => `${(bps / 100).toFixed(1)}%`;
 export const cairoTime = (iso: string) =>
   new Date(iso).toLocaleString('en-EG', { timeZone: 'Africa/Cairo', dateStyle: 'short', timeStyle: 'short' });

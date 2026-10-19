@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Spinner, TextInput, useLoad } from '../lib/ui';
+import { tr } from '../lib/i18n';
 
 interface AdminResource {
   id: string; name: string; nameAr?: string | null; type: string; capacity: number;
@@ -12,9 +13,9 @@ interface AdminZone { id: string; name: string; nameAr?: string | null; resource
 interface RatePlanRef { id: string; name: string }
 
 const TYPES = [
-  { value: 'RESTAURANT_TABLE', label: 'Restaurant table' },
-  { value: 'BILLIARDS_TABLE', label: 'Billiards table' },
-  { value: 'PS_ROOM', label: 'PlayStation room' },
+  { value: 'RESTAURANT_TABLE', label: tr('Restaurant table') },
+  { value: 'BILLIARDS_TABLE', label: tr('Billiards table') },
+  { value: 'PS_ROOM', label: tr('PlayStation room') },
 ];
 
 const VIEWS = ['list', 'layout'] as const;
@@ -29,6 +30,7 @@ export function TablesView() {
   const [editingZone, setEditingZone] = useState<AdminZone | null>(null);
   const [newZoneOpen, setNewZoneOpen] = useState(false);
   const [err, setErr] = useState('');
+  const [deleting, setDeleting] = useState<AdminResource | null>(null);
 
   if (error) return <p className="p-8 text-red-600">{error}</p>;
   if (!zones) return <Spinner />;
@@ -38,7 +40,7 @@ export function TablesView() {
       <div className="space-y-6">
         <div className="flex items-center gap-2">
           <Pills value={view} onChange={setView} options={VIEWS} />
-          <p className="text-sm text-goblin-400">Drag tables to rearrange — positions save when you drop.</p>
+          <p className="text-sm text-goblin-400">{tr('Drag tables to rearrange — positions save when you drop.')}</p>
         </div>
         {zones.map((zone) => (
           <ZoneCanvas key={zone.id} zone={zone} onEdit={setEditing} />
@@ -56,8 +58,12 @@ export function TablesView() {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Pills value={view} onChange={setView} options={VIEWS} />
-        <Btn kind="primary" onClick={() => setNewZoneOpen(true)}>+ New zone</Btn>
+        <Btn kind="primary" onClick={() => setNewZoneOpen(true)}>{tr('+ New zone')}</Btn>
         <ErrorBanner message={err} />
+        {deleting && (
+          <DeleteResourceModal resource={deleting} onClose={() => setDeleting(null)}
+            onDone={() => { setDeleting(null); reload(); }} />
+        )}
       </div>
       {zones.map((zone) => (
         <div key={zone.id}>
@@ -65,17 +71,17 @@ export function TablesView() {
             <div className="flex items-center gap-3">
               <h2 className="font-semibold text-goblin-100">{zone.name}{zone.nameAr ? ` · ${zone.nameAr}` : ''}</h2>
               <button onClick={() => setEditingZone(zone)} className="text-xs text-goblin-400 hover:text-goblin-200 underline font-medium">
-                Edit zone
+                {tr('Edit zone')}
               </button>
             </div>
-            <Btn onClick={() => setCreatingIn(zone)}>+ Add table</Btn>
+            <Btn onClick={() => setCreatingIn(zone)}>{tr('+ Add table')}</Btn>
           </div>
           <div className="overflow-hidden rounded-xl bg-goblin-900 shadow">
             <table className="w-full text-sm">
               <thead className="bg-goblin-800 text-left text-goblin-300">
                 <tr>
-                  <th className="p-3">Name</th><th className="p-3">Type</th><th className="p-3">Capacity</th>
-                  <th className="p-3">Rate plan</th><th className="p-3">Position / size</th><th className="p-3">Status</th><th className="p-3" />
+                  <th className="p-3">{tr('Name')}</th><th className="p-3">{tr('Type')}</th><th className="p-3">{tr('Capacity')}</th>
+                  <th className="p-3">{tr('Rate plan')}</th><th className="p-3">{tr('Position / size')}</th><th className="p-3">{tr('Status')}</th><th className="p-3" />
                 </tr>
               </thead>
               <tbody>
@@ -86,20 +92,21 @@ export function TablesView() {
                     <td className="p-3">{r.capacity}</td>
                     <td className="p-3">{r.ratePlan?.name ?? '—'}</td>
                     <td className="p-3 font-mono text-xs text-goblin-300">
-                      ({r.posX}, {r.posY}) {r.width}×{r.height} {r.shape}
+                      ({r.posX}, {r.posY}) {r.width}×{r.height} {tr(r.shape)}
                     </td>
-                    <td className="p-3 text-xs">{r.isActive ? r.status : 'INACTIVE'}</td>
+                    <td className="p-3 text-xs">{r.isActive ? tr(r.status) : tr('INACTIVE')}</td>
                     <td className="p-3 text-right">
                       <div className="flex gap-2 justify-end">
-                        <Btn onClick={() => setEditing(r)}>Edit</Btn>
-                        <Btn onClick={() => setDuplicating(r)}>Duplicate</Btn>
+                        <Btn onClick={() => setEditing(r)}>{tr('Edit')}</Btn>
+                        <Btn onClick={() => setDuplicating(r)}>{tr('Duplicate')}</Btn>
+                        <Btn kind="danger" onClick={() => setDeleting(r)}>{tr('Delete')}</Btn>
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {!zone.resources.length && <p className="p-4 text-sm text-goblin-400">No tables in this zone</p>}
+            {!zone.resources.length && <p className="p-4 text-sm text-goblin-400">{tr('No tables in this zone')}</p>}
           </div>
         </div>
       ))}
@@ -236,7 +243,7 @@ function ZoneCanvas({ zone, onEdit }: { zone: AdminZone; onEdit: (r: AdminResour
       setSavedFlash(d.id);
       setTimeout(() => setSavedFlash(''), 800);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Save failed');
+      setErr(e instanceof Error ? e.message : tr('Save failed'));
     }
   }
 
@@ -252,7 +259,7 @@ function ZoneCanvas({ zone, onEdit }: { zone: AdminZone; onEdit: (r: AdminResour
             <div key={r.id}
               onPointerDown={(e) => downMove(e, r)} onPointerMove={move} onPointerUp={() => void up()}
               onDoubleClick={() => onEdit(r)}
-              title={`${r.name} — drag to move, drag corner to resize, double-click to edit`}
+              title={`${r.name} ${tr('— drag to move, drag corner to resize, double-click to edit')}`}
               className={`absolute flex cursor-grab select-none items-center justify-center border-2 text-xs font-semibold text-white active:cursor-grabbing ${savedFlash === r.id ? 'border-yellow-300' : 'border-goblin-600'} ${r.shape === 'circle' ? 'rounded-full' : 'rounded-lg'} ${r.isActive ? 'bg-goblin-600' : 'bg-goblin-800 opacity-60'}`}
               style={{ left: g.x, top: g.y, width: g.w, height: g.h, touchAction: 'none' }}>
               {r.name}
@@ -267,7 +274,7 @@ function ZoneCanvas({ zone, onEdit }: { zone: AdminZone; onEdit: (r: AdminResour
             </div>
           );
         })}
-        {!zone.resources.length && <p className="p-4 text-sm text-goblin-400/60">No tables in this zone</p>}
+        {!zone.resources.length && <p className="p-4 text-sm text-goblin-400/60">{tr('No tables in this zone')}</p>}
       </div>
     </div>
   );
@@ -278,19 +285,19 @@ function NewZoneModal({ onClose, onDone }: { onClose: () => void; onDone: () => 
   const [nameAr, setNameAr] = useState('');
   const [err, setErr] = useState('');
   async function submit() {
-    if (!name.trim()) { setErr('Name is required'); return; }
+    if (!name.trim()) { setErr(tr('Name is required')); return; }
     try {
       await api('/admin/zones', { method: 'POST', body: { name: name.trim(), nameAr: nameAr.trim() || undefined } });
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
   return (
-    <Modal title="New zone" onClose={onClose}>
+    <Modal title={tr('New zone')} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Name"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Name (Arabic)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
-        <Btn kind="primary" onClick={() => void submit()}>Create zone</Btn>
+        <Field label={tr('Name')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Name (Arabic)')}><TextInput value={nameAr} onChange={setNameAr} /></Field>
+        <Btn kind="primary" onClick={() => void submit()}>{tr('Create zone')}</Btn>
       </div>
     </Modal>
   );
@@ -310,36 +317,40 @@ function EditZoneModal({ zone, onClose, onDone }: { zone: AdminZone; onClose: ()
   }, [zone]);
 
   async function submit() {
-    if (!name.trim()) { setErr('Name is required'); return; }
+    if (!name.trim()) { setErr(tr('Name is required')); return; }
     const order = Number(sortOrder);
-    if (!Number.isInteger(order)) { setErr('Sort order must be an integer'); return; }
+    if (!Number.isInteger(order)) { setErr(tr('Sort order must be an integer')); return; }
     try {
       await api(`/admin/zones/${zone.id}`, {
         method: 'PATCH',
         body: { name: name.trim(), nameAr: nameAr.trim() || null, sortOrder: order },
       });
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   async function handleDelete() {
-    if (!confirm(`Are you sure you want to delete zone "${zone.name}"?`)) return;
+    // two taps instead of a browser confirm() box, which can be blocked
+    if (!confirmingDelete) { setConfirmingDelete(true); return; }
     try {
       await api(`/admin/zones/${zone.id}`, { method: 'DELETE' });
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title={`Edit Zone: ${zone.name}`} onClose={onClose}>
+    <Modal title={`${tr('Edit Zone:')} ${zone.name}`} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
-        <Field label="Name"><TextInput value={name} onChange={setName} /></Field>
-        <Field label="Name (Arabic)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
-        <Field label="Sort Order (determines order in POS & Admin)"><TextInput value={sortOrder} onChange={setSortOrder} type="number" /></Field>
+        <Field label={tr('Name')}><TextInput value={name} onChange={setName} /></Field>
+        <Field label={tr('Name (Arabic)')}><TextInput value={nameAr} onChange={setNameAr} /></Field>
+        <Field label={tr('Sort Order (determines order in POS & Admin)')}><TextInput value={sortOrder} onChange={setSortOrder} type="number" /></Field>
         <div className="flex justify-between items-center pt-2">
-          <Btn kind="danger" onClick={() => void handleDelete()}>Delete Zone</Btn>
-          <Btn kind="primary" onClick={() => void submit()}>Save Changes</Btn>
+          <Btn kind="danger" onClick={() => void handleDelete()}>
+            {confirmingDelete ? tr('Tap again to delete') : tr('Delete Zone')}
+          </Btn>
+          <Btn kind="primary" onClick={() => void submit()}>{tr('Save Changes')}</Btn>
         </div>
       </div>
     </Modal>
@@ -369,10 +380,10 @@ function ResourceModal({ resource, duplicateFrom, zone, zones, ratePlans, onClos
   const needsRatePlan = type !== 'RESTAURANT_TABLE';
 
   async function submit() {
-    if (!name.trim() || !zoneId) { setErr('Name and zone are required'); return; }
-    if (needsRatePlan && !ratePlanId) { setErr('Billiards/PS need a rate plan for the timer'); return; }
+    if (!name.trim() || !zoneId) { setErr(tr('Name and zone are required')); return; }
+    if (needsRatePlan && !ratePlanId) { setErr(tr('Billiards/PS need a rate plan for the timer')); return; }
     const geometry = { posX: Number(posX), posY: Number(posY), width: Number(width), height: Number(height) };
-    if (Object.values(geometry).some((n) => !Number.isFinite(n))) { setErr('Geometry must be numeric'); return; }
+    if (Object.values(geometry).some((n) => !Number.isFinite(n))) { setErr(tr('Geometry must be numeric')); return; }
     try {
       if (resource) {
         await api(`/admin/resources/${resource.id}`, { method: 'PATCH', body: {
@@ -389,35 +400,35 @@ function ResourceModal({ resource, duplicateFrom, zone, zones, ratePlans, onClos
         } });
       }
       onDone();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+    } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
   }
 
   return (
-    <Modal title={resource ? `Edit ${resource.name}` : (duplicateFrom ? `Duplicate ${duplicateFrom.name}` : `New table in ${zone?.name}`)} onClose={onClose}>
+    <Modal title={resource ? `${tr('Edit')} ${resource.name}` : (duplicateFrom ? `${tr('Duplicate')} ${duplicateFrom.name}` : `${tr('New table in')} ${zone?.name}`)} onClose={onClose}>
       <ErrorBanner message={err} />
       <div className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Name"><TextInput value={name} onChange={setName} /></Field>
-          <Field label="Name (Arabic)"><TextInput value={nameAr} onChange={setNameAr} /></Field>
+          <Field label={tr('Name')}><TextInput value={name} onChange={setName} /></Field>
+          <Field label={tr('Name (Arabic)')}><TextInput value={nameAr} onChange={setNameAr} /></Field>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Type">
+          <Field label={tr('Type')}>
             <Select value={type} onChange={setType} options={TYPES} />
           </Field>
-          <Field label="Zone">
+          <Field label={tr('Zone')}>
             <Select value={zoneId} onChange={setZoneId}
               options={zones.map((z) => ({ value: z.id, label: z.name }))} />
           </Field>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Capacity"><TextInput value={capacity} onChange={setCapacity} type="number" /></Field>
-          <Field label="Shape">
+          <Field label={tr('Capacity')}><TextInput value={capacity} onChange={setCapacity} type="number" /></Field>
+          <Field label={tr('Shape')}>
             <Select value={shape} onChange={setShape}
-              options={[{ value: 'rect', label: 'Rectangle' }, { value: 'circle', label: 'Circle' }]} />
+              options={[{ value: 'rect', label: tr('Rectangle') }, { value: 'circle', label: tr('Circle') }]} />
           </Field>
         </div>
         {needsRatePlan && (
-          <Field label="Rate plan (time billing)">
+          <Field label={tr('Rate plan (time billing)')}>
             <Select value={ratePlanId} onChange={setRatePlanId} allowEmpty="— pick —"
               options={ratePlans.map((p) => ({ value: p.id, label: p.name }))} />
           </Field>
@@ -425,16 +436,47 @@ function ResourceModal({ resource, duplicateFrom, zone, zones, ratePlans, onClos
         <div className="grid grid-cols-4 gap-3">
           <Field label="X"><TextInput value={posX} onChange={setPosX} type="number" /></Field>
           <Field label="Y"><TextInput value={posY} onChange={setPosY} type="number" /></Field>
-          <Field label="Width"><TextInput value={width} onChange={setWidth} type="number" /></Field>
-          <Field label="Height"><TextInput value={height} onChange={setHeight} type="number" /></Field>
+          <Field label={tr('Width')}><TextInput value={width} onChange={setWidth} type="number" /></Field>
+          <Field label={tr('Height')}><TextInput value={height} onChange={setHeight} type="number" /></Field>
         </div>
         {resource && (
           <label className="flex items-center gap-2 text-sm text-goblin-200">
             <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
-            Active (visible on the POS floor)
+            {tr('Active (visible on the POS floor)')}
           </label>
         )}
-        <Btn kind="primary" onClick={() => void submit()}>{resource ? 'Save' : 'Create table'}</Btn>
+        <Btn kind="primary" onClick={() => void submit()}>{resource ? tr('Save') : tr('Create table')}</Btn>
+      </div>
+    </Modal>
+  );
+}
+
+
+/** In-page confirmation (browser confirm() boxes can be blocked) that shows the server's answer. */
+function DeleteResourceModal({ resource, onClose, onDone }: {
+  resource: AdminResource; onClose: () => void; onDone: () => void;
+}) {
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function confirmDelete() {
+    setBusy(true); setErr('');
+    try {
+      await api(`/admin/resources/${resource.id}`, { method: 'DELETE' });
+      onDone();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : tr('Failed'));
+      setBusy(false);
+    }
+  }
+  return (
+    <Modal title={`${tr('Delete')} ${resource.name}`} onClose={onClose}>
+      <ErrorBanner message={err} />
+      <p className="mb-4 text-sm text-goblin-300">
+        {tr('A table that was used before is archived instead, so its sales history stays.')}
+      </p>
+      <div className="flex justify-end gap-2">
+        <Btn onClick={onClose}>{tr('Cancel')}</Btn>
+        <Btn kind="danger" disabled={busy} onClick={() => void confirmDelete()}>{tr('Delete')}</Btn>
       </div>
     </Modal>
   );

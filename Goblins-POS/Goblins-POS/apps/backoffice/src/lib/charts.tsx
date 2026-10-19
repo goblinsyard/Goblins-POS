@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { egp } from './api';
+import { tr } from './i18n';
 
 /**
  * Themed chart primitives built on Recharts, following the data-viz method:
@@ -36,8 +37,8 @@ export function ChartCard({ title, subtitle, icon, right, children, className = 
     <div className={`rounded-2xl border border-goblin-800 bg-goblin-900 p-5 shadow-sm ${className}`}>
       <div className="mb-4 flex items-start justify-between gap-2">
         <div>
-          <h2 className="flex items-center gap-2 text-base font-bold text-goblin-50">{icon}{title}</h2>
-          {subtitle && <p className="text-[11px] font-medium text-goblin-300">{subtitle}</p>}
+          <h2 className="flex items-center gap-2 text-base font-bold text-goblin-50">{icon}{tr(title)}</h2>
+          {subtitle && <p className="text-[11px] font-medium text-goblin-300">{tr(subtitle)}</p>}
         </div>
         {right}
       </div>
@@ -156,7 +157,7 @@ export function SharePie({ slices, height = 240, format = egp }: {
 function Empty({ height }: { height: number }) {
   return (
     <div className="flex items-center justify-center text-xs text-goblin-400" style={{ height }}>
-      No data for this period.
+      {tr('No data for this period.')}
     </div>
   );
 }
