@@ -13,6 +13,10 @@ import { AutoBackupService } from './auto-backup.service';
 
 const execAsync = promisify(exec);
 
+/** Logins shipped with the demo seed — anyone who has read the README knows them. */
+const DEMO_PASSWORDS = ['admin123'];
+const DEMO_PINS = ['9999', '1111', '2222', '3333', '4444', '5555', '0000', '1234'];
+
 /**
  * Back-office administration: menu, rate plans, printers, staff, time clock.
  * Free-form bodies are validated structurally here; all writes are audited.
@@ -642,6 +646,35 @@ export class AdminController {
         createdAt: true,
       },
     });
+  }
+
+  /**
+   * Staff still signing in with a demo password or PIN from the README.
+   * Shown as a warning in the back office until each one is changed.
+   */
+  @Get('security/weak-logins')
+  @RequirePermissions('staff.manage')
+  async weakLogins() {
+    const users = await this.prisma.user.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, passwordHash: true, pinHash: true, role: { select: { name: true } } },
+    });
+    const matches = async (hash: string | null, candidates: string[]) => {
+      if (!hash) return false;
+      for (const c of candidates) {
+        if (await argon2.verify(hash, c).catch(() => false)) return true;
+      }
+      return false;
+    };
+    const weak: { id: string; name: string; role: string; password: boolean; pin: boolean }[] = [];
+    for (const u of users) {
+      const [password, pin] = await Promise.all([
+        matches(u.passwordHash, DEMO_PASSWORDS),
+        matches(u.pinHash, DEMO_PINS),
+      ]);
+      if (password || pin) weak.push({ id: u.id, name: u.name, role: u.role.name, password, pin });
+    }
+    return weak;
   }
 
   @Get('roles')

@@ -46,8 +46,12 @@ describe('discount + accounting integrity', () => {
     owner = await pinLogin('Owner', '9999');
     const shift = (await call(owner, '/shifts/current')).body;
     if (!shift?.id) await call(owner, '/shifts/open', 'POST', { floatCents: 0 });
-    const cats = (await call(owner, '/menu')).body as { items?: { id: string; priceCents: number; is86ed: boolean }[] }[];
-    itemId = cats.flatMap((c) => c.items ?? []).find((i) => i.priceCents >= 5000 && !i.is86ed)!.id;
+    type MenuRow = { id: string; priceCents: number; is86ed: boolean; modifierGroups?: unknown[] };
+    const cats = (await call(owner, '/menu')).body as { items?: MenuRow[] }[];
+    // a plain item with no option groups, so no modifiers are needed to add it
+    itemId = cats
+      .flatMap((c) => c.items ?? [])
+      .find((i) => i.priceCents >= 5000 && !i.is86ed && !(i.modifierGroups ?? []).length)!.id;
     const methods = (await call(owner, '/payment-methods')).body as { id: string; kind: string }[];
     cashId = methods.find((m) => m.kind === 'CASH')!.id;
   });
@@ -105,6 +109,20 @@ describe('discount + accounting integrity', () => {
     expect(updated.discountCents).toBe(Math.round(gross / 2));
     expect(updated.lineCents).toBe(gross - updated.discountCents);
     await call(owner, `/orders/${order.id}/void`, 'POST', { reason: 'test cleanup' });
+  });
+
+  it('rejects items that skip a required option (e.g. size)', async () => {
+    type Group = { group?: { minSelect: number; isActive: boolean }; minSelect?: number };
+    type MenuRow = { id: string; is86ed: boolean; modifierGroups?: Group[] };
+    const cats = (await call(owner, '/menu')).body as { items?: MenuRow[] }[];
+    const needsOption = cats
+      .flatMap((c) => c.items ?? [])
+      .find((i) => !i.is86ed && (i.modifierGroups ?? []).some((g) => (g.group?.minSelect ?? g.minSelect ?? 0) > 0));
+    if (!needsOption) return; // menu has no required options
+    const order = (await call(owner, '/orders', 'POST', { type: 'TAKEAWAY' })).body;
+    const res = await call(owner, `/orders/${order.id}/items`, 'POST', { items: [{ itemId: needsOption.id, quantity: 1 }] });
+    expect(res.status).toBe(400);
+    await call(owner, `/orders/${order.id}/abandon`, 'POST');
   });
 
   it('hides credential settings from non-managers', async () => {

@@ -27,6 +27,7 @@ export const SETTING_DEFAULTS = {
   'expense.allocationManual.BAR': 2000,
   'expense.allocationManual.BILLIARDS': 2000,
   'expense.allocationManual.PLAYSTATION': 2000,
+  'pos.autoLockMinutes': 3, // lock idle POS terminals back to the PIN screen (0 = never)
   'session.prepaidAlertMinutes': 10, // alert when 10 min left on prepaid block
   'session.prepaidSmsAlertMinutes': 5, // SMS/WhatsApp alert minutes before expiry
   'business.currency': 'EGP',

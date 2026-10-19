@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { api, setTokens } from './api';
+import { api, getRefreshToken, setTokens } from './api';
 import type { SessionUser, Shift } from './types';
 
 interface PosState {
@@ -80,6 +80,15 @@ export const usePos = create<PosState>((set) => ({
   },
 
   logout: () => {
+    // revoke the refresh token so a locked terminal can't silently resume the session
+    const refresh = getRefreshToken();
+    if (refresh) {
+      void fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: refresh }),
+      }).catch(() => {});
+    }
     setTokens(null, null);
     sessionStorage.removeItem('pos.user');
     set({ user: null, screen: 'floor', activeOrderId: null });

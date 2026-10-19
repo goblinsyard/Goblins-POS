@@ -12,6 +12,10 @@ export function setTokens(access: string | null, refresh: string | null) {
   else sessionStorage.removeItem('pos.refreshToken');
 }
 
+export function getRefreshToken(): string | null {
+  return refreshToken;
+}
+
 export function hasSession(): boolean {
   return !!accessToken;
 }

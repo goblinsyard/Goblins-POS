@@ -81,6 +81,11 @@ The route has no `@RequirePermissions`. **Confirmed live:** a 7-permission Waite
 | P1 item-discounted sales missing from the ledger | **Fixed** — entry posts and balances (12306 = 12306). Bonus pool and receipt/POS discount row corrected too. |
 | P1 quantity change dropping discount | **Fixed** — discount re-applied to the new quantity. Bill-level % discounts now also follow items added later. |
 | P2 settings leak | **Fixed** — non-managers no longer receive Twilio credentials. |
-| P2 secret hygiene, P3 menu data, P3 enhancements | Open. |
+| P3 POS idle auto-lock | **Done** — `pos.autoLockMinutes` (default 3, 0 = off, Settings → General); 20 s warning, then back to the PIN screen; refresh token revoked on logout. |
+| P2 demo logins | **Flagged** — back office shows a warning banner (owners/managers) listing staff still on README passwords/PINs. Change them in Staff. |
+| P3 menu data | **Done** — 20 demo items + 9 demo categories hidden (history kept); Smashed Croissant and Ice-Cream now require a choice; server now enforces required options and rejects options from other items. |
+| Stale HTML on terminals | **Fixed** — nginx serves `index.html` with `Cache-Control: no-cache`, so a reload always picks up a new build. |
+| Note | Back office → Settings "erase demo" button wipes ALL data (real menu, customers, sales), not just demo data. Treat it as a factory reset. |
+| P2 secret hygiene (prod secrets), cloud deploy | Open — before going to the cloud. |
 
 Regression tests: `apps/api/test/discount-integrity.spec.ts`.

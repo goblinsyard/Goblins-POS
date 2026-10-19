@@ -227,13 +227,36 @@ export class OrdersService {
       for (const input of inputs) {
         const item = await tx.menuItem.findUniqueOrThrow({
           where: { id: input.itemId },
-          include: { taxRate: true, priceSchedules: { where: { isActive: true } } },
+          include: {
+            taxRate: true,
+            priceSchedules: { where: { isActive: true } },
+            modifierGroups: { include: { group: true } },
+          },
         });
         if (item.is86ed) throw new BadRequestException(`${item.name} is unavailable (86'd)`);
+        if (!item.isActive) throw new BadRequestException(`${item.name} is not on the menu`);
 
-        const modifiers = input.modifierIds?.length
-          ? await tx.modifier.findMany({ where: { id: { in: input.modifierIds } } })
+        const modifierIds = [...new Set(input.modifierIds ?? [])];
+        const modifiers = modifierIds.length
+          ? await tx.modifier.findMany({ where: { id: { in: modifierIds }, isActive: true } })
           : [];
+        // Enforce the menu's modifier rules on the server too: only this item's
+        // modifiers, and each group's min/max (e.g. a required size, so a
+        // size-priced coffee can't be rung up at EGP 0).
+        const groups = item.modifierGroups.map((g) => g.group).filter((g) => g.isActive);
+        const groupIds = new Set(groups.map((g) => g.id));
+        if (modifiers.length !== modifierIds.length || modifiers.some((m) => !groupIds.has(m.groupId))) {
+          throw new BadRequestException(`Invalid options for ${item.name}`);
+        }
+        for (const g of groups) {
+          const picked = modifiers.filter((m) => m.groupId === g.id).length;
+          if (picked < g.minSelect) {
+            throw new BadRequestException(`${item.name}: choose ${g.minSelect} from "${g.name}"`);
+          }
+          if (g.maxSelect > 0 && picked > g.maxSelect) {
+            throw new BadRequestException(`${item.name}: at most ${g.maxSelect} from "${g.name}"`);
+          }
+        }
         const unitCents = this.effectivePrice(item);
         const modsCents = modifiers.reduce((a, m) => a + m.priceDeltaCents, 0);
         await tx.orderItem.create({

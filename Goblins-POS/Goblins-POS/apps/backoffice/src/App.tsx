@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, TrendingUp, Gauge, Landmark, Package, ShoppingCart, CalendarClock,
   Users, Receipt, BookOpen, UtensilsCrossed, ChefHat, LayoutGrid, Clock, UserCog,
@@ -122,6 +122,15 @@ export function App() {
     setLangState(next);
   }
 
+  const [weakLogins, setWeakLogins] = useState<{ name: string; password: boolean; pin: boolean }[]>([]);
+  useEffect(() => {
+    if (!authed) return;
+    // only users with staff.manage can see this; everyone else gets a 403 and no banner
+    api<{ name: string; password: boolean; pin: boolean }[]>('/admin/security/weak-logins')
+      .then(setWeakLogins)
+      .catch(() => setWeakLogins([]));
+  }, [authed, tab]);
+
   if (!authed) return <Login onDone={() => setAuthed(true)} />;
   const View = NAV.flatMap((s) => s.tabs).find((t2) => t2.name === tab)?.view ?? DashboardView;
   return (
@@ -189,6 +198,14 @@ export function App() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto p-4 md:p-6">
+        {weakLogins.length > 0 && (
+          <div className="mb-4 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-amber-300 [.light_&]:text-amber-800">
+            <strong>Change the demo logins before going live.</strong>{' '}
+            {weakLogins.map((w) => `${w.name} (${[w.password && 'password', w.pin && 'PIN'].filter(Boolean).join(' + ')})`).join(', ')}
+            {' '}still use the default from the README. Update them in{' '}
+            <button className="font-semibold underline" onClick={() => setTab('Staff')}>Staff</button>.
+          </div>
+        )}
         <View />
       </main>
     </div>
