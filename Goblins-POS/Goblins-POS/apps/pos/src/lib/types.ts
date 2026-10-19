@@ -112,6 +112,7 @@ export interface OrderItemLine {
   unitCents: number;
   modifiersCents: number;
   lineCents: number;
+  discountCents?: number;
   status: string;
   notes?: string | null;
   isTimeCharge: boolean;

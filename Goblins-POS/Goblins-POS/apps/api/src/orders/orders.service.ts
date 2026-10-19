@@ -84,6 +84,17 @@ export class OrdersService {
       },
     });
     const activeLines = order.items.filter((i) => i.status !== 'VOIDED');
+    // Bill-level percent discounts are re-resolved against the current lines, so a
+    // 10% discount stays 10% when items are added or voided afterwards.
+    const linesSum = activeLines.reduce((a, l) => a + l.lineCents, 0);
+    for (const d of order.discounts) {
+      if (d.orderItemId || d.kind !== 'PERCENT') continue;
+      const amount = resolveDiscount('PERCENT', d.value, linesSum);
+      if (amount !== d.amountCents) {
+        await tx.orderDiscount.update({ where: { id: d.id }, data: { amountCents: amount } });
+        d.amountCents = amount;
+      }
+    }
     // customer-group discount is applied automatically whenever the customer is attached (seat-level falls back to order-level)
     let groupDiscount = 0;
     for (const line of activeLines) {
@@ -362,9 +373,15 @@ export class OrdersService {
       approverId = await this.auth.approveWithPin(params.approverPin, 'discount.apply');
     }
     const order = await this.prisma.$transaction(async (tx) => {
+      const target = await tx.order.findUniqueOrThrow({ where: { id: params.orderId } });
+      if (target.status !== 'OPEN') throw new BadRequestException('Order is not open');
       let base: number;
       if (params.orderItemId) {
         const item = await tx.orderItem.findUniqueOrThrow({ where: { id: params.orderItemId } });
+        if (item.orderId !== params.orderId) {
+          throw new BadRequestException('Item does not belong to this order');
+        }
+        if (item.status === 'VOIDED') throw new BadRequestException('Cannot discount a voided item');
         base = item.lineCents;
         const amount = resolveDiscount(params.kind, params.value, base);
         await tx.orderItem.update({
@@ -1038,13 +1055,30 @@ export class OrdersService {
       if (item.status === 'PENDING') {
         const unitCents = item.unitCents;
         const modsCents = item.modifiersCents;
-        const lineCents = lineTotal(unitCents + modsCents, quantity);
+        const grossCents = lineTotal(unitCents + modsCents, quantity);
+
+        // Re-apply this line's discounts to the new gross so they aren't silently dropped.
+        const lineDiscounts = await tx.orderDiscount.findMany({
+          where: { orderItemId }, // item may have moved here from a split, so don't filter by order
+          orderBy: { createdAt: 'asc' },
+        });
+        let lineCents = grossCents;
+        let itemDiscountCents = 0;
+        for (const d of lineDiscounts) {
+          const amount = resolveDiscount(d.kind, d.value, lineCents);
+          lineCents -= amount;
+          itemDiscountCents += amount;
+          if (amount !== d.amountCents) {
+            await tx.orderDiscount.update({ where: { id: d.id }, data: { amountCents: amount } });
+          }
+        }
 
         await tx.orderItem.update({
           where: { id: orderItemId },
           data: {
             quantity: new Prisma.Decimal(quantity),
             lineCents,
+            discountCents: itemDiscountCents,
           },
         });
 

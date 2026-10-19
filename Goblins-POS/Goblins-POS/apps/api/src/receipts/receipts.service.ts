@@ -92,7 +92,11 @@ export class ReceiptsService {
     }
     out.push(line());
     out.push(row('Subtotal', formatEgp(order.subtotalCents)));
-    if (order.discountCents > 0) out.push(row('Discount', `-${formatEgp(order.discountCents)}`));
+    const itemDiscountCents = order.items
+      .filter((i) => i.status !== 'VOIDED')
+      .reduce((a, i) => a + i.discountCents, 0);
+    const billDiscountCents = order.discountCents - itemDiscountCents;
+    if (billDiscountCents > 0) out.push(row('Discount', `-${formatEgp(billDiscountCents)}`));
     if (showTax) {
       if (order.serviceChargeCents > 0) out.push(row('Service', formatEgp(order.serviceChargeCents)));
       out.push(row('VAT', formatEgp(order.taxCents)));

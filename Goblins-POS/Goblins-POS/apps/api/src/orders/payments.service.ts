@@ -136,7 +136,10 @@ export class PaymentsService {
         const vatAccount = await tx.account.findUnique({ where: { code: '2200' } });
 
         if (revAccount) {
-          const netSales = order.subtotalCents - order.discountCents;
+          // order.subtotalCents is already net of item-level discounts, and
+          // order.discountCents includes those item discounts again, so
+          // subtotal - discount double-counted them and unbalanced the entry.
+          const netSales = order.totalCents - order.serviceChargeCents - order.taxCents;
           creditLines.push({
             accountId: revAccount.id,
             debitCents: 0,
@@ -172,6 +175,11 @@ export class PaymentsService {
         const totalDebit = debitLines.reduce((sum, l) => sum + l.debitCents, 0);
         const totalCredit = creditLines.reduce((sum, l) => sum + l.creditCents, 0);
 
+        if (totalDebit > 0 && totalDebit !== totalCredit) {
+          console.error(
+            `[payments] journal for order #${order.number} is unbalanced (debit ${totalDebit}, credit ${totalCredit}) — entry not posted`,
+          );
+        }
         if (totalDebit > 0 && totalDebit === totalCredit) {
           await tx.journalEntry.create({
             data: {

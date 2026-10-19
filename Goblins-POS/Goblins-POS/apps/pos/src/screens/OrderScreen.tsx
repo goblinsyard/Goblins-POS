@@ -301,6 +301,10 @@ export function OrderScreen() {
 
   const isSessionOrder = order.type === 'BILLIARDS' || order.type === 'PS_ROOM';
   const isPaid = order.status === 'PAID';
+  // item-level discounts are already inside each line total; show only the bill-level part here
+  const billDiscountCents =
+    order.discountCents -
+    order.items.filter((i) => i.status !== 'VOIDED').reduce((a, i) => a + (i.discountCents ?? 0), 0);
   const hasPayments = (order.payments ?? []).some((p) => p.amountCents > 0);
   const laterCourses = [...new Set(
     order.items.filter((i) => i.status !== 'VOIDED' && (i.course ?? 1) > 1).map((i) => i.course as number),
@@ -730,7 +734,7 @@ export function OrderScreen() {
             </>
           )}
           <Row k={t(lang, 'subtotal')} v={fmtMoney(order.subtotalCents, lang)} />
-          {order.discountCents > 0 && <Row k={t(lang, 'discount')} v={`-${fmtMoney(order.discountCents, lang)}`} />}
+          {billDiscountCents > 0 && <Row k={t(lang, 'discount')} v={`-${fmtMoney(billDiscountCents, lang)}`} />}
           {(order.serviceChargeCents > 0 || order.noService) && (
             <div className="flex justify-between text-goblin-300">
               <span>{t(lang, 'service')}{order.noService ? ` (${lang === 'ar' ? 'ملغاة' : 'Removed'})` : ''}</span>

@@ -15,6 +15,8 @@ COPY apps/print-service/package.json apps/print-service/
 RUN pnpm install --frozen-lockfile --filter @goblins/pos --filter @goblins/backoffice --filter @goblins/kds --filter @goblins/shared
 COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
+# shared theme CSS + Tailwind preset, imported by all three apps
+COPY packages/ui packages/ui
 COPY apps/pos apps/pos
 COPY apps/backoffice apps/backoffice
 COPY apps/kds apps/kds

@@ -568,10 +568,14 @@ export class HrService {
         status: 'PAID',
         closedAt: { gte: start, lte: end },
       },
-      select: { subtotalCents: true, discountCents: true },
+      select: { totalCents: true, serviceChargeCents: true, taxCents: true },
     });
 
-    const totalNetSalesCents = orders.reduce((sum, o) => sum + (o.subtotalCents - o.discountCents), 0);
+    // net sales = paid total minus service and VAT (item discounts are already in line totals)
+    const totalNetSalesCents = orders.reduce(
+      (sum, o) => sum + (o.totalCents - o.serviceChargeCents - o.taxCents),
+      0,
+    );
     const bonusPoolCents = Math.round(totalNetSalesCents * (params.bonusPercentage / 100));
 
     const eligibleStaff = await this.prisma.user.findMany({
