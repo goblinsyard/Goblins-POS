@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Post, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
 import { AuthedRequest, RequirePermissions } from '../auth/auth.guard';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -48,6 +48,16 @@ interface ImportedPriceSchedule {
   daysOfWeek: number[];
   startTime: string;
   endTime: string;
+  isActive?: boolean;
+}
+
+interface ImportedStation {
+  name: string;
+  nameAr?: string | null;
+  kind?: 'PREP' | 'EXPO';
+  useKds?: boolean;
+  usePrinter?: boolean;
+  sortOrder?: number;
   isActive?: boolean;
 }
 
@@ -125,7 +135,7 @@ export class ImportExportController {
 
   @Get('export/menu')
   @RequirePermissions('menu.manage')
-  async exportMenu() {
+  async exportMenu(@Query('format') format?: string) {
     const categories = await this.prisma.category.findMany({
       include: {
         parentCategory: {
@@ -163,7 +173,7 @@ export class ImportExportController {
     });
 
     // Transform into clean importable structure
-    return categories.map((cat) => ({
+    const result = categories.map((cat) => ({
       name: cat.name,
       nameAr: cat.nameAr,
       sortOrder: cat.sortOrder,
@@ -223,6 +233,13 @@ export class ImportExportController {
         })) : [],
       })),
     }));
+    if (format !== 'v2') return result;
+    // v2 (used for the .zip catalog): also carries the stations so an import can recreate them
+    const stations = await this.prisma.station.findMany({
+      orderBy: { sortOrder: 'asc' },
+      select: { name: true, nameAr: true, kind: true, useKds: true, usePrinter: true, sortOrder: true, isActive: true },
+    });
+    return { version: 2, exportedAt: new Date().toISOString(), stations, categories: result };
   }
 
   @Get('export/customers')
@@ -300,9 +317,11 @@ export class ImportExportController {
 
   @Post('import/menu')
   @RequirePermissions('menu.manage')
-  async importMenu(@Req() req: AuthedRequest, @Body() body: ImportedCategory[]) {
+  async importMenu(@Req() req: AuthedRequest, @Body() raw: ImportedCategory[] | { categories?: ImportedCategory[]; stations?: ImportedStation[] }) {
+    const body: ImportedCategory[] | undefined = Array.isArray(raw) ? raw : raw?.categories;
+    const stationDefs: ImportedStation[] = (!Array.isArray(raw) && Array.isArray(raw?.stations)) ? raw.stations! : [];
     if (!Array.isArray(body)) {
-      throw new BadRequestException('Payload must be a JSON array of categories.');
+      throw new BadRequestException('Payload must be a menu catalog (a list of categories).');
     }
 
     try {
@@ -311,8 +330,32 @@ export class ImportExportController {
         where: { isDefault: true },
       });
 
-      // Find standard stations (Kitchen / Bar) to auto-route
+      // Stations: reuse by name, create the ones the catalog mentions but this system lacks
       const stations = await this.prisma.station.findMany();
+      let stationsCreated = 0;
+      const ensureStation = async (name: string | null | undefined) => {
+        const n = (name ?? '').trim();
+        if (!n) return null;
+        const hit = stations.find((st) => st.name.toLowerCase() === n.toLowerCase());
+        if (hit) return hit;
+        const def = stationDefs.find((d) => (d.name ?? '').toLowerCase() === n.toLowerCase());
+        const created = await this.prisma.station.create({
+          data: {
+            name: n,
+            nameAr: def?.nameAr || (/^kitchen$/i.test(n) ? 'المطبخ' : /^bar$/i.test(n) ? 'البار' : null),
+            kind: def?.kind === 'EXPO' ? 'EXPO' : 'PREP',
+            useKds: def?.useKds ?? true,
+            usePrinter: def?.usePrinter ?? false,
+            sortOrder: def?.sortOrder ?? stations.length,
+            isActive: def?.isActive ?? true,
+          },
+        });
+        stations.push(created);
+        stationsCreated++;
+        return created;
+      };
+      // stations listed in a v2 catalog are created even if no item uses them yet
+      for (const d of stationDefs) await ensureStation(d.name);
 
       let categoriesCreated = 0;
       let itemsImported = 0;
@@ -327,9 +370,7 @@ export class ImportExportController {
 
         // Resolve station (support both string stationName and object station.name)
         const resolvedStationName = catData.stationName || catData.station?.name || null;
-        const stationRec = resolvedStationName
-          ? stations.find((s) => s.name.toLowerCase() === resolvedStationName.toLowerCase())
-          : null;
+        const stationRec = await ensureStation(resolvedStationName);
 
         const catPayload = {
           nameAr: catData.nameAr || null,
@@ -411,25 +452,13 @@ export class ImportExportController {
         for (const itemData of catData.items) {
           if (!itemData.name || !(itemData.priceCents >= 0)) continue;
 
-          // Determine routing station: station.name > stationName > department > inherit from category
-          let stationId: string | null = null;
-          const itemStationName = itemData.station?.name || itemData.stationName || null;
-          if (itemStationName) {
-            const byName = stations.find((s) => s.name.toLowerCase() === itemStationName.toLowerCase());
-            if (byName) stationId = byName.id;
-          }
-          if (!stationId) {
-            if (itemData.department === 'BAR') {
-              const barStation = stations.find((s) => s.name.toLowerCase().includes('bar'));
-              if (barStation) stationId = barStation.id;
-            } else if (itemData.department) {
-              const kitchenStation = stations.find((s) => s.name.toLowerCase().includes('kitchen'));
-              if (kitchenStation) stationId = kitchenStation.id;
-            }
-          }
-          // If still no station, inherit from the category's station
-          if (!stationId && category.stationId) {
-            stationId = category.stationId;
+          // Routing station: the item's own station > its category's > Bar/Kitchen by department
+          let stationId: string | null = (await ensureStation(itemData.station?.name || itemData.stationName))?.id ?? null;
+          if (!stationId && category.stationId) stationId = category.stationId;
+          if (!stationId && itemData.department === 'BAR') {
+            stationId = (stations.find((st) => /bar/i.test(st.name)) ?? await ensureStation('Bar'))?.id ?? null;
+          } else if (!stationId && (itemData.department === 'RESTAURANT' || !itemData.department)) {
+            stationId = (stations.find((st) => /kitchen/i.test(st.name)) ?? await ensureStation('Kitchen'))?.id ?? null;
           }
 
           // Find or create Menu Item
@@ -695,7 +724,7 @@ export class ImportExportController {
       });
 
       this.realtime.emitTo('pos', 'menu.changed', {});
-      return { success: true, categoriesCreated, itemsImported };
+      return { success: true, categoriesCreated, itemsImported, stationsCreated };
     } catch (e) {
       throw new BadRequestException(e instanceof Error ? e.message : 'Menu import failed.');
     }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { Btn, ErrorBanner, Field, Modal, Pills, Select, Spinner, Table, TextInput, useLoad } from '../lib/ui';
 import { tr } from '../lib/i18n';
+import { bytesToDataUrl, createZip, dataUrlToBytes, readZip, type ZipEntry } from '../lib/zip';
 
 interface Printer {
   id: string; name: string; connection: 'NETWORK' | 'USB' | 'PREVIEW'; address: string;
@@ -876,23 +877,69 @@ function DatabaseManager() {
     }
   }
 
+  /**
+   * Menu catalog as a .zip: menu.json (categories, items, stations…) plus an
+   * images/ folder with one picture per item, so the photos are easy to see and reuse.
+   */
   async function exportMenu() {
-    setErr(''); setSuccess('');
+    setErr(''); setSuccess(''); setBusy(true);
     try {
-      const data = await api<any[]>('/admin/export/menu');
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
+      const data = await api<{ categories: any[]; stations: any[] }>('/admin/export/menu?format=v2');
+      const files: ZipEntry[] = [];
+      const used = new Set<string>();
+      let pictures = 0;
+      for (const cat of data.categories) {
+        for (const item of cat.items ?? []) {
+          if (typeof item.image !== 'string') { delete item.image; continue; }
+          const pic = dataUrlToBytes(item.image);
+          delete item.image;
+          if (!pic) continue;
+          const slug = String(item.sku || item.name).toLowerCase().normalize('NFKD')
+            .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'item';
+          let name = `images/${slug}.${pic.ext}`;
+          for (let n = 2; used.has(name); n++) name = `images/${slug}-${n}.${pic.ext}`;
+          used.add(name);
+          item.imageFile = name;
+          files.push({ name, data: pic.bytes });
+          pictures++;
+        }
+      }
+      const json = new TextEncoder().encode(JSON.stringify(data, null, 2));
+      const zip = createZip([{ name: 'menu.json', data: json }, ...files]);
+      const url = URL.createObjectURL(zip);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `menu-catalog-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `menu-catalog-${new Date().toISOString().slice(0, 10)}.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      setSuccess(tr('Menu catalog exported successfully.'));
+      setSuccess(`${tr('Menu catalog exported successfully.')} (${pictures} ${tr('pictures')})`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : tr('Export failed'));
+    } finally {
+      setBusy(false);
     }
+  }
+
+  /** Import a .zip catalog: read menu.json and put each item's picture back from images/. */
+  async function importMenuZip(file: File) {
+    const files = await readZip(file);
+    const jsonName = [...files.keys()].find((n) => /(^|\/)menu\.json$/i.test(n));
+    if (!jsonName) throw new Error(tr('The .zip has no menu.json inside'));
+    const prefix = jsonName.slice(0, jsonName.length - 'menu.json'.length);
+    const payload = JSON.parse(new TextDecoder().decode(files.get(jsonName)!));
+    const cats: any[] = Array.isArray(payload) ? payload : payload.categories ?? [];
+    for (const cat of cats) {
+      for (const item of cat.items ?? []) {
+        if (typeof item.imageFile !== 'string') continue;
+        const bytes = files.get(prefix + item.imageFile) ?? files.get(item.imageFile);
+        const url = bytes ? bytesToDataUrl(bytes, item.imageFile) : null;
+        if (url) item.image = url;
+        delete item.imageFile;
+      }
+    }
+    return api<any>('/admin/import/menu', { method: 'POST', body: payload });
   }
 
   async function exportCustomers() {
@@ -968,6 +1015,20 @@ function DatabaseManager() {
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>, type: 'menu' | 'customers') {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (type === 'menu' && file.name.toLowerCase().endsWith('.zip')) {
+      setErr(''); setSuccess(''); setBusy(true);
+      try {
+        const res = await importMenuZip(file);
+        setSuccess(`${tr('Imported')} ${res.itemsImported ?? 0} ${tr('items')}, ${res.categoriesCreated ?? 0} ${tr('new categories')}, ${res.stationsCreated ?? 0} ${tr('new stations')}.`);
+      } catch (err) {
+        setErr(err instanceof Error ? err.message : tr('Import failed'));
+      } finally {
+        setBusy(false);
+        e.target.value = '';
+      }
+      return;
+    }
 
     setErr(''); setSuccess(''); setBusy(true);
     const reader = new FileReader();
@@ -1198,17 +1259,17 @@ function DatabaseManager() {
           <div className="space-y-3">
             <h4 className="font-medium text-goblin-100 text-sm">{tr('Menu Catalog')}</h4>
             <div className="flex flex-col gap-2">
-              <Btn onClick={exportMenu} disabled={busy}>{tr('Export Menu (JSON)')}</Btn>
+              <Btn onClick={() => void exportMenu()} disabled={busy}>{tr('Export Menu (ZIP with pictures)')}</Btn>
               <div className="border-t pt-2 mt-1">
                 <label className="block text-xs font-semibold text-goblin-400 uppercase tracking-wider mb-1">{tr('Import Menu Catalog')}</label>
                 <input
                   type="file"
-                  accept=".json,.csv"
+                  accept=".zip,.json,.csv"
                   onChange={(e) => void handleImport(e, 'menu')}
                   disabled={busy}
                   className="w-full text-xs text-goblin-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-goblin-800 file:text-goblin-100 hover:file:bg-goblin-700 cursor-pointer"
                 />
-                <p className="text-[10px] text-goblin-400 mt-1">{tr('Accepts JSON (nested structure) or CSV with columns: `Category, Item, Description, SKU, PriceEGP, ModifierGroup, Modifier, PriceDeltaEGP`')}</p>
+                <p className="text-[10px] text-goblin-400 mt-1">{tr('Accepts the exported .zip (menu + pictures + stations), JSON, or CSV with columns: `Category, Item, Description, SKU, PriceEGP, ModifierGroup, Modifier, PriceDeltaEGP`')}</p>
               </div>
             </div>
           </div>

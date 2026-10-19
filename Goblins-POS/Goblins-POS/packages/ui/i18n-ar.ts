@@ -1762,6 +1762,16 @@ export const AR_TEXT: Record<string, string> = {
   "Owner permissions are locked to prevent locking yourself out": "صلاحيات المالك مقفلة حتى لا تُغلق الحساب على نفسك",
   "Unknown template": "قالب غير معروف",
   "Role to copy not found": "الدور المراد نسخه غير موجود",
+  "Export Menu (ZIP with pictures)": "تصدير المنيو (ZIP مع الصور)",
+  "pictures": "صور",
+  "The .zip has no menu.json inside": "ملف ‎.zip‎ لا يحتوي على menu.json",
+  "items": "أصناف",
+  "new categories": "فئات جديدة",
+  "new stations": "محطات جديدة",
+  "Accepts the exported .zip (menu + pictures + stations), JSON, or CSV with columns: `Category, Item, Description, SKU, PriceEGP, ModifierGroup, Modifier, PriceDeltaEGP`": "يقبل ملف ‎.zip‎ المُصدَّر (المنيو + الصور + المحطات) أو JSON أو CSV بالأعمدة: `Category, Item, Description, SKU, PriceEGP, ModifierGroup, Modifier, PriceDeltaEGP`",
+  "This is not a valid .zip file": "هذا ليس ملف ‎.zip‎ صالحًا",
+  "Damaged .zip file": "ملف ‎.zip‎ تالف",
+  "Payload must be a menu catalog (a list of categories).": "الملف يجب أن يكون كتالوج منيو (قائمة فئات).",
 };
 
 /** Dynamic messages (names / numbers inside), mostly from the server. */
