@@ -4,7 +4,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Prisma, OrderType } from '@prisma/client';
+import { Prisma, OrderChannel, OrderType } from '@prisma/client';
 import { computeBill, lineTotal, resolveDiscount } from '@goblins/shared';
 import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
@@ -34,6 +34,9 @@ export class OrdersService {
   // ---------- helpers ----------
 
   private async nextOrderNumber(tx: Prisma.TransactionClient, branchId: string): Promise<number> {
+    // Serialize numbering per branch: two terminals opening an order at the same
+    // moment would otherwise both read the same max and collide on the unique key.
+    await tx.$queryRaw`SELECT id FROM "Branch" WHERE id = ${branchId} FOR UPDATE`;
     const last = await tx.order.findFirst({
       where: { branchId },
       orderBy: { number: 'desc' },
@@ -108,7 +111,9 @@ export class OrdersService {
       .reduce((a, d) => a + d.amountCents, 0);
     const vatBps = order.noVat ? 0 : await this.settings.get('tax.vatBps');
     const serviceBps =
-      (order.type === 'TAKEAWAY' || order.noService) ? 0 : await this.settings.get('tax.serviceChargeBps');
+      (order.type === 'TAKEAWAY' || order.type === 'DELIVERY' || order.noService)
+        ? 0
+        : await this.settings.get('tax.serviceChargeBps');
     const totals = computeBill({
       lineCents: activeLines.map((l) => l.lineCents),
       billDiscountCents: billDiscount,
@@ -156,7 +161,24 @@ export class OrdersService {
     resourceId?: string;
     customerId?: string;
     guestCount?: number;
+    channel?: OrderChannel;
+    externalRef?: string;
+    deliveryName?: string;
+    deliveryPhone?: string;
+    deliveryAddress?: string;
   }) {
+    const channel = params.channel ?? (params.type === 'DELIVERY' ? 'PHONE' : 'IN_HOUSE');
+    if (params.type === 'DELIVERY' && params.resourceId) {
+      throw new BadRequestException('Delivery orders are not placed on a table');
+    }
+    if (params.type !== 'DELIVERY' && channel !== 'IN_HOUSE') {
+      throw new BadRequestException('Only delivery orders can come from an app');
+    }
+    const externalRef = params.externalRef?.trim() || null;
+    if (externalRef) {
+      const dup = await this.prisma.order.findFirst({ where: { channel, externalRef } });
+      if (dup) throw new BadRequestException(`${channel} order ${externalRef} is already open as #${dup.number}`);
+    }
     return this.prisma.$transaction(async (tx) => {
       const shift = await tx.shift.findFirst({
         where: { branchId: params.branchId, status: 'OPEN' },
@@ -180,6 +202,11 @@ export class OrdersService {
           guestCount: params.guestCount ?? 1,
           openedById: params.userId,
           shiftId: shift.id,
+          channel,
+          externalRef,
+          deliveryName: params.deliveryName?.trim() || null,
+          deliveryPhone: params.deliveryPhone?.trim() || null,
+          deliveryAddress: params.deliveryAddress?.trim() || null,
         },
         include: { items: { include: { modifiers: true } }, discounts: true, payments: true },
       });

@@ -5,7 +5,7 @@ import { AlertTriangle } from 'lucide-react';
 import { CategoryBars, ChartCard, RevenueTrend } from '../lib/charts';
 
 const SECTIONS = ['sales reports', 'receipts', 'shifts report'] as const;
-const GROUPS = ['hour', 'day', 'department', 'category', 'item', 'method', 'staff'] as const;
+const GROUPS = ['hour', 'day', 'department', 'category', 'item', 'method', 'staff', 'channel'] as const;
 
 export function SalesView() {
   const [section, setSection] = useState<(typeof SECTIONS)[number]>('sales reports');
@@ -23,7 +23,7 @@ export function SalesView() {
 function SalesReports() {
   const [groupBy, setGroupBy] = useState<(typeof GROUPS)[number]>('day');
   const { data } = useLoad(
-    () => api<{ key: string; orders: number; revenueCents: number; quantity: number }[]>(`/reports/sales?groupBy=${groupBy}`),
+    () => api<{ key: string; orders: number; revenueCents: number; quantity: number; commissionCents?: number }[]>(`/reports/sales?groupBy=${groupBy}`),
     [groupBy],
   );
   const rows = data ?? [];
@@ -43,10 +43,20 @@ function SalesReports() {
           ? <RevenueTrend points={chartRows} />
           : <CategoryBars rows={chartRows} horizontal={groupBy === 'item' || groupBy === 'category'} />}
       </ChartCard>
-      <Table
-        headers={[groupBy, 'Orders', 'Qty', 'Revenue']}
-        rows={(data ?? []).map((r) => [r.key, String(r.orders), String(r.quantity), egp(r.revenueCents)])}
-      />
+      {groupBy === 'channel' ? (
+        <Table
+          headers={['Channel', 'Orders', 'Revenue', 'App commission', 'You keep']}
+          rows={rows.map((r) => [
+            r.key, String(r.orders), egp(r.revenueCents),
+            r.commissionCents ? egp(r.commissionCents) : '—', egp(r.revenueCents - (r.commissionCents ?? 0)),
+          ])}
+        />
+      ) : (
+        <Table
+          headers={[groupBy, 'Orders', 'Qty', 'Revenue']}
+          rows={rows.map((r) => [r.key, String(r.orders), String(r.quantity), egp(r.revenueCents)])}
+        />
+      )}
     </div>
   );
 }

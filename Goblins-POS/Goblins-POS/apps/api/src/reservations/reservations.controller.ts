@@ -1,9 +1,26 @@
 import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { IsInt, IsOptional, IsPositive, IsString } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsPositive, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import { ReservationStatus } from '@prisma/client';
 import { AuthedRequest, Public, RequirePermissions } from '../auth/auth.guard';
 import { ReservationsService } from './reservations.service';
+import { PublicBookingService } from './public-booking.service';
+
+class PublicBookDto {
+  @IsOptional() @IsIn(['BILLIARDS_TABLE', 'PS_ROOM', 'RESTAURANT_TABLE']) type?: string;
+  @IsOptional() @IsString() @MaxLength(40) resourceId?: string;
+  @Matches(/^\d{4}-\d{2}-\d{2}$/) date!: string;
+  @Matches(/^\d{2}:\d{2}$/) time!: string;
+  @IsInt() @Min(15) @Max(720) durationMinutes!: number;
+  @IsString() @MaxLength(80) name!: string;
+  @IsString() @MaxLength(20) phone!: string;
+  @IsInt() @Min(1) @Max(20) partySize!: number;
+  @IsOptional() @IsString() @MaxLength(300) notes?: string;
+}
+
+class DepositReceivedDto {
+  @IsString() @MaxLength(80) reference!: string;
+}
 
 class CreateReservationDto {
   @IsString() resourceId!: string;
@@ -19,7 +36,10 @@ class CreateReservationDto {
 
 @Controller('reservations')
 export class ReservationsController {
-  constructor(private readonly reservations: ReservationsService) {}
+  constructor(
+    private readonly reservations: ReservationsService,
+    private readonly booking: PublicBookingService,
+  ) {}
 
   @Get('timeline')
   @RequirePermissions('reservation.manage')
@@ -54,11 +74,41 @@ export class ReservationsController {
     return this.reservations.sweep();
   }
 
-  /** Public availability for the website booking widget (phase-2 ready). */
+  /** Staff: the InstaPay / wallet deposit for an online booking arrived. */
+  @Post(':id/deposit-received')
+  @RequirePermissions('reservation.manage')
+  depositReceived(@Req() req: AuthedRequest, @Param('id') id: string, @Body() dto: DepositReceivedDto) {
+    return this.booking.confirmDeposit(id, dto.reference, req.user.sub);
+  }
+
+  // ---------- public website booking (no login; rate-limited) ----------
+
+  @Public()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Get('public/config')
+  publicConfig() {
+    return this.booking.config();
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Get('public/availability')
+  publicAvailability(@Query('date') date?: string, @Query('type') type?: string) {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+    return this.booking.availability(date ?? today, type);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('public/book')
+  publicBook(@Body() dto: PublicBookDto) {
+    return this.booking.book(dto);
+  }
+
   @Public()
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
-  @Get('public/availability')
-  publicAvailability(@Query('date') date: string, @Query('type') type?: string) {
-    return this.reservations.publicAvailability(date ?? new Date().toISOString().slice(0, 10), type);
+  @Get('public/booking/:code')
+  publicStatus(@Param('code') code: string) {
+    return this.booking.status(code);
   }
 }

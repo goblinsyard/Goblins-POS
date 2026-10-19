@@ -511,6 +511,13 @@ model Order {
   notes         String?
   noService     Boolean     @default(false)
   noVat         Boolean     @default(false)
+  // delivery / app orders
+  channel         OrderChannel @default(IN_HOUSE)
+  externalRef     String? // the app's own order number (Talabat/Elmenus/Rabbit)
+  commissionCents Int          @default(0) // app commission, snapshotted at payment
+  deliveryName    String?
+  deliveryPhone   String?
+  deliveryAddress String?
   openedAt      DateTime    @default(now())
   closedAt      DateTime?
   // split-bill lineage
@@ -528,6 +535,7 @@ model Order {
   seatCustomers OrderSeatCustomer[]
 
   @@unique([branchId, number])
+  @@unique([channel, externalRef])
   @@index([status, openedAt])
 }
 
@@ -536,7 +544,16 @@ enum OrderType {
   TAKEAWAY
   BILLIARDS
   PS_ROOM
-  DELIVERY // phase-2 ready
+  DELIVERY
+}
+
+/// Where an order came from. Delivery apps pay out later and keep a commission.
+enum OrderChannel {
+  IN_HOUSE
+  PHONE
+  TALABAT
+  ELMENUS
+  RABBIT
 }
 
 enum OrderStatus {
@@ -1243,6 +1260,11 @@ model Reservation {
   endAt       DateTime
   status      ReservationStatus @default(PENDING)
   depositCents Int              @default(0)
+  // online booking (goblinsyard.com widget); deposit paid by InstaPay / wallet
+  source           ReservationSource @default(STAFF)
+  bookingCode      String?           @unique
+  depositStatus    DepositStatus     @default(NONE)
+  depositReference String? // InstaPay / wallet transfer reference given by the customer
   notes       String?
   createdById String?
   createdBy   User?             @relation(fields: [createdById], references: [id])
@@ -1251,6 +1273,18 @@ model Reservation {
 
   @@index([resourceId, startAt])
   @@index([status, startAt])
+}
+
+enum ReservationSource {
+  STAFF
+  ONLINE
+}
+
+enum DepositStatus {
+  NONE
+  AWAITING
+  RECEIVED
+  REFUNDED
 }
 
 enum ReservationStatus {

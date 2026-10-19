@@ -184,24 +184,4 @@ export class ReservationsService {
     }
     if (upcoming.length || overdue.length) this.realtime.emitTo('floor', 'floor.refresh', {});
   }
-
-  /** Public booking API for goblinsyard.com (phase-2 web embed). Rate-limited + no auth. */
-  async publicAvailability(date: string, type?: string) {
-    const dayStart = new Date(`${date}T00:00:00+02:00`);
-    const dayEnd = new Date(dayStart.getTime() + 86400_000);
-    const resources = await this.prisma.resource.findMany({
-      where: { isActive: true, ...(type ? { type: type as never } : {}) },
-      select: { id: true, name: true, type: true, capacity: true },
-    });
-    const reservations = await this.prisma.reservation.findMany({
-      where: { startAt: { lt: dayEnd }, endAt: { gt: dayStart }, status: { in: ACTIVE } },
-      select: { resourceId: true, startAt: true, endAt: true },
-    });
-    return resources.map((r) => ({
-      ...r,
-      busy: reservations
-        .filter((b) => b.resourceId === r.id)
-        .map((b) => ({ startAt: b.startAt, endAt: b.endAt })),
-    }));
-  }
 }

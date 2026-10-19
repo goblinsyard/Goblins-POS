@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { NotifyService } from '../notify/notify.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class ShiftsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly notify: NotifyService,
   ) {}
 
   async open(params: { branchId: string; userId: string; terminalId?: string; floatCents: number }) {
@@ -88,6 +90,8 @@ export class ShiftsService {
       discountCents: paidOrders.reduce((a, o) => a + o.discountCents, 0),
       discountCount: discounts.length,
       tipsCents: shift.payments.reduce((a, p) => a + p.tipCents, 0),
+      refundCount: shift.payments.filter((p) => p.refundOfId).length,
+      refundsCents: -shift.payments.filter((p) => p.refundOfId).reduce((a, p) => a + p.amountCents, 0),
       byMethod,
       byDepartment,
       cash: {
@@ -208,6 +212,8 @@ export class ShiftsService {
       action: 'shift.close', entity: 'Shift', entityId: params.shiftId,
       detail: { countedCents: params.countedCents, varianceCents: variance },
     });
+    // end-of-day message to the owner; never blocks or fails the close
+    void this.notify.sendEndOfDay(z).catch(() => {});
     return { shift: closed, zReport: z };
   }
 

@@ -22,6 +22,11 @@ export const SETTING_DEFAULTS = {
   'twilio.accountSid': '',
   'twilio.authToken': '',
   'twilio.from': '',
+  // owner notifications (WhatsApp/SMS via Twilio); comma-separate several numbers
+  'notify.ownerPhone': '',
+  'notify.channel': 'whatsapp', // or 'sms'
+  'notify.endOfDaySummary': true,
+  'notify.lowStockAlerts': true,
   'expense.allocationMethod': 'revenue',
   'expense.allocationManual.RESTAURANT': 4000,
   'expense.allocationManual.BAR': 2000,
@@ -30,8 +35,32 @@ export const SETTING_DEFAULTS = {
   'pos.autoLockMinutes': 3, // lock idle POS terminals back to the PIN screen (0 = never)
   'session.prepaidAlertMinutes': 10, // alert when 10 min left on prepaid block
   'session.prepaidSmsAlertMinutes': 5, // SMS/WhatsApp alert minutes before expiry
+  // delivery apps: commission in bps (2500 = 25%) and the API key each app's
+  // integration must send (empty = integration off)
+  'delivery.commissionBps.TALABAT': 0,
+  'delivery.commissionBps.ELMENUS': 0,
+  'delivery.commissionBps.RABBIT': 0,
+  'integration.TALABAT.apiKey': '',
+  'integration.ELMENUS.apiKey': '',
+  'integration.RABBIT.apiKey': '',
+  // online booking (website + /book page)
+  'booking.enabled': true,
+  'booking.types': 'BILLIARDS_TABLE,PS_ROOM', // which tables/rooms can be booked online
+  'booking.openTime': '12:00',
+  'booking.closeTime': '02:00', // earlier than openTime = closes after midnight
+  'booking.slotMinutes': 30,
+  'booking.durations': '60,90,120,180',
+  'booking.maxDaysAhead': 14,
+  'booking.minLeadMinutes': 30,
+  'booking.depositCents.BILLIARDS_TABLE': 10000,
+  'booking.depositCents.PS_ROOM': 10000,
+  'booking.depositHoldMinutes': 120, // unpaid online bookings are released after this
+  'booking.instapay': '', // InstaPay address shown to customers, e.g. goblinsyard@instapay
+  'booking.wallet': '', // mobile wallet number, e.g. Vodafone Cash
+  'booking.liveSessionBufferMinutes': 60, // a running game counts as busy at least this long
   'business.currency': 'EGP',
   'business.timezone': 'Africa/Cairo',
+  'business.openHoursPerDay': 12, // used for billiards/PS occupancy %
   'business.name': 'Goblins Yard',
   'business.address': '123 Nile Street, Zamalek, Cairo',
   'business.taxId': '123-456-789',

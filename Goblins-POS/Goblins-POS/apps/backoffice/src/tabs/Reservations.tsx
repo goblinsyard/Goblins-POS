@@ -5,6 +5,8 @@ import { Btn, ErrorBanner, Field, Modal, Select, Spinner, TextInput, useLoad } f
 interface Reservation {
   id: string; startAt: string; endAt: string; partySize: number; status: string;
   guestName?: string | null; guestPhone?: string | null; depositCents: number; notes?: string | null;
+  source?: 'STAFF' | 'ONLINE'; bookingCode?: string | null;
+  depositStatus?: 'NONE' | 'AWAITING' | 'RECEIVED' | 'REFUNDED'; depositReference?: string | null;
   resource: { id: string; name: string; type: string };
   customer?: { id: string; name: string; phone: string; visitCount: number } | null;
 }
@@ -33,6 +35,18 @@ export function ReservationsView() {
     setErr('');
     try {
       await api(`/reservations/${id}/status/${status.toLowerCase()}`, { method: 'POST' });
+      reload();
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
+  }
+
+  const [depositFor, setDepositFor] = useState<Reservation | null>(null);
+  const [depositRef, setDepositRef] = useState('');
+  async function confirmDeposit() {
+    if (!depositFor) return;
+    setErr('');
+    try {
+      await api(`/reservations/${depositFor.id}/deposit-received`, { method: 'POST', body: { reference: depositRef.trim() } });
+      setDepositFor(null); setDepositRef('');
       reload();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Failed'); }
   }
@@ -99,14 +113,28 @@ export function ReservationsView() {
               <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-goblin-900 p-3 shadow">
                 <span className="w-28 font-mono text-sm">{time(r.startAt)}–{time(r.endAt)}</span>
                 <span className="font-semibold text-goblin-100">{r.resource.name}</span>
+                {r.source === 'ONLINE' && (
+                  <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-semibold text-blue-400" title="Booked on the website">
+                    Online · {r.bookingCode}
+                  </span>
+                )}
                 <span className="text-sm text-goblin-200">
                   {r.customer?.name ?? r.guestName ?? '—'}
                   {(r.customer?.phone ?? r.guestPhone) && <span className="text-goblin-400"> · {r.customer?.phone ?? r.guestPhone}</span>}
                   {' '}· {r.partySize} pax
-                  {r.depositCents > 0 && <span className="text-goblin-500"> · deposit {egp(r.depositCents)}</span>}
+                  {r.depositCents > 0 && (
+                    <span className={r.depositStatus === 'AWAITING' ? 'text-amber-500' : 'text-goblin-500'}>
+                      {' '}· deposit {egp(r.depositCents)}
+                      {r.depositStatus === 'AWAITING' && ' — awaiting transfer'}
+                      {r.depositStatus === 'RECEIVED' && ` — received${r.depositReference ? ` (${r.depositReference})` : ''}`}
+                    </span>
+                  )}
                 </span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[r.status] ?? ''}`}>{r.status.replace('_', ' ')}</span>
                 <span className="ml-auto flex gap-1">
+                  {r.depositStatus === 'AWAITING' && (r.status === 'PENDING' || r.status === 'CONFIRMED') && (
+                    <Btn kind="primary" onClick={() => { setDepositFor(r); setDepositRef(''); }}>Deposit received</Btn>
+                  )}
                   {(NEXT[r.status] ?? []).map((s) => (
                     <Btn key={s} kind={s === 'CANCELLED' || s === 'NO_SHOW' ? 'danger' : 'default'}
                       onClick={() => void setStatus(r.id, s)}>
@@ -120,6 +148,22 @@ export function ReservationsView() {
         </div>
       ))}
       {!filtered.length && <p className="text-sm text-goblin-400">No reservations in the next 7 days for this category</p>}
+      {depositFor && (
+        <Modal title={`Deposit for ${depositFor.bookingCode ?? depositFor.resource.name}`} onClose={() => setDepositFor(null)}>
+          <p className="mb-3 text-sm text-goblin-300">
+            Confirm that {egp(depositFor.depositCents)} arrived by InstaPay / wallet from {depositFor.guestName ?? 'the guest'}
+            {depositFor.guestPhone ? ` (${depositFor.guestPhone})` : ''}. The booking becomes confirmed and the guest gets a message.
+            At check-out, take this amount with the “Booking deposit” payment method.
+          </p>
+          <Field label="Transfer reference (from the InstaPay / wallet message)">
+            <TextInput value={depositRef} onChange={setDepositRef} />
+          </Field>
+          <div className="mt-3 flex justify-end gap-2">
+            <Btn onClick={() => setDepositFor(null)}>Cancel</Btn>
+            <Btn kind="primary" onClick={() => void confirmDeposit()}>Confirm deposit</Btn>
+          </div>
+        </Modal>
+      )}
       {createOpen && (
         <NewReservationModal zones={zones ?? []} onClose={() => setCreateOpen(false)}
           onDone={() => { setCreateOpen(false); reload(); }} />

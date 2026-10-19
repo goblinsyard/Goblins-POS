@@ -6,7 +6,9 @@ services:
       POSTGRES_PASSWORD: goblins_dev_pw
       POSTGRES_DB: goblins_pos
     ports:
-      - "5433:5432" # host 5433 to avoid clashing with a locally-installed PostgreSQL
+      # host 5433 (avoids a locally-installed PostgreSQL); bound to this PC only,
+      # so other devices on the venue network can't reach the database
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -28,8 +30,13 @@ services:
       PORT: "3000"
       TZ: Africa/Cairo
       SEED_ON_START: "true"
+      # backups are written to the host's ./backups folder so they survive rebuilds
+      BACKUP_DIR: /backups
+    volumes:
+      - ./backups:/backups
     ports:
-      - "3000:3000"
+      # this PC only — tablets and terminals use the web app on :8080
+      - "127.0.0.1:3000:3000"
     depends_on:
       db:
         condition: service_healthy

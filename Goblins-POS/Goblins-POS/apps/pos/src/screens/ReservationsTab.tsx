@@ -17,6 +17,9 @@ interface Reservation {
   guestName?: string | null;
   guestPhone?: string | null;
   depositCents: number;
+  source?: 'STAFF' | 'ONLINE';
+  bookingCode?: string | null;
+  depositStatus?: 'NONE' | 'AWAITING' | 'RECEIVED' | 'REFUNDED';
   notes?: string | null;
   resource: { id: string; name: string; type: string };
   customerId?: string | null;
@@ -806,6 +809,11 @@ function ReservationCard({ r, lang, timeLabel, onStatusChange, onCheckIn }: Rese
           <span className="inline-flex items-center gap-1.5 text-base font-bold text-goblin-200">
             <User className="h-4 w-4 shrink-0" /> {guestName}
           </span>
+          {r.source === 'ONLINE' && (
+            <span className="text-[10px] bg-blue-500/15 text-blue-400 px-2 py-0.5 rounded-full font-mono font-bold">
+              {lang === 'ar' ? 'أونلاين' : 'Online'} {r.bookingCode}
+            </span>
+          )}
           {r.customer && r.customer.visitCount > 0 && (
             <span className="inline-flex items-center gap-1 text-[10px] bg-goblin-800 text-goblin-300 px-2 py-0.5 rounded-full font-mono font-bold">
               <Star className="h-3 w-3" /> {r.customer.visitCount} {lang === 'ar' ? 'زيارة' : 'visits'}
@@ -828,8 +836,10 @@ function ReservationCard({ r, lang, timeLabel, onStatusChange, onCheckIn }: Rese
           {r.depositCents > 0 && (
             <div className="flex items-center gap-1.5 col-span-2 border-t border-goblin-850/30 pt-1.5 mt-0.5">
               <Coins className="h-3.5 w-3.5 text-emerald-400" />
-              <span className="text-emerald-400 font-bold">
+              <span className={`font-bold ${r.depositStatus === 'AWAITING' ? 'text-amber-400' : 'text-emerald-400'}`}>
                 {lang === 'ar' ? 'تأمين' : 'Deposit'}: {fmtMoney(r.depositCents, lang)}
+                {r.depositStatus === 'AWAITING' && (lang === 'ar' ? ' — لم يُدفع بعد' : ' — not paid yet')}
+                {r.depositStatus === 'RECEIVED' && (lang === 'ar' ? ' — مدفوع، اخصمه عند الحساب' : ' — paid, deduct at checkout')}
               </span>
             </div>
           )}

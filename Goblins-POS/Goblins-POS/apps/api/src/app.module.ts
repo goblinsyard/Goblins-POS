@@ -22,6 +22,8 @@ import { SessionsModule } from './sessions/sessions.module';
 import { ShiftsModule } from './shifts/shifts.module';
 import { AccountingModule } from './accounting/accounting.module';
 import { HrModule } from './hr/hr.module';
+import { NotifyModule } from './notify/notify.module';
+import { IntegrationsModule } from './integrations/integrations.module';
 
 @Module({
   imports: [
@@ -45,6 +47,8 @@ import { HrModule } from './hr/hr.module';
     AdminModule,
     AccountingModule,
     HrModule,
+    NotifyModule,
+    IntegrationsModule,
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
   ],

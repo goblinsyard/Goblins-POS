@@ -35,6 +35,7 @@ export interface MenuItem {
   id: string;
   name: string;
   nameAr?: string | null;
+  sku?: string | null;
   priceCents: number;
   is86ed: boolean;
   modifierGroups: { group: ModifierGroup }[];
@@ -139,6 +140,11 @@ export interface Order {
   paidCents: number;
   noService: boolean;
   noVat: boolean;
+  channel?: 'IN_HOUSE' | 'PHONE' | 'TALABAT' | 'ELMENUS' | 'RABBIT';
+  externalRef?: string | null;
+  deliveryName?: string | null;
+  deliveryPhone?: string | null;
+  deliveryAddress?: string | null;
   items: OrderItemLine[];
   payments?: { id: string; amountCents: number; method?: { name: string; kind?: string } }[];
   seatCustomers?: OrderSeatCustomer[];
@@ -151,6 +157,8 @@ export interface OpenOrderSummary {
   totalCents: number;
   resource?: { name: string } | null;
   customer?: { name: string } | null;
+  channel?: string;
+  externalRef?: string | null;
 }
 
 export interface PaymentMethod {

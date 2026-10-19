@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ArrowLeft, ArrowLeftRight, ChevronDown, ChevronRight, Ellipsis, Flame,
-  Merge, Palette, RotateCcw, Send, ShoppingCart, Split, Star, Trash2, User,
+  History, Merge, Palette, RotateCcw, Search, Send, ShoppingCart, Split, Star, Trash2, User, X,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { fmtMoney, t } from '../lib/i18n';
@@ -20,6 +20,38 @@ import { SessionPanel } from './SessionPanel';
 import { AdminPinDialog } from './dialogs/AdminPinDialog';
 import { QuantityDialog } from './dialogs/QuantityDialog';
 import { DisplaySettingsDialog } from './dialogs/DisplaySettingsDialog';
+
+const RECENT_KEY = 'pos.recentItems';
+const RECENT_MAX = 16;
+
+function readRecent(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]') as string[];
+  } catch {
+    return [];
+  }
+}
+
+function rememberRecent(itemId: string) {
+  try {
+    const next = [itemId, ...readRecent().filter((id) => id !== itemId)].slice(0, RECENT_MAX);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    /* storage unavailable — recent list is a convenience only */
+  }
+}
+
+/** Case/diacritic-insensitive match that also folds common Arabic letter variants. */
+function normalizeSearch(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u064B-\u065F\u0670]/g, '') // Arabic harakat
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/[\u0300-\u036f]/g, '');
+}
 
 export function OrderScreen() {
   const { user, lang, activeOrderId, openOrder, toFloor } = usePos();
@@ -57,6 +89,7 @@ export function OrderScreen() {
   const [quantityEditingItem, setQuantityEditingItem] = useState<OrderItemLine | null>(null);
   const [commentingItem, setCommentingItem] = useState<OrderItemLine | null>(null);
   const [displaySettingsOpen, setDisplaySettingsOpen] = useState(false);
+  const [query, setQuery] = useState('');
 
   const reload = useCallback(async () => {
     if (!activeOrderId) return;
@@ -83,6 +116,7 @@ export function OrderScreen() {
         body: { items: [{ itemId: item.id, quantity: 1, modifierIds, ...(course > 1 ? { course } : {}), ...(seat > 0 ? { seat } : {}) }] },
       });
       setOrder(updated);
+      rememberRecent(item.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error');
     }
@@ -341,8 +375,17 @@ export function OrderScreen() {
           </button>
           <h1 className="text-lg font-bold">
             {t(lang, 'order')} #{order.number}
-            <span className="ml-2 text-sm font-normal text-goblin-400">{order.type.replace('_', ' ')}</span>
+            <span className="ml-2 text-sm font-normal text-goblin-400">
+              {order.type === 'DELIVERY'
+                ? `${order.channel === 'PHONE' ? (lang === 'ar' ? 'توصيل' : 'Delivery') : order.channel ?? ''}${order.externalRef ? ` · ${order.externalRef}` : ''}`
+                : order.type.replace('_', ' ')}
+            </span>
           </h1>
+          {order.type === 'DELIVERY' && (order.deliveryName || order.deliveryPhone || order.deliveryAddress) && (
+            <span className="hidden max-w-xs truncate text-xs text-goblin-300 md:inline" title={order.deliveryAddress ?? ''}>
+              {[order.deliveryName, order.deliveryPhone, order.deliveryAddress].filter(Boolean).join(' · ')}
+            </span>
+          )}
           {isPaid && <span className="rounded bg-goblin-600 px-2 py-1 text-sm font-bold text-white">{t(lang, 'paid')}</span>}
           <div className="ms-auto flex items-center gap-2">
             <button
@@ -404,6 +447,21 @@ export function OrderScreen() {
               }`}
             >
               <Star className="h-4 w-4" /> {lang === 'ar' ? 'المفضلة' : 'Favorites'}
+            </button>
+
+            {/* Recently sold on this terminal */}
+            <button
+              onClick={() => {
+                setActiveParentCat('recent');
+                setActiveSubCat(null);
+                setActiveSubSubCat(null);
+                setQuery('');
+              }}
+              className={`w-full inline-flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all ${
+                activeParentCat === 'recent' ? 'bg-goblin-600 text-white font-bold' : 'bg-goblin-950/40 text-goblin-300 hover:bg-goblin-800'
+              }`}
+            >
+              <History className="h-4 w-4" /> {lang === 'ar' ? 'الأحدث' : 'Recent'}
             </button>
 
             {/* Combos virtual category */}
@@ -527,10 +585,29 @@ export function OrderScreen() {
 
           {/* Right items grid area */}
           <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Search across the whole menu (EN/AR names and SKU) */}
+            <div className="relative px-3 pt-3">
+              <Search className="pointer-events-none absolute top-1/2 mt-1.5 h-4 w-4 -translate-y-1/2 text-goblin-400 ltr:left-6 rtl:right-6" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={lang === 'ar' ? 'ابحث في القائمة…' : 'Search menu…'}
+                className="w-full rounded-xl border border-goblin-700 bg-goblin-900 py-2.5 text-sm text-goblin-50 placeholder:text-goblin-500 focus:border-goblin-500 focus:outline-none ltr:pl-9 ltr:pr-9 rtl:pr-9 rtl:pl-9"
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery('')}
+                  aria-label={lang === 'ar' ? 'مسح' : 'Clear search'}
+                  className="absolute top-1/2 mt-1.5 -translate-y-1/2 rounded-full p-1 text-goblin-400 hover:text-goblin-100 ltr:right-5 rtl:left-5"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             {/* Menu Items Grid */}
             <div className="grid flex-1 auto-rows-min grid-cols-2 gap-2 overflow-auto p-3 sm:grid-cols-3 lg:grid-cols-4">
               {(() => {
-                if (activeParentCat === 'combos') {
+                if (activeParentCat === 'combos' && !query.trim()) {
                   return combos.map((combo) => (
                     <button
                       key={combo.id}
@@ -547,6 +624,22 @@ export function OrderScreen() {
                 }
 
                 const itemsToDisplay = (() => {
+                  const q = normalizeSearch(query.trim());
+                  if (q) {
+                    const seen = new Map<string, MenuItem>();
+                    for (const c of menu) {
+                      for (const item of c.items) {
+                        const hay = normalizeSearch(`${item.name} ${item.nameAr ?? ''} ${item.sku ?? ''}`);
+                        if (hay.includes(q)) seen.set(item.id, item);
+                      }
+                    }
+                    return Array.from(seen.values()).slice(0, 60);
+                  }
+                  if (activeParentCat === 'recent') {
+                    const byId = new Map<string, MenuItem>();
+                    menu.forEach((c) => c.items.forEach((i) => byId.set(i.id, i)));
+                    return readRecent().map((id) => byId.get(id)).filter((i): i is MenuItem => !!i);
+                  }
                   if (activeParentCat === 'favorites') {
                     // Extract favorites across all categories without duplicates
                     const uniqueFavorites = new Map<string, MenuItem>();
@@ -591,10 +684,20 @@ export function OrderScreen() {
                   }
                 })();
 
+                if (itemsToDisplay.length === 0 && (query.trim() || activeParentCat === 'recent')) {
+                  return (
+                    <p className="col-span-full py-10 text-center text-sm text-goblin-400">
+                      {query.trim()
+                        ? (lang === 'ar' ? 'لا توجد أصناف مطابقة' : 'No items match your search')
+                        : (lang === 'ar' ? 'لم يتم بيع أصناف من هذا الجهاز بعد' : 'Nothing sold from this terminal yet')}
+                    </p>
+                  );
+                }
+
                 return itemsToDisplay.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => tapItem(item)}
+                    onClick={() => { tapItem(item); }}
                     disabled={isPaid || item.is86ed}
                     className={`flex min-h-20 flex-col items-center justify-center rounded-xl p-2 text-center shadow transition-all ${
                       item.is86ed

@@ -36,6 +36,7 @@ function GeneralSettings() {
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [err, setErr] = useState('');
   const [saved, setSaved] = useState(false);
+  const [testMsg, setTestMsg] = useState('');
 
   useEffect(() => {
     if (settings) {
@@ -52,8 +53,19 @@ function GeneralSettings() {
     'receipt.showTaxSummary', 'receipt.showLoyalty', 'receipt.showQrCode', 'receipt.qrCodeText', 'receipt.fontSize',
     'twilio.accountSid', 'twilio.authToken', 'twilio.from', 'session.prepaidSmsAlertMinutes'
   ];
-  const keys = Object.keys(settings).filter((k) => !hiddenKeys.includes(k)).sort();
+  // objects/arrays are internal state (backup schedule, alert bookkeeping), not editable here
+  const keys = Object.keys(settings)
+    .filter((k) => !hiddenKeys.includes(k) && (settings[k] === null || typeof settings[k] !== 'object'))
+    .sort();
   const dirtyKeys = keys.filter((k) => draft[k] !== undefined && draft[k] !== String(settings[k]));
+
+  async function sendTest() {
+    setTestMsg('Sending…');
+    try {
+      const r = await api<{ sent: number; skipped?: string; errors: string[] }>('/notify/test', { method: 'POST' });
+      setTestMsg(r.sent ? `Sent to ${r.sent} number(s).` : r.skipped ?? (r.errors.join('; ') || 'Not sent'));
+    } catch (e) { setTestMsg(e instanceof Error ? e.message : 'Failed'); }
+  }
 
   async function save() {
     setErr(''); setSaved(false);
@@ -115,6 +127,53 @@ function GeneralSettings() {
         <Btn kind="primary" onClick={() => void save()} disabled={!dirtyKeys.length}>
           Save{dirtyKeys.length ? ` (${dirtyKeys.length})` : ''}
         </Btn>
+      </div>
+      <div className="mt-6 rounded-xl bg-goblin-900 p-4 text-sm shadow">
+        <p className="font-semibold text-goblin-100">Owner notifications</p>
+        <p className="mt-1 text-goblin-300">
+          Set <code>notify.ownerPhone</code> above (e.g. 01001234567; separate several with commas) and your Twilio
+          account below. You'll get a summary when each shift is closed, and an alert when an ingredient reaches its
+          reorder point. The same account is used for customer campaigns and prepaid-time reminders.
+        </p>
+        <TwilioForm settings={settings} onSaved={reload} />
+        <div className="mt-3 flex items-center gap-3">
+          <Btn onClick={() => void sendTest()}>Send test message</Btn>
+          {testMsg && <span className="text-goblin-300">{testMsg}</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TwilioForm({ settings, onSaved }: { settings: Record<string, unknown>; onSaved: () => void }) {
+  const [sid, setSid] = useState(String(settings['twilio.accountSid'] ?? ''));
+  const [token, setToken] = useState('');
+  const [from, setFrom] = useState(String(settings['twilio.from'] ?? ''));
+  const [msg, setMsg] = useState('');
+  const hasToken = !!settings['twilio.authToken'];
+
+  async function save() {
+    setMsg('');
+    const body: Record<string, string> = { 'twilio.accountSid': sid.trim(), 'twilio.from': from.trim() };
+    if (token.trim()) body['twilio.authToken'] = token.trim(); // blank keeps the saved token
+    try {
+      await api('/settings', { method: 'PUT', body });
+      setToken('');
+      setMsg('Saved.');
+      onSaved();
+    } catch (e) { setMsg(e instanceof Error ? e.message : 'Failed'); }
+  }
+
+  return (
+    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+      <Field label="Twilio Account SID"><TextInput value={sid} onChange={setSid} autoComplete="off" /></Field>
+      <Field label={hasToken ? 'Auth token (saved — type to replace)' : 'Auth token'}>
+        <TextInput value={token} onChange={setToken} type="password" autoComplete="new-password" />
+      </Field>
+      <Field label="From number (WhatsApp sender)"><TextInput value={from} onChange={setFrom} placeholder="+14155238886" /></Field>
+      <div className="flex items-center gap-3 sm:col-span-3">
+        <Btn onClick={() => void save()}>Save Twilio account</Btn>
+        {msg && <span className="text-goblin-300">{msg}</span>}
       </div>
     </div>
   );

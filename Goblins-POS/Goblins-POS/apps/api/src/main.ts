@@ -1,12 +1,18 @@
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.setGlobalPrefix('api');
+
+  // Requests arrive through nginx (Docker) or a cloud proxy. Trusting private-
+  // network proxies makes req.ip the real device, so rate limits apply per
+  // terminal instead of one shared bucket for the whole venue.
+  app.set('trust proxy', process.env.TRUST_PROXY ?? 'loopback, linklocal, uniquelocal');
 
   // Allow large import payloads (menu catalog, customer data, etc.)
   app.use(json({ limit: '20mb' }));

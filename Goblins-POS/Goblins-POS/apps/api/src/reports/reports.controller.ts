@@ -54,9 +54,10 @@ export class ReportsController {
 
   @Get('utilization')
   @RequirePermissions('report.view')
-  utilization(@Query('from') from?: string, @Query('to') to?: string) {
+  utilization(@Query('from') from?: string, @Query('to') to?: string, @Query('type') type?: string) {
     const r = range(from, to);
-    return this.reports.utilization(r.from, r.to);
+    const t = type === 'BILLIARDS_TABLE' || type === 'PS_ROOM' ? type : undefined;
+    return this.reports.utilization(r.from, r.to, t);
   }
 
   @Get('inventory/:kind')

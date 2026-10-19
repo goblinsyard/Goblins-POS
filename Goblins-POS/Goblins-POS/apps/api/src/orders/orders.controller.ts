@@ -2,9 +2,9 @@ import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, 
 import { Type } from 'class-transformer';
 import {
   ArrayNotEmpty, IsArray, IsBoolean, IsEnum, IsIn, IsInt, IsNumber, IsOptional,
-  IsPositive, IsString, Min, ValidateNested,
+  IsPositive, IsString, MaxLength, Min, ValidateNested,
 } from 'class-validator';
-import { OrderType } from '@prisma/client';
+import { OrderChannel, OrderType } from '@prisma/client';
 import { AuthedRequest, RequirePermissions } from '../auth/auth.guard';
 import { OrdersService } from './orders.service';
 import { PaymentsService } from './payments.service';
@@ -15,6 +15,11 @@ class CreateOrderDto {
   @IsOptional() @IsString() resourceId?: string;
   @IsOptional() @IsString() customerId?: string;
   @IsOptional() @IsInt() @IsPositive() guestCount?: number;
+  @IsOptional() @IsEnum(OrderChannel) channel?: OrderChannel;
+  @IsOptional() @IsString() @MaxLength(60) externalRef?: string;
+  @IsOptional() @IsString() @MaxLength(120) deliveryName?: string;
+  @IsOptional() @IsString() @MaxLength(30) deliveryPhone?: string;
+  @IsOptional() @IsString() @MaxLength(300) deliveryAddress?: string;
 }
 
 class AddItemDto {

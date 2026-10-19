@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Book a table — Goblins Yard</title>
+<meta name="description" content="Book a billiards table or PlayStation room at Goblins Yard." />
+<style>
+  :root {
+    --bg: #101a0b; --surface: #17240f; --surface-2: #213416; --line: #2e4720;
+    --text: #eef5e8; --muted: #a9c093; --brand: #5f9735; --brand-ink: #ffffff;
+    --busy: #2a3a20; --error: #ff8a80; --ok: #9be07a;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f4f8f0; --surface: #ffffff; --surface-2: #eaf2e2; --line: #cfe0c0;
+      --text: #1b2a12; --muted: #5d7349; --brand: #4c7d29; --busy: #e6ece1; --error: #c62828; --ok: #2e7d32; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+  h1 { font-size: 22px; margin: 0; }
+  .sub { color: var(--muted); font-size: 14px; margin: 2px 0 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+  .label { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 8px; text-transform: uppercase; letter-spacing: .03em; }
+  .row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+  button.chip { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface-2); color: var(--text);
+    border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 15px; cursor: pointer; min-height: 44px; }
+  button.chip small { display: block; color: var(--muted); font-size: 12px; }
+  button.chip[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+  button.chip[aria-pressed="true"] small { color: var(--brand-ink); opacity: .85; }
+  button.chip:disabled { background: var(--busy); color: var(--muted); text-decoration: line-through; cursor: not-allowed; opacity: .7; }
+  input, textarea { width: 100%; border: 1px solid var(--line); background: var(--surface-2); color: var(--text);
+    border-radius: 12px; padding: 12px; font: inherit; margin-bottom: 10px; }
+  .primary { width: 100%; border: 0; background: var(--brand); color: var(--brand-ink); border-radius: 14px;
+    padding: 14px; font: inherit; font-weight: 700; font-size: 17px; cursor: pointer; min-height: 52px; }
+  .primary:disabled { opacity: .5; cursor: not-allowed; }
+  .link { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; padding: 8px 0; }
+  .error { color: var(--error); font-size: 14px; margin: 8px 0 0; min-height: 1em; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .code { font: 700 34px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .12em; margin: 8px 0 12px; }
+  .ok { color: var(--ok); font-weight: 700; }
+  .hidden { display: none !important; }
+  .lang { border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 10px; padding: 8px 12px; font: inherit; cursor: pointer; }
+  .pay { background: var(--surface-2); border-radius: 12px; padding: 12px; margin-top: 10px; }
+  .pay .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; }
+  .pay-title { font-weight: 700; margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 id="title">Book a table</h1>
+      <p class="sub" id="subtitle">Billiards & PlayStation — Goblins Yard</p>
+    </div>
+    <button class="lang" id="langBtn" type="button">العربية</button>
+  </header>
+
+  <div id="closed" class="card hidden"><p id="closedMsg"></p></div>
+
+  <form id="form" class="hidden" novalidate>
+    <div class="card"><p class="label" data-t="what">What would you like to book?</p><div class="row" id="types"></div></div>
+    <div class="card"><p class="label" data-t="day">Day</p><div class="row" id="days"></div></div>
+    <div class="card"><p class="label" data-t="howLong">How long?</p><div class="row" id="durations"></div></div>
+    <div class="card">
+      <p class="label" data-t="time">Start time</p>
+      <div class="grid" id="slots"></div>
+      <p class="muted" id="slotsNote"></p>
+    </div>
+    <div class="card">
+      <p class="label" data-t="you">Your details</p>
+      <input id="name" autocomplete="name" maxlength="80" />
+      <input id="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="01XXXXXXXXX" />
+      <input id="party" type="number" inputmode="numeric" min="1" max="20" value="2" />
+      <textarea id="notes" rows="2" maxlength="300"></textarea>
+      <p class="muted" id="depositNote"></p>
+      <button class="primary" id="submit" type="submit" disabled>Book</button>
+      <p class="error" id="error" role="alert"></p>
+    </div>
+    <button class="link" type="button" id="checkLink">Already booked? Check your booking</button>
+  </form>
+
+  <div id="done" class="card hidden" aria-live="polite"></div>
+
+  <div id="check" class="card hidden">
+    <p class="label" data-t="checkTitle">Check your booking</p>
+    <input id="checkCode" maxlength="6" style="text-transform:uppercase" />
+    <button class="primary" id="checkBtn" type="button">Check</button>
+    <p class="error" id="checkError" role="alert"></p>
+    <div id="checkResult"></div>
+    <button class="link" type="button" id="backLink">Make a new booking</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const API = '/api/reservations/public';
+  const T = {
+    en: { title: 'Book a table', subtitle: 'Billiards & PlayStation — Goblins Yard', what: 'What would you like to book?', day: 'Day',
+      howLong: 'How long?', time: 'Start time', you: 'Your details', name: 'Your name', phone: 'Mobile (01XXXXXXXXX)',
+      party: 'Number of people', notes: 'Notes (optional)', book: 'Book', booking: 'Booking…', checkTitle: 'Check your booking',
+      check: 'Check', checkLink: 'Already booked? Check your booking', back: 'Make a new booking', codePh: 'Booking code',
+      today: 'Today', tomorrow: 'Tomorrow', min: 'min', h: 'h', from: 'from', perHour: 'EGP/hr', noSlots: 'No free times that day — try another day or a shorter time.',
+      pickSlot: 'Free times are shown; taken times are crossed out.', deposit: (egp, hold) => `A deposit of ${egp} EGP is needed to confirm. You'll get payment details after booking (pay within ${hold} min).`,
+      noDeposit: 'No deposit needed.', closed: 'Online booking is closed right now. Please call us.',
+      yourCode: 'Your booking code', bookedFor: 'Booked', payTitle: 'Pay the deposit to confirm', payWith: 'Send', payNote: (code, by) => `Write ${code} in the transfer note. If it doesn't arrive by ${by}, the booking is released.`,
+      instapay: 'InstaPay to', wallet: 'Mobile wallet', confirmed: 'Confirmed — see you then!', status: { PENDING: 'Waiting for deposit', CONFIRMED: 'Confirmed', SEATED: 'Checked in', COMPLETED: 'Completed', NO_SHOW: 'Missed', CANCELLED: 'Cancelled' },
+      people: 'people', saveCode: 'Save this code — you can check your booking with it.', notFound: 'No booking with that code.',
+      weWillCall: (egp) => `We'll contact you on WhatsApp with how to pay the ${egp} EGP deposit.`, tooMany: 'Too many attempts — please wait a minute and try again.' },
+    ar: { title: 'احجز', subtitle: 'بلياردو وبلايستيشن — جوبلنز يارد', what: 'عايز تحجز إيه؟', day: 'اليوم',
+      howLong: 'المدة', time: 'وقت البداية', you: 'بياناتك', name: 'الاسم', phone: 'الموبايل (01XXXXXXXXX)',
+      party: 'عدد الأشخاص', notes: 'ملاحظات (اختياري)', book: 'احجز', booking: 'جاري الحجز…', checkTitle: 'استعلم عن حجزك',
+      check: 'استعلم', checkLink: 'حجزت قبل كده؟ استعلم عن حجزك', back: 'حجز جديد', codePh: 'كود الحجز',
+      today: 'النهارده', tomorrow: 'بكره', min: 'دقيقة', h: 'ساعة', from: 'من', perHour: 'ج/ساعة', noSlots: 'مفيش مواعيد فاضية اليوم ده — جرّب يوم تاني أو مدة أقل.',
+      pickSlot: 'المواعيد الفاضية ظاهرة، والمحجوزة عليها خط.', deposit: (egp, hold) => `لتأكيد الحجز مطلوب عربون ${egp} جنيه. هتوصلك طريقة الدفع بعد الحجز (خلال ${hold} دقيقة).`,
+      noDeposit: 'مفيش عربون.', closed: 'الحجز أونلاين مقفول دلوقتي. كلمنا بالتليفون.',
+      yourCode: 'كود الحجز', bookedFor: 'الحجز', payTitle: 'ادفع العربون لتأكيد الحجز', payWith: 'حوّل', payNote: (code, by) => `اكتب ${code} في ملاحظة التحويل. لو موصلش قبل ${by} الحجز هيتلغي.`,
+      instapay: 'إنستاباي على', wallet: 'محفظة', confirmed: 'الحجز متأكد — مستنيينك!', status: { PENDING: 'مستني العربون', CONFIRMED: 'متأكد', SEATED: 'وصل', COMPLETED: 'خلص', NO_SHOW: 'محضرش', CANCELLED: 'اتلغى' },
+      people: 'أشخاص', saveCode: 'احتفظ بالكود ده — تقدر تستعلم بيه عن حجزك.', notFound: 'مفيش حجز بالكود ده.',
+      weWillCall: (egp) => `هنكلمك على واتساب بطريقة دفع العربون (${egp} جنيه).`, tooMany: 'محاولات كتير — استنى دقيقة وجرّب تاني.' },
+  };
+  const qs = new URLSearchParams(location.search);
+  let lang = qs.get('lang') === 'ar' || (!qs.get('lang') && (navigator.language || '').startsWith('ar')) ? 'ar' : 'en';
+  const $ = (id) => document.getElementById(id);
+  const tz = 'Africa/Cairo';
+  const state = { cfg: null, type: null, day: null, dur: null, slot: null, avail: null };
+
+  const cairoDate = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(d);
+  const cairoHM = (d) => new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+  const fmtTime = (d) => new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : 'en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit' }).format(d);
+  const fmtWhen = (d) => new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : 'en-GB', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }).format(d);
+  const egp = (c) => (c / 100).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-EG', { maximumFractionDigits: 0 });
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  async function get(path) {
+    const r = await fetch(API + path);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(Array.isArray(j.message) ? j.message.join(', ') : j.message || 'Error');
+    return j;
+  }
+
+  function chip(label, small, pressed, disabled, onClick) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip';
+    b.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+    b.innerHTML = esc(label) + (small ? `<small>${esc(small)}</small>` : '');
+    b.disabled = !!disabled;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function applyLang() {
+    const t = T[lang];
+    document.documentElement.lang = lang; document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    $('langBtn').textContent = lang === 'ar' ? 'English' : 'العربية';
+    $('title').textContent = t.title; $('subtitle').textContent = t.subtitle;
+    document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t[el.dataset.t]; });
+    $('name').placeholder = t.name; $('phone').placeholder = t.phone; $('party').placeholder = t.party; $('notes').placeholder = t.notes;
+    $('party').setAttribute('aria-label', t.party);
+    $('submit').textContent = t.book; $('checkLink').textContent = t.checkLink; $('backLink').textContent = t.back;
+    $('checkBtn').textContent = t.check; $('checkCode').placeholder = t.codePh;
+    $('closedMsg').textContent = t.closed;
+    if (state.cfg) renderAll();
+  }
+
+  function renderTypes() {
+    const box = $('types'); box.innerHTML = '';
+    for (const ty of state.cfg.types.filter((x) => x.count > 0)) {
+      const small = ty.fromHourlyCents ? `${T[lang].from} ${egp(ty.fromHourlyCents)} ${T[lang].perHour}` : '';
+      box.append(chip(lang === 'ar' ? ty.labelAr : ty.label, small, state.type === ty.type, false, () => { state.type = ty.type; state.slot = null; renderAll(); void loadAvail(); }));
+    }
+  }
+  function renderDays() {
+    const box = $('days'); box.innerHTML = '';
+    const today = cairoDate(new Date());
+    for (let i = 0; i <= state.cfg.maxDaysAhead; i++) {
+      const d = new Date(`${today}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + i);
+      const iso = d.toISOString().slice(0, 10);
+      const label = i === 0 ? T[lang].today : i === 1 ? T[lang].tomorrow
+        : new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : 'en-GB', { weekday: 'short', timeZone: 'UTC' }).format(d);
+      const small = new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(d);
+      box.append(chip(label, small, state.day === iso, false, () => { state.day = iso; state.slot = null; renderAll(); void loadAvail(); }));
+    }
+  }
+  function renderDurations() {
+    const box = $('durations'); box.innerHTML = '';
+    for (const m of state.cfg.durations) {
+      const label = m % 60 === 0 ? `${m / 60} ${T[lang].h}` : `${m} ${T[lang].min}`;
+      box.append(chip(label, '', state.dur === m, false, () => { state.dur = m; state.slot = null; renderAll(); }));
+    }
+  }
+  function freeFor(start, end) {
+    const rs = state.avail.resources.filter((r) => r.type === state.type);
+    return rs.some((r) => r.busy.every((b) => new Date(b.endAt) <= start || new Date(b.startAt) >= end));
+  }
+  function renderSlots() {
+    const box = $('slots'); box.innerHTML = ''; $('slotsNote').textContent = '';
+    if (!state.avail || !state.dur) return;
+    const ws = new Date(state.avail.window.start), we = new Date(state.avail.window.end);
+    const step = state.cfg.slotMinutes * 60000, dur = state.dur * 60000;
+    const earliest = Date.now() + state.cfg.minLeadMinutes * 60000;
+    let any = false;
+    for (let t = ws.getTime(); t + dur <= we.getTime(); t += step) {
+      if (t < earliest) continue;
+      const s = new Date(t), e = new Date(t + dur);
+      const free = freeFor(s, e);
+      any = any || free;
+      box.append(chip(fmtTime(s), '', state.slot && state.slot.getTime() === t, !free, () => { state.slot = s; renderAll(); }));
+    }
+    $('slotsNote').textContent = any ? T[lang].pickSlot : T[lang].noSlots;
+  }
+  function renderAll() {
+    renderTypes(); renderDays(); renderDurations(); renderSlots();
+    const ty = state.cfg.types.find((x) => x.type === state.type);
+    $('depositNote').textContent = ty && ty.depositCents > 0 ? T[lang].deposit(egp(ty.depositCents), state.cfg.depositHoldMinutes) : T[lang].noDeposit;
+    $('submit').disabled = !(state.type && state.day && state.dur && state.slot);
+  }
+
+  async function loadAvail() {
+    if (!state.type || !state.day) return;
+    state.avail = null; renderSlots();
+    try { state.avail = await get(`/availability?date=${state.day}&type=${state.type}`); }
+    catch (e) { $('error').textContent = e.message; }
+    renderAll();
+  }
+
+  function bookingCard(b, fresh) {
+    const t = T[lang];
+    const start = new Date(b.startAt);
+    const statusLine = b.status === 'CONFIRMED' ? `<p class="ok">${esc(t.confirmed)}</p>` : `<p><b>${esc(t.status[b.status] || b.status)}</b></p>`;
+    let pay = '';
+    if (b.depositStatus === 'AWAITING' && b.status === 'PENDING') {
+      const p = state.cfg.payment;
+      const ways = [p.instapay && `${t.instapay} <span class="mono">${esc(p.instapay)}</span>`, p.wallet && `${t.wallet} <span class="mono">${esc(p.wallet)}</span>`].filter(Boolean).join('<br>');
+      pay = `<div class="pay"><p class="pay-title">${esc(t.payTitle)}</p>`
+        + (ways
+          ? `<p>${esc(t.payWith)} <span class="mono">${egp(b.depositCents)} EGP</span><br>${ways}</p><p class="muted">${esc(t.payNote(b.code, b.payBy ? fmtTime(new Date(b.payBy)) : ''))}</p>`
+          : `<p>${esc(t.weWillCall(egp(b.depositCents)))}</p>`)
+        + `</div>`;
+    }
+    return `<p class="label">${esc(t.yourCode)}</p><div class="code">${esc(b.code)}</div>${statusLine}
+      <p>${esc(t.bookedFor)}: ${esc(lang === 'ar' && b.resource.nameAr ? b.resource.nameAr : b.resource.name)} — ${esc(fmtWhen(start))} · ${b.partySize} ${esc(t.people)}</p>
+      ${pay}${fresh ? `<p class="muted">${esc(t.saveCode)}</p>` : ''}`;
+  }
+
+  $('form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    $('error').textContent = '';
+    $('submit').disabled = true; $('submit').textContent = T[lang].booking;
+    try {
+      const r = await fetch(`${API}/book`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: state.type, date: state.day, time: cairoHM(state.slot), durationMinutes: state.dur,
+          name: $('name').value, phone: $('phone').value, partySize: Number($('party').value) || 1,
+          notes: $('notes').value || undefined,
+        }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.status === 429) throw new Error(T[lang].tooMany);
+      if (!r.ok) throw new Error(Array.isArray(j.message) ? j.message.join(', ') : j.message || 'Error');
+      try { localStorage.setItem('gy.lastBooking', j.code); } catch { /* optional */ }
+      $('form').classList.add('hidden');
+      $('done').innerHTML = bookingCard(j, true) + `<button class="link" type="button" id="again">${esc(T[lang].back)}</button>`;
+      $('done').classList.remove('hidden');
+      $('again').addEventListener('click', () => location.reload());
+    } catch (e) {
+      $('error').textContent = e.message;
+      void loadAvail();
+    } finally {
+      $('submit').textContent = T[lang].book; renderAll();
+    }
+  });
+
+  $('checkLink').addEventListener('click', () => {
+    $('form').classList.add('hidden'); $('check').classList.remove('hidden');
+    try { $('checkCode').value = localStorage.getItem('gy.lastBooking') || ''; } catch { /* optional */ }
+  });
+  $('backLink').addEventListener('click', () => { $('check').classList.add('hidden'); $('form').classList.remove('hidden'); });
+  $('checkBtn').addEventListener('click', async () => {
+    $('checkError').textContent = ''; $('checkResult').innerHTML = '';
+    const code = $('checkCode').value.trim().toUpperCase();
+    if (!code) return;
+    try { $('checkResult').innerHTML = bookingCard(await get(`/booking/${encodeURIComponent(code)}`), false); }
+    catch { $('checkError').textContent = T[lang].notFound; }
+  });
+  $('langBtn').addEventListener('click', () => { lang = lang === 'ar' ? 'en' : 'ar'; applyLang(); });
+
+  (async () => {
+    applyLang();
+    try {
+      state.cfg = await get('/config');
+      if (!state.cfg.enabled || !state.cfg.types.some((x) => x.count > 0)) { $('closed').classList.remove('hidden'); return; }
+      state.type = (qs.get('type') && state.cfg.types.find((x) => x.type === qs.get('type'))?.type) || state.cfg.types.find((x) => x.count > 0).type;
+      state.day = cairoDate(new Date());
+      state.dur = state.cfg.durations.includes(60) ? 60 : state.cfg.durations[0];
+      $('form').classList.remove('hidden');
+      renderAll(); void loadAvail();
+      if (qs.get('code')) { $('checkLink').click(); $('checkCode').value = qs.get('code'); $('checkBtn').click(); }
+    } catch {
+      $('closed').classList.remove('hidden');
+    }
+  })();
+})();
+</script>
+</body>
+</html>

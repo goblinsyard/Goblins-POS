@@ -29,5 +29,7 @@ FROM nginx:alpine
 COPY --from=build /repo/apps/pos/dist /usr/share/nginx/html
 COPY --from=build /repo/apps/backoffice/dist /usr/share/nginx/html/admin
 COPY --from=build /repo/apps/kds/dist /usr/share/nginx/html/kds
+# public online-booking page (embeddable on goblinsyard.com)
+COPY apps/booking /usr/share/nginx/html/book
 COPY apps/web.nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

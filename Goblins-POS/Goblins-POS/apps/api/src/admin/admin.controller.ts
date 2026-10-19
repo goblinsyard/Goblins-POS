@@ -10,6 +10,7 @@ import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { AutoBackupService } from './auto-backup.service';
+import { backupsDir as backupsDir_ } from './backup-dir';
 
 const execAsync = promisify(exec);
 
@@ -1054,8 +1055,7 @@ export class AdminController {
   async createBackup(@Req() req: AuthedRequest) {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `goblins-backup-${stamp}.json`;
-    const backupsDir = path.join(process.cwd(), 'backups');
-    if (!fs.existsSync(backupsDir)) fs.mkdirSync(backupsDir, { recursive: true });
+    const backupsDir = backupsDir_();
 
     // Dump every table into one JSON file
     const [
@@ -1141,10 +1141,7 @@ export class AdminController {
   @RequirePermissions('settings.manage')
   async backupDatabase(@Req() req: AuthedRequest) {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupsDir = path.join(process.cwd(), 'backups');
-    if (!fs.existsSync(backupsDir)) {
-      fs.mkdirSync(backupsDir, { recursive: true });
-    }
+    const backupsDir = backupsDir_();
     const file = path.join(backupsDir, `goblins-${stamp}.sql`);
     const dbUrl = process.env.DATABASE_URL;
     if (!dbUrl) throw new BadRequestException('DATABASE_URL is not set.');
@@ -1166,8 +1163,7 @@ export class AdminController {
   @Get('db/backups')
   @RequirePermissions('settings.manage')
   async listBackups() {
-    const backupsDir = path.join(process.cwd(), 'backups');
-    if (!fs.existsSync(backupsDir)) return { files: [] };
+    const backupsDir = backupsDir_();
     const files = fs.readdirSync(backupsDir)
       .filter((f) => f.startsWith('goblins-') && f.endsWith('.sql'))
       .sort()
@@ -1179,7 +1175,7 @@ export class AdminController {
   @RequirePermissions('settings.manage')
   async restoreDatabase(@Req() req: AuthedRequest, @Body() body: { filename: string }) {
     if (!body.filename) throw new BadRequestException('Filename is required');
-    const backupsDir = path.join(process.cwd(), 'backups');
+    const backupsDir = backupsDir_();
     const file = path.join(backupsDir, body.filename);
     if (!fs.existsSync(file) || path.relative(backupsDir, file).includes('..')) {
       throw new BadRequestException('Invalid or non-existent file.');
@@ -1344,7 +1340,7 @@ export class AdminController {
     const config = await this.prisma.setting.findUnique({
       where: { key: 'db.autoBackupConfig' },
     });
-    return config?.value || { enabled: false, intervalHours: 24, keepCount: 10 };
+    return config?.value || { enabled: true, intervalHours: 24, keepCount: 14 };
   }
 
   @Post('db/auto-backup/config')

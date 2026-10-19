@@ -36,6 +36,9 @@ export class PaymentsService {
    */
   async pay(params: { orderId: string; userId: string; payments: PaymentInput[]; terminalId?: string }) {
     const result = await this.prisma.$transaction(async (tx) => {
+      // Lock the order row so a double-tap or a second terminal paying the same
+      // bill waits here and then sees it already paid, instead of paying twice.
+      await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${params.orderId} FOR UPDATE`;
       const order = await tx.order.findUniqueOrThrow({
         where: { id: params.orderId },
         include: { payments: true, session: true },
@@ -75,14 +78,14 @@ export class PaymentsService {
           if (!order.customerId) {
             throw new BadRequestException('Wallet payment requires a customer to be attached to the order');
           }
-          const customer = await tx.customer.findUniqueOrThrow({ where: { id: order.customerId } });
-          if (customer.walletBalanceCents < p.amountCents) {
-            throw new BadRequestException('Credit is not enough');
-          }
-          await tx.customer.update({
-            where: { id: order.customerId },
+          // check-and-deduct in one statement so two bills can't spend the same credit
+          const debited = await tx.customer.updateMany({
+            where: { id: order.customerId, walletBalanceCents: { gte: p.amountCents } },
             data: { walletBalanceCents: { decrement: p.amountCents } },
           });
+          if (debited.count === 0) {
+            throw new BadRequestException('Credit is not enough');
+          }
         }
 
         await tx.payment.create({
@@ -192,6 +195,33 @@ export class PaymentsService {
             },
           });
         }
+        // Delivery-app orders: snapshot the app's commission and book it as an
+        // expense against what the app owes us (receivable 1300).
+        if (order.channel === 'TALABAT' || order.channel === 'ELMENUS' || order.channel === 'RABBIT') {
+          const all = await this.settings.getAll();
+          const bps = Number(all[`delivery.commissionBps.${order.channel}`] ?? 0);
+          const commission = Math.round((order.totalCents * (Number.isFinite(bps) ? bps : 0)) / 10_000);
+          if (commission > 0) {
+            await tx.order.update({ where: { id: order.id }, data: { commissionCents: commission } });
+            const fees = await tx.account.findUnique({ where: { code: '5280' } });
+            const receivable = await tx.account.findUnique({ where: { code: '1300' } });
+            if (fees && receivable) {
+              await tx.journalEntry.create({
+                data: {
+                  description: `${order.channel} commission — Order #${order.number}`,
+                  reference: `Commission #${order.id}`,
+                  date: closed.closedAt || new Date(),
+                  lines: {
+                    create: [
+                      { accountId: fees.id, debitCents: commission, creditCents: 0 },
+                      { accountId: receivable.id, debitCents: 0, creditCents: commission },
+                    ],
+                  },
+                },
+              });
+            }
+          }
+        }
         // free the resource if no other open orders sit on it
         if (order.resourceId) {
           const others = await tx.order.count({
@@ -272,7 +302,12 @@ export class PaymentsService {
     return result;
   }
 
-  /** Refund a payment — manager gated, audited. */
+  /**
+   * Refund a payment — manager gated, audited. The refund is booked to today's
+   * open shift (that's the drawer the cash leaves from), and for a closed sale
+   * the accounting entry and loyalty points are reversed in proportion to the
+   * refunded amount. Stock is not returned: the food was already prepared.
+   */
   async refund(params: {
     paymentId: string;
     userId: string;
@@ -285,18 +320,28 @@ export class PaymentsService {
       approverId = await this.auth.approveWithPin(params.approverPin, 'payment.refund');
     }
     return this.prisma.$transaction(async (tx) => {
+      const first = await tx.payment.findUniqueOrThrow({ where: { id: params.paymentId } });
+      await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${first.orderId} FOR UPDATE`;
       const payment = await tx.payment.findUniqueOrThrow({
         where: { id: params.paymentId },
         include: { order: true, method: true },
       });
+      if (payment.refundOfId || payment.amountCents <= 0) {
+        throw new BadRequestException('This line is already a refund');
+      }
       const existing = await tx.payment.findFirst({ where: { refundOfId: payment.id } });
       if (existing) throw new BadRequestException('Already refunded');
+
+      const openShift = await tx.shift.findFirst({
+        where: { branchId: payment.order.branchId, status: 'OPEN' },
+        orderBy: { openedAt: 'desc' },
+      });
       const refund = await tx.payment.create({
         data: {
           orderId: payment.orderId,
           methodId: payment.methodId,
           amountCents: -payment.amountCents,
-          shiftId: payment.shiftId,
+          shiftId: openShift?.id ?? payment.shiftId,
           refundOfId: payment.id,
         },
       });
@@ -310,6 +355,10 @@ export class PaymentsService {
           data: { walletBalanceCents: { increment: payment.amountCents } },
         });
       }
+      if (payment.order.status === 'PAID') {
+        await this.postRefundJournal(tx, payment);
+        await this.reverseLoyalty(tx, payment.order, payment.amountCents);
+      }
       await this.audit.log(
         {
           userId: params.userId, approverId, terminalId: params.terminalId,
@@ -320,6 +369,97 @@ export class PaymentsService {
       );
       return refund;
     });
+  }
+
+  /** Reverse the refunded share of a closed sale's journal entry. */
+  private async postRefundJournal(
+    tx: Prisma.TransactionClient,
+    payment: {
+      id: string;
+      amountCents: number;
+      method: { kind: string; accountId: string | null };
+      order: { id: string; number: number; type: string; totalCents: number; serviceChargeCents: number; taxCents: number; commissionCents: number; channel: string };
+    },
+  ) {
+    const { order } = payment;
+    const amount = payment.amountCents;
+    if (order.totalCents <= 0 || amount <= 0) return;
+    const code = (c: string) => tx.account.findUnique({ where: { code: c } });
+    const fallback = await code(payment.method.kind === 'CASH' ? '1110' : '1210');
+    const payAccountId = payment.method.accountId || fallback?.id;
+    const revenue = await code(order.type === 'BILLIARDS' ? '4300' : order.type === 'PS_ROOM' ? '4200' : '4100');
+    const service = await code('4600');
+    const vat = await code('2200');
+    if (!payAccountId || !revenue) return;
+
+    const serviceCents = service ? Math.round((order.serviceChargeCents * amount) / order.totalCents) : 0;
+    const taxCents = vat ? Math.round((order.taxCents * amount) / order.totalCents) : 0;
+    const revenueCents = amount - serviceCents - taxCents;
+    const lines = [
+      { accountId: revenue.id, debitCents: revenueCents, creditCents: 0 },
+      ...(serviceCents && service ? [{ accountId: service.id, debitCents: serviceCents, creditCents: 0 }] : []),
+      ...(taxCents && vat ? [{ accountId: vat.id, debitCents: taxCents, creditCents: 0 }] : []),
+      { accountId: payAccountId, debitCents: 0, creditCents: amount },
+    ];
+    await tx.journalEntry.create({
+      data: {
+        description: `Refund for Order #${order.number}`,
+        reference: `Refund #${payment.id}`,
+        lines: { create: lines },
+      },
+    });
+
+    // a delivery app doesn't keep its commission on a refunded order
+    const commission = Math.round((order.commissionCents * amount) / order.totalCents);
+    if (commission > 0) {
+      const fees = await code('5280');
+      const receivable = await code('1300');
+      if (fees && receivable) {
+        await tx.journalEntry.create({
+          data: {
+            description: `${order.channel} commission reversed — Order #${order.number}`,
+            reference: `Commission refund #${payment.id}`,
+            lines: {
+              create: [
+                { accountId: receivable.id, debitCents: commission, creditCents: 0 },
+                { accountId: fees.id, debitCents: 0, creditCents: commission },
+              ],
+            },
+          },
+        });
+      }
+    }
+  }
+
+  /** Take back the refunded share of the points (and lifetime spend) this order earned. */
+  private async reverseLoyalty(
+    tx: Prisma.TransactionClient,
+    order: { id: string; totalCents: number },
+    refundCents: number,
+  ) {
+    if (order.totalCents <= 0) return;
+    const earned = await tx.pointsTransaction.findMany({ where: { orderId: order.id, kind: 'EARN' } });
+    const totalPoints = earned.reduce((a, e) => a + e.points, 0);
+    const byCustomer = new Map<string, number>();
+    for (const e of earned) byCustomer.set(e.customerId, (byCustomer.get(e.customerId) ?? 0) + e.points);
+    const share = refundCents / order.totalCents;
+    for (const [customerId, points] of byCustomer) {
+      const customer = await tx.customer.findUniqueOrThrow({ where: { id: customerId } });
+      const takePoints = Math.min(Math.round(points * share), customer.pointsBalance);
+      const takeSpend = Math.min(
+        Math.round(refundCents * (totalPoints ? points / totalPoints : 1)),
+        customer.lifetimeCents,
+      );
+      if (takePoints > 0) {
+        await tx.pointsTransaction.create({
+          data: { customerId, orderId: order.id, points: -takePoints, kind: 'ADJUST', note: 'Refund' },
+        });
+      }
+      await tx.customer.update({
+        where: { id: customerId },
+        data: { pointsBalance: { decrement: takePoints }, lifetimeCents: { decrement: takeSpend } },
+      });
+    }
   }
 
   private async earnPoints(

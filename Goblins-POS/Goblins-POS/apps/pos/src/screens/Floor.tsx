@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Banknote, CalendarDays, ClipboardList, Crown, Map, Palette, Pause, Play, Plus, Timer, User,
+  Banknote, Bike, CalendarDays, ClipboardList, Crown, Map, Palette, Pause, Play, Plus, Timer, User,
 } from 'lucide-react';
 import { priceSession, type RatePlanSpec } from '@goblins/shared';
 import { api } from '../lib/api';
@@ -11,6 +11,7 @@ import { CashDrawerDialog, TimeClockDialog } from './dialogs/CashDrawerDialog';
 import { ShiftDialogs } from './ShiftDialogs';
 import { ReservationsTab } from './ReservationsTab';
 import { DisplaySettingsDialog } from './dialogs/DisplaySettingsDialog';
+import { DeliveryDialog } from './dialogs/DeliveryDialog';
 
 const STATUS_COLORS: Record<string, string> = {
   FREE: 'bg-goblin-600 border-goblin-400',
@@ -75,6 +76,7 @@ export function Floor() {
   const [shiftDialog, setShiftDialog] = useState<'open' | 'close' | 'x' | null>(null);
   const [pending, setPending] = useState<FloorResource | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deliveryOpen, setDeliveryOpen] = useState(false);
   const [clockOpen, setClockOpen] = useState(false);
   const [choosing, setChoosing] = useState<FloorResource | null>(null); // table with several bills
   const [openList, setOpenList] = useState<OpenOrderSummary[] | null>(null);
@@ -145,6 +147,9 @@ export function Floor() {
             <>
               <button onClick={takeaway} className="rounded-xl bg-goblin-600 px-4 py-2 font-semibold active:bg-goblin-500">
                 {t(lang, 'takeaway')}
+              </button>
+              <button onClick={() => setDeliveryOpen(true)} className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-800 px-4 py-2">
+                <Bike className="h-4 w-4" /> {lang === 'ar' ? 'توصيل' : 'Delivery'}
               </button>
               <button
                 onClick={() => void api<OpenOrderSummary[]>('/orders/open').then(setOpenList)}
@@ -344,6 +349,9 @@ export function Floor() {
       )}
 
       {drawerOpen && shift && <CashDrawerDialog shiftId={shift.id} onClose={() => setDrawerOpen(false)} />}
+      {deliveryOpen && (
+        <DeliveryDialog onClose={() => setDeliveryOpen(false)} onCreated={(id) => { setDeliveryOpen(false); openOrder(id); }} />
+      )}
       {clockOpen && <TimeClockDialog onClose={() => setClockOpen(false)} />}
       {displaySettingsOpen && <DisplaySettingsDialog onClose={() => setDisplaySettingsOpen(false)} />}
 
@@ -358,7 +366,7 @@ export function Floor() {
                   className="flex w-full items-center justify-between rounded-xl bg-goblin-800 p-4 text-start active:bg-goblin-600">
                   <span>
                     <b>#{o.number}</b>
-                    <span className="ms-2 text-goblin-300">{o.resource?.name ?? o.type.replace('_', ' ')}</span>
+                    <span className="ms-2 text-goblin-300">{o.resource?.name ?? (o.type === 'DELIVERY' && o.channel && o.channel !== 'PHONE' ? `${o.channel}${o.externalRef ? ` ${o.externalRef}` : ''}` : o.type.replace('_', ' '))}</span>
                     {o.customer && <span className="ms-2 text-sm text-goblin-400">{o.customer.name}</span>}
                   </span>
                   <span className="font-semibold">{fmtMoney(o.totalCents, lang)}</span>

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 
 const D = Prisma.Decimal;
 const CAIRO = 'Africa/Cairo';
@@ -10,13 +11,20 @@ function cairoHour(d: Date): number {
     new Intl.DateTimeFormat('en-US', { timeZone: CAIRO, hour: 'numeric', hour12: false }).format(d),
   ) % 24;
 }
+function cairoDow(d: Date): number {
+  const wd = new Intl.DateTimeFormat('en-US', { timeZone: CAIRO, weekday: 'short' }).format(d);
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(wd);
+}
 function cairoDay(d: Date): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: CAIRO }).format(d); // YYYY-MM-DD
 }
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: SettingsService,
+  ) {}
 
   /** Owner dashboard: today at a glance. */
   async dashboard(branchId: string) {
@@ -71,7 +79,7 @@ export class ReportsService {
   }
 
   /** Sales report with grouping. */
-  async sales(branchId: string, from: Date, to: Date, groupBy: 'hour' | 'day' | 'department' | 'category' | 'item' | 'method' | 'staff') {
+  async sales(branchId: string, from: Date, to: Date, groupBy: 'hour' | 'day' | 'department' | 'category' | 'item' | 'method' | 'staff' | 'channel') {
     const orders = await this.prisma.order.findMany({
       where: { branchId, status: 'PAID', closedAt: { gte: from, lte: to } },
       include: {
@@ -80,13 +88,17 @@ export class ReportsService {
         openedBy: { select: { name: true } },
       },
     });
-    const agg = new Map<string, { orders: number; revenueCents: number; quantity: number }>();
-    const add = (key: string, revenue: number, qty = 0, countOrder = true) => {
-      const row = agg.get(key) ?? { orders: 0, revenueCents: 0, quantity: 0 };
+    const agg = new Map<string, { orders: number; revenueCents: number; quantity: number; commissionCents: number }>();
+    const add = (key: string, revenue: number, qty = 0, countOrder = true, commission = 0) => {
+      const row = agg.get(key) ?? { orders: 0, revenueCents: 0, quantity: 0, commissionCents: 0 };
       if (countOrder) row.orders++;
       row.revenueCents += revenue;
       row.quantity += qty;
+      row.commissionCents += commission;
       agg.set(key, row);
+    };
+    const CHANNEL_LABEL: Record<string, string> = {
+      IN_HOUSE: 'In house', PHONE: 'Phone delivery', TALABAT: 'Talabat', ELMENUS: 'Elmenus', RABBIT: 'Rabbit',
     };
 
     for (const o of orders) {
@@ -98,6 +110,7 @@ export class ReportsService {
           add(o.type === 'BILLIARDS' ? 'Billiards' : o.type === 'PS_ROOM' ? 'PlayStation' : 'Restaurant', o.totalCents);
           break;
         case 'staff': add(o.openedBy.name, o.totalCents); break;
+        case 'channel': add(CHANNEL_LABEL[o.channel] ?? o.channel, o.totalCents, 0, true, o.commissionCents); break;
         case 'method':
           for (const p of o.payments) add(p.method.name, p.amountCents, 0, false);
           break;
@@ -114,48 +127,90 @@ export class ReportsService {
       .sort((a, b) => (groupBy === 'hour' || groupBy === 'day' ? a.key.localeCompare(b.key) : b.revenueCents - a.revenueCents));
   }
 
-  /** Billiards/PS utilization: occupancy %, revenue/available hour, peak heatmap. */
-  async utilization(from: Date, to: Date) {
-    const sessions = await this.prisma.session.findMany({
-      where: { status: 'STOPPED', startedAt: { gte: from }, endedAt: { lte: to } },
-      include: { resource: { select: { id: true, name: true, type: true } }, segments: true },
+  /**
+   * Billiards / PlayStation utilization. Every active table/room is listed (idle
+   * ones show 0%), minutes are split exactly at Cairo hour boundaries, occupancy
+   * is measured against `business.openHoursPerDay`, and food & drink sold on a
+   * session's bill is reported next to the time revenue.
+   */
+  async utilization(from: Date, to: Date, type?: 'BILLIARDS_TABLE' | 'PS_ROOM') {
+    const types: ('BILLIARDS_TABLE' | 'PS_ROOM')[] = type ? [type] : ['BILLIARDS_TABLE', 'PS_ROOM'];
+    const openHours = Math.min(24, Math.max(1, Number((await this.settings.getAll())['business.openHoursPerDay'] ?? 12)));
+    const resources = await this.prisma.resource.findMany({
+      where: { isActive: true, type: { in: types } },
+      select: { id: true, name: true, type: true },
+      orderBy: { name: 'asc' },
     });
-    const windowHours = Math.max(1, (to.getTime() - from.getTime()) / 3600_000);
-    // assume venue open 12h/day
-    const availableHours = (windowHours / 24) * 12;
+    const ids = resources.map((r) => r.id);
+    const sessions = await this.prisma.session.findMany({
+      where: { status: 'STOPPED', resourceId: { in: ids }, startedAt: { gte: from, lt: to } },
+      include: {
+        segments: true,
+        order: { select: { status: true, items: { select: { lineCents: true, status: true, isTimeCharge: true } } } },
+      },
+    });
 
-    const byResource = new Map<string, { name: string; type: string; minutes: number; revenueCents: number; sessions: number }>();
-    const heatmap = new Map<string, number>(); // "dow-hour" → minutes
+    const days = Math.max(1, (to.getTime() - from.getTime()) / 86_400_000);
+    const availableHours = days * openHours;
+    const rows = new Map(
+      resources.map((r) => [r.id, { resourceId: r.id, name: r.name, type: r.type, sessions: 0, minutes: 0, revenueCents: 0, fnbRevenueCents: 0 }]),
+    );
+    const heat = new Map<string, number>(); // "dow-hour" -> minutes
+    const HOUR = 3_600_000;
+
     for (const s of sessions) {
-      const row = byResource.get(s.resourceId) ?? {
-        name: s.resource.name, type: s.resource.type, minutes: 0, revenueCents: 0, sessions: 0,
-      };
-      row.minutes += s.billedMinutes ?? 0;
-      row.revenueCents += s.billedCents ?? 0;
-      row.sessions++;
-      byResource.set(s.resourceId, row);
+      const row = rows.get(s.resourceId);
+      if (row) {
+        row.sessions++;
+        row.minutes += s.billedMinutes ?? 0;
+        row.revenueCents += s.billedCents ?? 0;
+        if (s.order?.status === 'PAID') {
+          row.fnbRevenueCents += s.order.items
+            .filter((i) => i.status !== 'VOIDED' && !i.isTimeCharge)
+            .reduce((a, i) => a + i.lineCents, 0);
+        }
+      }
       for (const seg of s.segments) {
         if (!seg.endedAt) continue;
+        const end = seg.endedAt.getTime();
         let cursor = seg.startedAt.getTime();
-        while (cursor < seg.endedAt.getTime()) {
+        // Cairo's UTC offset is a whole number of hours, so UTC hour boundaries are Cairo ones too
+        while (cursor < end) {
+          const next = Math.min(end, Math.floor(cursor / HOUR) * HOUR + HOUR);
           const d = new Date(cursor);
-          const key = `${d.getDay()}-${cairoHour(d)}`;
-          heatmap.set(key, (heatmap.get(key) ?? 0) + Math.min(60, (seg.endedAt.getTime() - cursor) / 60_000));
-          cursor += 3600_000;
+          const key = `${cairoDow(d)}-${cairoHour(d)}`;
+          heat.set(key, (heat.get(key) ?? 0) + (next - cursor) / 60_000);
+          cursor = next;
         }
       }
     }
+
+    const list = [...rows.values()].map((r) => ({
+      ...r,
+      occupancyPctBps: Math.round((r.minutes / 60 / availableHours) * 10_000),
+      revenuePerAvailableHourCents: Math.round(r.revenueCents / availableHours),
+      avgSessionMinutes: r.sessions ? Math.round(r.minutes / r.sessions) : 0,
+    }));
+    const heatmap = [...heat.entries()].map(([key, minutes]) => {
+      const [dow, hour] = key.split('-');
+      return { dayOfWeek: Number(dow), hour: Number(hour), minutes: Math.round(minutes) };
+    });
+    const peak = heatmap.reduce<(typeof heatmap)[number] | null>((a, h) => (!a || h.minutes > a.minutes ? h : a), null);
+    const totalMinutes = list.reduce((a, r) => a + r.minutes, 0);
+    const totalSessions = list.reduce((a, r) => a + r.sessions, 0);
     return {
-      resources: [...byResource.entries()].map(([id, v]) => ({
-        resourceId: id,
-        ...v,
-        occupancyPctBps: Math.round((v.minutes / 60 / availableHours) * 10_000),
-        revenuePerAvailableHourCents: Math.round(v.revenueCents / availableHours),
-      })),
-      heatmap: [...heatmap.entries()].map(([key, minutes]) => {
-        const [dow, hour] = key.split('-');
-        return { dayOfWeek: Number(dow), hour: Number(hour), minutes: Math.round(minutes) };
-      }),
+      from, to, openHoursPerDay: openHours,
+      totals: {
+        sessions: totalSessions,
+        minutes: totalMinutes,
+        revenueCents: list.reduce((a, r) => a + r.revenueCents, 0),
+        fnbRevenueCents: list.reduce((a, r) => a + r.fnbRevenueCents, 0),
+        occupancyPctBps: list.length ? Math.round((totalMinutes / 60 / (availableHours * list.length)) * 10_000) : 0,
+        avgSessionMinutes: totalSessions ? Math.round(totalMinutes / totalSessions) : 0,
+      },
+      peak,
+      resources: list.sort((a, b) => b.occupancyPctBps - a.occupancyPctBps),
+      heatmap,
     };
   }
 
