@@ -286,6 +286,32 @@ export class OrdersService {
         }
         const unitCents = this.effectivePrice(item);
         const modsCents = modifiers.reduce((a, m) => a + m.priceDeltaCents, 0);
+
+        // Same item tapped again → one line with a bigger quantity, as long as the
+        // earlier line hasn't gone to the kitchen yet and nothing about it differs
+        // (options, note, course, seat, price, discount). Lines already sent stay
+        // separate so the kitchen gets a new ticket for the extra ones.
+        const candidates = await tx.orderItem.findMany({
+          where: {
+            orderId, itemId: item.id, status: 'PENDING', isTimeCharge: false,
+            course: input.course ?? 1, seat: input.seat ?? null,
+            unitCents, modifiersCents: modsCents, discountCents: 0,
+            notes: input.notes ? input.notes : null,
+          },
+          include: { modifiers: { select: { modifierId: true } } },
+          orderBy: { sortOrder: 'desc' },
+        });
+        const wanted = [...modifierIds].sort().join(',');
+        const same = candidates.find((c) => c.modifiers.map((m) => m.modifierId ?? '').sort().join(',') === wanted);
+        if (same) {
+          const qty = Number(same.quantity) + Number(input.quantity);
+          await tx.orderItem.update({
+            where: { id: same.id },
+            data: { quantity: new Prisma.Decimal(qty), lineCents: lineTotal(unitCents + modsCents, qty) },
+          });
+          continue;
+        }
+
         await tx.orderItem.create({
           data: {
             orderId,

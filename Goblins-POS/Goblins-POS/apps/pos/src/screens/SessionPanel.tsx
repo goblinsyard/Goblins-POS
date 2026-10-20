@@ -104,7 +104,7 @@ export function SessionPanel({ order, onChanged }: { order: Order; onChanged: ()
                 onClick={() => act(() => api('/sessions/start', { method: 'POST', body: { orderId: order.id, isMultiplayer: false } }))}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-goblin-500 px-5 py-2 font-bold hover:bg-goblin-400 active:scale-95 transition-all shadow"
               >
-                <Play className="h-4 w-4" /> {t(lang, 'startSession')}{isMulti ? ` (${t(lang, 'single')})` : ''}
+                <Play className="h-4 w-4" /> {session?.status === 'STOPPED' ? (lang === 'ar' ? 'بدء جلسة جديدة' : 'Start new session') : t(lang, 'startSession')}{isMulti ? ` (${t(lang, 'single')})` : ''}
               </button>
               {isMulti && (
                 <button
@@ -117,7 +117,8 @@ export function SessionPanel({ order, onChanged }: { order: Order; onChanged: ()
               )}
               {session?.status === 'STOPPED' && (
                 <span className="text-goblin-300">
-                  {session.liveMinutes} {t(lang, 'minutes')} — {fmtMoney(session.liveCostCents, lang)}
+                  {lang === 'ar' ? 'الجلسة السابقة:' : 'Last session:'} {session.liveMinutes} {t(lang, 'minutes')} — {fmtMoney(session.liveCostCents, lang)}
+                  <span className="ms-1 text-goblin-400">{lang === 'ar' ? '(مضافة للفاتورة)' : '(added to the bill)'}</span>
                 </span>
               )}
             </>

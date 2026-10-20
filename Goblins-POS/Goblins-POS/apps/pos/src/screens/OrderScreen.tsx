@@ -957,6 +957,9 @@ export function OrderScreen() {
                   {line.description}
                   {(line.course ?? 1) > 1 && <span className="ms-1 rounded bg-goblin-700 px-1 text-xs">C{line.course}</span>}
                   {seat === 0 && (line.seat ?? 0) > 0 && <span className="ms-1 rounded bg-sky-900 px-1 text-xs">S{line.seat}</span>}
+                  {line.status === 'SENT' && !line.isTimeCharge && (
+                    <span className="ms-1 rounded bg-emerald-900/70 px-1 text-[10px] font-semibold text-emerald-200">{lang === 'ar' ? 'أُرسل' : 'Sent'}</span>
+                  )}
                 </span>
                 <span>{fmtMoney(line.lineCents, lang)}</span>
               </div>

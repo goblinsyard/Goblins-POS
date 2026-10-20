@@ -914,7 +914,8 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
   );
 
   const [resourceId, setResourceId] = useState(initialData?.resourceId ?? '');
-  const [date, setDate] = useState(initialData?.date ?? new Date().toISOString().slice(0, 10));
+  // today's date in Cairo (toISOString() is UTC, which is still yesterday after midnight here)
+  const [date, setDate] = useState(initialData?.date ?? new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date()));
   const [start, setStart] = useState(initialData?.startTime ?? '19:00');
   const [durationMin, setDurationMin] = useState(initialData?.durationMin ?? '120');
   const [partySize, setPartySize] = useState('2');
@@ -926,6 +927,7 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
   const [crmSearch, setCrmSearch] = useState('');
   const [crmResults, setCrmResults] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+  const [saveCustomer, setSaveCustomer] = useState(true);
 
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -981,6 +983,7 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
           guestPhone: guestPhone.trim() || selectedCustomer?.phone || undefined,
           depositCents: depositCents ?? undefined,
           notes: notes.trim() || undefined,
+          ...(!selectedCustomer && saveCustomer && guestPhone.trim() ? { saveCustomer: true } : {}),
         },
       });
       onCreated();
@@ -1154,6 +1157,20 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
             </div>
           </div>
 
+          {!selectedCustomer && (
+            <label className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-xl border border-goblin-800 bg-goblin-950 px-3 py-2 text-sm">
+              <input type="checkbox" className="h-5 w-5" checked={saveCustomer} onChange={(e) => setSaveCustomer(e.target.checked)} />
+              <span>
+                {lang === 'ar' ? 'حفظ الضيف كعميل جديد' : 'Save this guest as a new customer'}
+                <span className="block text-xs text-goblin-400">
+                  {lang === 'ar'
+                    ? 'يحتاج الاسم ورقم الهاتف. إن كان الرقم مسجلًا يُربط الحجز بالعميل الموجود.'
+                    : 'Needs a name and phone. If the phone is already registered, the booking links to that customer.'}
+                </span>
+              </span>
+            </label>
+          )}
+
           {/* Party size & Deposit */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
@@ -1193,6 +1210,12 @@ function NewReservationDialog({ zones, onClose, onCreated, initialData }: NewRes
               className="w-full rounded-xl bg-goblin-950 p-3 text-sm border border-goblin-800 focus:outline-none focus:border-goblin-600"
             />
           </div>
+
+          {err && (
+            <div className="flex items-center gap-2 rounded-xl border border-red-900 bg-red-950/60 p-3 text-sm text-red-200">
+              <TriangleAlert className="h-4 w-4 shrink-0" /> {err}
+            </div>
+          )}
 
           {/* Dialog Action Buttons */}
           <div className="flex gap-3 pt-3">

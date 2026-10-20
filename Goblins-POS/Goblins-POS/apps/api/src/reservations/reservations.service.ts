@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { SettingsService } from '../settings/settings.service';
+import { normalizeEgMobile } from './public-booking.service';
 
 const ACTIVE: ReservationStatus[] = ['PENDING', 'CONFIRMED', 'SEATED'];
 
@@ -54,6 +55,7 @@ export class ReservationsService {
     depositCents?: number;
     notes?: string;
     userId?: string;
+    saveCustomer?: boolean;
   }) {
     const startAt = new Date(params.startAt);
     const endAt = new Date(params.endAt);
@@ -82,11 +84,33 @@ export class ReservationsService {
         throw new ConflictException('Time slot conflicts with an existing reservation');
       }
 
+      // New guest typed into the form → save them to the CRM (or link the
+      // existing customer with the same phone), all-or-nothing with the booking.
+      let customerId = params.customerId;
+      if (!customerId && params.saveCustomer) {
+        const name = params.guestName?.trim();
+        const raw = params.guestPhone?.trim();
+        if (!name || !raw) throw new BadRequestException('Enter the guest name and phone to save them as a customer');
+        const phone = normalizeEgMobile(raw) ?? raw.replace(/[\s\-()]/g, '');
+        const existing = await tx.customer.findFirst({ where: { phone: { in: [...new Set([phone, raw])] } } });
+        if (existing) {
+          customerId = existing.id;
+        } else {
+          const tier = await tx.loyaltyTier.findFirst({ orderBy: { minLifetimeCents: 'asc' } });
+          const created = await tx.customer.create({ data: { name, phone, tags: [], tierId: tier?.id } });
+          customerId = created.id;
+          await this.audit.log({
+            userId: params.userId, action: 'customer.create', entity: 'Customer', entityId: created.id,
+            detail: { source: 'reservation' },
+          }, tx);
+        }
+      }
+
       return tx.reservation.create({
         data: {
           branchId: params.branchId,
           resourceId: params.resourceId,
-          customerId: params.customerId,
+          customerId,
           guestName: params.guestName,
           guestPhone: params.guestPhone,
           partySize: params.partySize,

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { IsIn, IsInt, IsOptional, IsPositive, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsPositive, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import { ReservationStatus } from '@prisma/client';
 import { AuthedRequest, Public, RequirePermissions } from '../auth/auth.guard';
 import { ReservationsService } from './reservations.service';
@@ -32,6 +32,8 @@ class CreateReservationDto {
   @IsOptional() @IsString() guestPhone?: string;
   @IsOptional() @IsInt() depositCents?: number;
   @IsOptional() @IsString() notes?: string;
+  /** also save the guest as a CRM customer (or link the existing one with that phone) */
+  @IsOptional() @IsBoolean() saveCustomer?: boolean;
 }
 
 @Controller('reservations')

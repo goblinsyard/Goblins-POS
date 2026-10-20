@@ -100,8 +100,17 @@ export class SessionsService {
         include: { resource: { include: { ratePlan: { include: { rules: true } } } }, session: true },
       });
       if (order.status !== 'OPEN') throw new BadRequestException('Order is not open');
-      if (order.session && order.session.status !== 'CANCELLED') {
-        throw new BadRequestException('Order already has a session');
+      if (order.session && (order.session.status === 'RUNNING' || order.session.status === 'PAUSED')) {
+        throw new BadRequestException('This bill already has a running timer');
+      }
+      // A finished (or cancelled) timer has already been billed onto this order as its
+      // own line, so it is unlinked to make room for a new timer on the same bill.
+      // The old session keeps its table, times and amount for reports.
+      if (order.session) {
+        await tx.session.update({
+          where: { id: order.session.id },
+          data: { orderId: null, notes: [order.session.notes, `Bill #${order.number}`].filter(Boolean).join(' · ') },
+        });
       }
       const resource = order.resource;
       if (!resource) throw new BadRequestException('Order has no table/room');
@@ -109,6 +118,9 @@ export class SessionsService {
         throw new BadRequestException('Restaurant tables are not time-billed');
       }
       if (!resource.ratePlan) throw new BadRequestException('Resource has no rate plan');
+      if (!resource.ratePlan.isActive) {
+        throw new BadRequestException(`The rate plan "${resource.ratePlan.name}" is turned off. Turn it on or pick another plan for this table.`);
+      }
       const running = await tx.session.findFirst({
         where: { resourceId: resource.id, status: { in: ['RUNNING', 'PAUSED'] } },
       });

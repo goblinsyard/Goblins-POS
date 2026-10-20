@@ -177,7 +177,9 @@ function NewReservationModal({ zones, onClose, onDone }: {
 }) {
   const resources = zones.flatMap((z) => z.resources.map((r) => ({ ...r, zone: z.name })));
   const [resourceId, setResourceId] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  // today in Cairo — toISOString() is UTC, which is still yesterday after midnight here
+  const [date, setDate] = useState(new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date()));
+  const [saveCustomer, setSaveCustomer] = useState(true);
   const [start, setStart] = useState('19:00');
   const [durationMin, setDurationMin] = useState('120');
   const [partySize, setPartySize] = useState('2');
@@ -199,6 +201,7 @@ function NewReservationModal({ zones, onClose, onDone }: {
         partySize: Math.max(1, Math.round(Number(partySize))),
         guestName: guestName.trim(), guestPhone: guestPhone.trim() || undefined,
         depositCents: depositCents ?? undefined, notes: notes.trim() || undefined,
+        ...(saveCustomer && guestPhone.trim() ? { saveCustomer: true } : {}),
       } });
       onDone();
     } catch (e) { setErr(e instanceof Error ? e.message : tr('Failed')); }
@@ -206,7 +209,6 @@ function NewReservationModal({ zones, onClose, onDone }: {
 
   return (
     <Modal title={tr('New reservation')} onClose={onClose}>
-      <ErrorBanner message={err} />
       <div className="space-y-3">
         <Field label={tr('Table / room')}>
           <Select value={resourceId} onChange={setResourceId} allowEmpty="— pick —"
@@ -226,6 +228,14 @@ function NewReservationModal({ zones, onClose, onDone }: {
           <Field label={tr('Deposit (EGP, optional)')}><TextInput value={deposit} onChange={setDeposit} type="number" /></Field>
         </div>
         <Field label={tr('Notes')}><TextInput value={notes} onChange={setNotes} /></Field>
+        <label className="flex cursor-pointer items-start gap-2 text-sm text-goblin-200">
+          <input type="checkbox" className="mt-0.5 h-4 w-4" checked={saveCustomer} onChange={(e) => setSaveCustomer(e.target.checked)} />
+          <span>
+            {tr('Save this guest as a customer')}
+            <span className="block text-xs text-goblin-400">{tr('Needs a phone. If the phone is already registered, the booking links to that customer.')}</span>
+          </span>
+        </label>
+        <ErrorBanner message={err} />
         <Btn kind="primary" onClick={() => void submit()}>{tr('Book')}</Btn>
       </div>
     </Modal>

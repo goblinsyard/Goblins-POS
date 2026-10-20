@@ -173,20 +173,53 @@ export class AdminController {
   @Delete('rate-plans/:id')
   @RequirePermissions('rateplan.manage')
   async deleteRatePlan(@Req() req: AuthedRequest, @Param('id') id: string) {
-    const associatedResources = await this.prisma.resource.count({ where: { ratePlanId: id } });
-    if (associatedResources > 0) {
-      throw new BadRequestException('Cannot delete rate plan because it is assigned to billiard tables or PS rooms');
+    const plan = await this.prisma.ratePlan.findUnique({
+      where: { id },
+      include: { _count: { select: { sessions: true } }, resources: { select: { id: true } } },
+    });
+    if (!plan) throw new NotFoundException('Rate plan not found');
+    // past sessions keep pointing at their plan for the sales history
+    if (plan._count.sessions > 0) {
+      throw new BadRequestException('This plan was used for past sessions, so it can\'t be deleted. Turn it off instead.');
     }
-    await this.prisma.ratePlan.delete({ where: { id } });
-    await this.audit.log({ userId: req.user.sub, action: 'rateplan.delete', entity: 'RatePlan', entityId: id });
-    return { ok: true };
+    await this.prisma.$transaction([
+      this.prisma.resource.updateMany({ where: { ratePlanId: id }, data: { ratePlanId: null } }),
+      this.prisma.ratePlan.delete({ where: { id } }),
+    ]);
+    await this.audit.log({
+      userId: req.user.sub, action: 'rateplan.delete', entity: 'RatePlan', entityId: id,
+      detail: { name: plan.name, tablesUnassigned: plan.resources.length },
+    });
+    this.realtime.emitTo('floor', 'floor.refresh', {});
+    return { ok: true, tablesUnassigned: plan.resources.length };
   }
 
   @Patch('rate-plans/:id')
   @RequirePermissions('rateplan.manage')
   async updateRatePlan(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: Record<string, unknown>) {
-    const allowed = ['name', 'hourlyCents', 'hourlyMultiCents', 'minimumCents', 'roundToMinutes', 'roundingMode', 'graceMinutes', 'isActive'];
-    const data = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
+    const data: Record<string, unknown> = {};
+    const int = (k: string, min = 0) => {
+      if (!(k in body)) return;
+      const v = body[k];
+      if (typeof v !== 'number' || !Number.isInteger(v) || v < min) throw new BadRequestException(`Invalid value for ${k}`);
+      data[k] = v;
+    };
+    if ('name' in body) {
+      const name = String(body.name ?? '').trim();
+      if (!name) throw new BadRequestException('Name is required');
+      data.name = name;
+    }
+    int('hourlyCents'); int('minimumCents'); int('graceMinutes'); int('roundToMinutes', 1);
+    if ('hourlyMultiCents' in body) {
+      const v = body.hourlyMultiCents;
+      if (v === null) data.hourlyMultiCents = null;
+      else int('hourlyMultiCents');
+    }
+    if ('roundingMode' in body) {
+      if (!['nearest', 'up', 'down'].includes(String(body.roundingMode))) throw new BadRequestException('Invalid rounding mode');
+      data.roundingMode = body.roundingMode;
+    }
+    if ('isActive' in body) data.isActive = !!body.isActive;
     const plan = await this.prisma.ratePlan.update({ where: { id }, data });
     await this.audit.log({ userId: req.user.sub, action: 'rateplan.update', entity: 'RatePlan', entityId: id, detail: data as never });
     this.realtime.emitTo('floor', 'floor.refresh', {});
@@ -199,9 +232,57 @@ export class AdminController {
     name: string; daysOfWeek: number[]; startTime: string; endTime: string;
     hourlyCents: number; hourlyMultiCents?: number; priority?: number;
   }) {
-    const rule = await this.prisma.rateRule.create({ data: { ...body, ratePlanId: id } });
+    const rule = await this.prisma.rateRule.create({ data: { ...this.ruleData(body, true), ratePlanId: id } as never });
     await this.audit.log({ userId: req.user.sub, action: 'rateplan.rule_add', entity: 'RateRule', entityId: rule.id });
+    this.realtime.emitTo('floor', 'floor.refresh', {});
     return rule;
+  }
+
+  @Patch('rate-plans/rules/:ruleId')
+  @RequirePermissions('rateplan.manage')
+  async updateRule(@Req() req: AuthedRequest, @Param('ruleId') ruleId: string, @Body() body: Record<string, unknown>) {
+    const data = this.ruleData(body, false);
+    const rule = await this.prisma.rateRule.update({ where: { id: ruleId }, data: data as never });
+    await this.audit.log({ userId: req.user.sub, action: 'rateplan.rule_update', entity: 'RateRule', entityId: ruleId, detail: data as never });
+    this.realtime.emitTo('floor', 'floor.refresh', {});
+    return rule;
+  }
+
+  /** Validates a time rule (all fields when creating, only the given ones when editing). */
+  private ruleData(body: Record<string, unknown>, creating: boolean) {
+    const out: Record<string, unknown> = {};
+    const has = (k: string) => creating || k in body;
+    const hhmm = /^([01]\d|2[0-3]):[0-5]\d$/;
+    if (has('name')) {
+      const n = String(body.name ?? '').trim();
+      if (!n) throw new BadRequestException('Rule name is required');
+      out.name = n;
+    }
+    for (const k of ['startTime', 'endTime']) {
+      if (!has(k)) continue;
+      if (!hhmm.test(String(body[k] ?? ''))) throw new BadRequestException('Times must be HH:mm');
+      out[k] = body[k];
+    }
+    if (has('daysOfWeek')) {
+      const d = body.daysOfWeek;
+      if (!Array.isArray(d) || !d.length || d.some((x) => !Number.isInteger(x) || x < 0 || x > 6)) {
+        throw new BadRequestException('Pick at least one day');
+      }
+      out.daysOfWeek = [...new Set(d as number[])].sort();
+    }
+    if (has('hourlyCents')) {
+      const v = body.hourlyCents;
+      if (typeof v !== 'number' || !Number.isInteger(v) || v < 0) throw new BadRequestException('Invalid hourly rate');
+      out.hourlyCents = v;
+    }
+    if ('hourlyMultiCents' in body) {
+      const v = body.hourlyMultiCents;
+      if (v !== null && (typeof v !== 'number' || !Number.isInteger(v) || v < 0)) throw new BadRequestException('Invalid multiplayer rate');
+      out.hourlyMultiCents = v;
+    }
+    if ('priority' in body && Number.isInteger(body.priority)) out.priority = body.priority;
+    if ('isActive' in body) out.isActive = !!body.isActive;
+    return out;
   }
 
   @Delete('rate-plans/rules/:ruleId')
@@ -209,6 +290,7 @@ export class AdminController {
   async deleteRule(@Req() req: AuthedRequest, @Param('ruleId') ruleId: string) {
     await this.prisma.rateRule.delete({ where: { id: ruleId } });
     await this.audit.log({ userId: req.user.sub, action: 'rateplan.rule_delete', entity: 'RateRule', entityId: ruleId });
+    this.realtime.emitTo('floor', 'floor.refresh', {});
     return { ok: true };
   }
 
